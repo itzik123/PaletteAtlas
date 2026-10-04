@@ -1,0 +1,21 @@
+{
+  "name": "@palette-atlas/pipeline",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "strips": "node src/strips.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@palette-atlas/color": "workspace:*",
+    "@palette-atlas/strip": "workspace:*",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

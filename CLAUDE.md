@@ -38,6 +38,7 @@ Expected applications (names are illustrative; confirm as we reach them):
 - No overly basic tests: skip getters, plain constructors, one-line delegation and behavior the language or a library already guarantees.
 - Unit tests only check baseline sanity: known reference values, round-trips and invariants (e.g. the Hilbert curve visits every pixel exactly once).
 - The substantive tests are integration tests between subsystems, e.g. image → strip → vector (an identical image gives distance zero), HNSW vs. brute force on real vectors (recall@10), and the pipeline's output loading in the app.
+- Reference images: `benchmark/strips` holds every axis's strip of the benchmark images, and a test compares the pipeline's output with them pixel for pixel. After an intended change, rerun `pnpm strips`, review the new images and commit them.
 - A test and the code that makes it pass go in the same commit, so `main` and CI stay green.
 
 ## Phase completion
@@ -106,7 +107,8 @@ PaletteAtlas/
 - **Build**: pnpm workspaces and Vite for the TypeScript part; a plain venv for the Python part.
 - **Drawing**: Canvas 2D for strips, Three.js for the 3D view in the Lab.
 - **Compute**: Web Workers for every heavy computation, so the interface never freezes.
-- **Tests**: Vitest for the libraries, each test file next to its code as `*.test.ts`; Playwright for UI flows and for screenshots compared against reference images.
+- **Tests**: Vitest for the libraries and the pipeline, each test file next to its code as `*.test.ts`; Playwright for UI flows and for screenshots of the app compared against reference images.
+- **Images in Node**: `sharp` (libvips) decodes and encodes image files in the pipeline, WebP and PNG included. Its strips of the benchmark images match the browser's exactly.
 - **CI/CD**: GitHub Actions run tests, build, and publish to GitHub Pages on every push to `main`.
 - **Toolchain**: Node 24 LTS, pnpm 12 (pinned by `packageManager`), TypeScript 6. Not TS 7 yet: it is very new (July 2026) and `typescript-eslint` only supports up to TS 6; revisit later.
 - **Workspace conventions**: packages are named `@palette-atlas/<name>`. Shared dependency versions live in the `catalog` in `pnpm-workspace.yaml`, and packages refer to them as `"catalog:"`. Each package has its own `typecheck` and `test` scripts, plus `build` where there is something to build; the root scripts run them across the workspace.
@@ -149,7 +151,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 | Part | Automated test | Visual check |
 |---|---|---|
 | color | A round-trip conversion returns the same color within a negligible error; known OKLab reference values | A gradient between two colors in sRGB vs. OKLab, one above the other |
-| strip | Hilbert fold-back at full resolution restores the image pixel for pixel; reference screenshots for every axis | Hovering over the strip highlights the source region in the image |
+| strip | Hilbert fold-back at full resolution restores the image pixel for pixel; reference strips for every axis (`benchmark/strips`) | Hovering over the strip highlights the source region in the image |
 | vectorize | An identical image gives distance zero; a small color change gives a small distance | The nearest results and their strips next to the query strip |
 | hnsw | recall@10 vs. brute force above a set target (e.g. 0.95); deterministic build with a seed | In the Lab: the true neighbors marked next to what HNSW found |
 | pipeline | Only works marked as public domain; record counts and file schema | A check page with 20 random works and their strips |
@@ -181,6 +183,7 @@ pnpm dev         # run the app locally at http://localhost:5173 (visual checks: 
 pnpm build       # build every workspace package
 pnpm test        # run every package's tests
 pnpm typecheck   # type-check every package
+pnpm strips      # write the benchmark images' strips to benchmark/strips, the tests' reference images
 ```
 
 Development happens on Windows (PowerShell). `.gitattributes` keeps every text file LF.

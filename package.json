@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @palette-atlas/app dev",
+    "strips": "pnpm --filter @palette-atlas/pipeline strips",
     "build": "pnpm -r --if-present run build",
     "test": "pnpm -r --if-present run test",
     "typecheck": "pnpm -r --if-present run typecheck"

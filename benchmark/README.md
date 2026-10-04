@@ -12,3 +12,5 @@ Renders from Itzik's Java ray tracer, used as the standard inputs for Palette At
 | `cube.webp` | 1600 × 1600 | Saturated primaries: red, yellow, green and blue |
 
 To see them with each mechanism's output, run `pnpm dev` and open http://localhost:5173/benchmark.html.
+
+`strips/` holds each image's strip along every axis (`<image>-<axis>.png`), written by `pnpm strips` with the benchmark page's settings. They are the reference images for the tests: after an intended change to the strips, rerun `pnpm strips`, review the new files and commit them.

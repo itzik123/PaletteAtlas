@@ -1,0 +1,8 @@
+{
+  // Node code: the shared base plus Node's own types, still without DOM.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src"]
+}
