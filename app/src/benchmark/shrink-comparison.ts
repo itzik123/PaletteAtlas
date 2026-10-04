@@ -1,12 +1,11 @@
-import { downscale, LinearRgb, PALETTE_WORKING_SIZE, type RgbaImage } from '@palette-atlas/color';
+import { LinearRgb, type RgbaImage } from '@palette-atlas/color';
 import { context2d, imageCanvas } from './paint.ts';
 
 /**
- * The image shrunk to the palette's working size twice, side by side: by our area averaging in
- * linear light, and by the browser's own canvas scaling. Each shows the mean light it kept.
+ * An image shrunk twice, side by side: by our area averaging in linear light (passed in), and
+ * by the browser's own canvas scaling to the same size. Each shows the mean light it kept.
  */
-export function shrinkComparison(image: RgbaImage): HTMLElement {
-  const ours = downscale(image, PALETTE_WORKING_SIZE);
+export function shrinkComparison(image: RgbaImage, ours: RgbaImage): HTMLElement {
   const element = document.createElement('div');
   element.className = 'shrinks';
   element.append(

@@ -71,7 +71,7 @@ Both sides import the same libraries:
 
 Two design decisions from day one:
 
-- **Source map in `strip`**: every segment of the strip remembers which pixels it came from. Hover linking and fold-back are built on it.
+- **Source map in `strip`**: every segment of the strip remembers which pixels it came from. Hover linking and fold-back are built on it. `SourceMap` holds each pixel's segment (or `NO_SEGMENT`); `Strip.read(image, axis, segments)` averages every segment in linear light, and `foldBack()` paints each segment back over its own pixels.
 - **Trace in `hnsw`**: every search can record its steps (visiting a node, comparing, descending a layer). The Lab only replays the record, so the animation shows the real code, not a simulation of it.
 
 **Color spaces** (decided Oct 4, 2026, after comparing them on the benchmark images):

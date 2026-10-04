@@ -21,6 +21,9 @@ root.innerHTML = `
         values, so fine bright detail comes out darker.</li>
       <li><b>Palette.</b> k-means in OKLab on our shrunk image; each color's share is the part of
         the image it stands for.</li>
+      <li><b>Strips.</b> The image read left to right and from the center out, each segment the
+        linear-light mean of its pixels. Hover a strip to see where a segment came from; the
+        square beside it is the fold-back, every segment painted over its own pixels.</li>
     </ul>
   </header>
 `;

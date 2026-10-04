@@ -48,9 +48,23 @@ header li {
   }
 }
 
+/* Stays in view while the strips further down are hovered. */
+.image-frame {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+}
+
+.highlight {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 .picker {
   position: relative;
-  align-self: start;
   cursor: crosshair;
 }
 
@@ -152,4 +166,31 @@ header li {
 
 .palette .swatch {
   width: 72px;
+}
+
+.strips {
+  display: grid;
+  gap: 10px;
+}
+
+.strip-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.strip {
+  width: 100%;
+  height: 40px;
+  border-radius: 6px;
+  cursor: crosshair;
+  image-rendering: pixelated;
+}
+
+.fold-back {
+  width: 72px;
+  height: 72px;
+  border-radius: 4px;
 }

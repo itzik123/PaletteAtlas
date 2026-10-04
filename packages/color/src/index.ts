@@ -1,3 +1,4 @@
+export { BucketMeans } from './bucket-means.ts';
 export { downscale } from './downscale.ts';
 export { type Cluster, KMeans, type WeightedPoints } from './kmeans.ts';
 export { LinearRgb } from './linear-rgb.ts';

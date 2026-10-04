@@ -184,6 +184,9 @@ importers:
       '@palette-atlas/color':
         specifier: workspace:*
         version: link:../packages/color
+      '@palette-atlas/strip':
+        specifier: workspace:*
+        version: link:../packages/strip
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -193,6 +196,19 @@ importers:
         version: 8.3.2
 
   packages/color:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(vite@8.3.2)
+
+  packages/strip:
+    dependencies:
+      '@palette-atlas/color':
+        specifier: workspace:*
+        version: link:../color
     devDependencies:
       typescript:
         specifier: 'catalog:'
