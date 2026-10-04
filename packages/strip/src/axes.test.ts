@@ -23,6 +23,27 @@ function noise(width: number, height: number): RgbaImage {
   return { width, height, data };
 }
 
+/** How many pixels of a width × height image each segment of the axis gets. */
+function pixelsPerSegment(axis: StripAxis, width: number, height: number, segments: number): number[] {
+  const map = axis.sourceMap(noise(width, height), segments);
+  const counts = new Array<number>(map.segmentCount).fill(0);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) counts[map.segmentAt(x, y)]++;
+  }
+  return counts;
+}
+
+describe('RadialAxis', () => {
+  it('gives every ring the same number of pixels, give or take one', () => {
+    for (const [width, height] of [[7, 5], [64, 48], [256, 256], [256, 144]]) {
+      for (const segments of [3, 16, 128]) {
+        const counts = pixelsPerSegment(new RadialAxis(), width, height, segments);
+        expect(Math.max(...counts) - Math.min(...counts), `${width} × ${height}, ${segments} rings`).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
+
 describe.each(AXES)('%s', (_, axis) => {
   it('puts every pixel in a segment and leaves no segment empty', () => {
     for (const [width, height] of SIZES) {

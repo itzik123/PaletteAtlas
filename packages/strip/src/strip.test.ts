@@ -36,11 +36,12 @@ describe('Strip', () => {
     expect(hexes(Strip.read(picture, new ColumnAxis(), 2))).toEqual(['#bc0000', '#bcbcff']);
   });
 
-  it('reads rings from the center outward', () => {
-    // A white 2×2 center inside a black border.
+  it('reads rings of equal area from the center outward', () => {
+    // A white 2×2 center inside a black border: the four pixels nearest the center fill the first
+    // of four rings, and the twelve around them the other three.
     const [B, W] = [BLACK, WHITE];
     const picture = image(4, B, B, B, B, B, W, W, B, B, W, W, B, B, B, B, B);
-    expect(hexes(Strip.read(picture, new RadialAxis(), 2))).toEqual(['#ffffff', '#000000']);
+    expect(hexes(Strip.read(picture, new RadialAxis(), 4))).toEqual(['#ffffff', '#000000', '#000000', '#000000']);
   });
 
   it('reads patches along the Hilbert curve, from the top-left corner around to the top-right', () => {
@@ -82,6 +83,7 @@ describe('Strip', () => {
   // Columns need a single row for every pixel to be a segment of its own.
   it.each([
     ['columns', new ColumnAxis(), 6],
+    ['rings', new RadialAxis(), 3],
     ['the Hilbert curve', new HilbertAxis(), 3],
     ['colors', colorAxis(2), 3],
   ])('restores the image exactly when every pixel is its own segment, reading %s', (_, axis, width) => {

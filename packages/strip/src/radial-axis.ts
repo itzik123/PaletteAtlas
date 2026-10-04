@@ -6,25 +6,26 @@ import type { StripAxis } from './strip-axis.ts';
 const PIXEL_CENTER = 0.5;
 
 /**
- * Reads an image from its center outward: each segment is a ring of equal width, and the rings
- * reach into the corners, so that every pixel belongs to one.
+ * Reads an image from its center outward: its pixels in order of their distance from the center,
+ * cut into runs of equal length. Each segment is a ring holding an equal share of the pixels, like
+ * the segments of every other axis, so the rings grow thinner away from the center, and reach
+ * into the corners.
  */
 export class RadialAxis implements StripAxis {
   sourceMap({ width, height }: RgbaImage, segments: number): SourceMap {
     const centerX = width / 2;
     const centerY = height / 2;
-    const reach = Math.hypot(centerX, centerY);
-    // Rings at least a pixel wide, so that none is empty.
-    const count = Math.max(1, Math.min(segments, Math.floor(reach)));
-    const map = new Int32Array(width * height);
+    // Squared distances, which order the pixels the same way without a square root.
+    const distances = new Float64Array(width * height);
     for (let y = 0; y < height; y++) {
       const dy = y + PIXEL_CENTER - centerY;
       for (let x = 0; x < width; x++) {
         const dx = x + PIXEL_CENTER - centerX;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        map[y * width + x] = Math.min(count - 1, Math.floor((distance / reach) * count));
+        distances[y * width + x] = dx * dx + dy * dy;
       }
     }
-    return new SourceMap(width, height, count, map);
+    // Pixels at the same distance keep their reading order.
+    const outward = Uint32Array.from(distances.keys()).sort((a, b) => distances[a] - distances[b] || a - b);
+    return SourceMap.fromSequence(width, height, outward, segments);
   }
 }
