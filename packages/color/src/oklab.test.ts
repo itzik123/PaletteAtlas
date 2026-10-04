@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OkLab, Srgb } from './index.ts';
+import { MAX_BYTE, OkLab, Srgb } from './index.ts';
 
 // sRGB to OKLab reference values from the color.js test suite, written by the CSS Color 4 editors.
 const REFERENCES = [
@@ -15,7 +15,6 @@ const REFERENCES = [
 
 /** The references are rounded to 6 decimals; matching 5 leaves room for that rounding. */
 const REFERENCE_DIGITS = 5;
-const MAX_BYTE = 255;
 /** 0, 17, 34, ..., 255: 16 levels per channel, 4096 colors in all. */
 const LATTICE_STEP = 17;
 /** Thousands of times smaller than one 8-bit step (1/255), so an error this small is invisible. */

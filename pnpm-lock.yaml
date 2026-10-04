@@ -180,6 +180,10 @@ importers:
         version: 6.0.3
 
   app:
+    dependencies:
+      '@palette-atlas/color':
+        specifier: workspace:*
+        version: link:../packages/color
     devDependencies:
       typescript:
         specifier: 'catalog:'

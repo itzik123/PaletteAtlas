@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LinearRgb, Srgb } from './index.ts';
+import { LinearRgb, MAX_BYTE, Srgb } from './index.ts';
 
-const MAX_BYTE = 255;
 /** Thousands of times smaller than one 8-bit step (1/255), so an error this small is invisible. */
 const NEGLIGIBLE = 1e-6;
 

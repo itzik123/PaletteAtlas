@@ -1,8 +1,17 @@
 export type Vector3 = readonly [number, number, number];
 export type Matrix3 = readonly [Vector3, Vector3, Vector3];
 
-export function multiply([row0, row1, row2]: Matrix3, vector: Vector3): Vector3 {
-  return [dot(row0, vector), dot(row1, vector), dot(row2, vector)];
+/**
+ * Writes matrix × (x, y, z) into out[0..2] without allocating, for pixel loops. The inputs are
+ * read before out is written, so they may come from out itself.
+ */
+export function transform(matrix: Matrix3, x: number, y: number, z: number, out: Float64Array): void {
+  const row0 = matrix[0];
+  const row1 = matrix[1];
+  const row2 = matrix[2];
+  out[0] = row0[0] * x + row0[1] * y + row0[2] * z;
+  out[1] = row1[0] * x + row1[1] * y + row1[2] * z;
+  out[2] = row2[0] * x + row2[1] * y + row2[2] * z;
 }
 
 /** The inverse of an invertible matrix, from its cofactors. */
@@ -19,10 +28,6 @@ export function invert([[a, b, c], [d, e, f], [g, h, i]]: Matrix3): Matrix3 {
     scale(row1, inverseDeterminant),
     scale(row2, inverseDeterminant),
   ];
-}
-
-function dot([a0, a1, a2]: Vector3, [b0, b1, b2]: Vector3): number {
-  return a0 * b0 + a1 * b1 + a2 * b2;
 }
 
 function scale([x, y, z]: Vector3, factor: number): Vector3 {

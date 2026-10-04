@@ -1,5 +1,8 @@
-import { LinearRgb } from './linear-rgb.ts';
-import { invert, type Matrix3, multiply } from './matrix3.ts';
+import { byteToLinear, LinearRgb } from './linear-rgb.ts';
+import { lerp } from './lerp.ts';
+import { invert, type Matrix3, transform } from './matrix3.ts';
+import { meanOfPixels } from './pixel-mean.ts';
+import type { RgbaImage } from './rgba-image.ts';
 import type { Srgb } from './srgb.ts';
 
 // The forward matrices are from Björn Ottosson, "A perceptual color space for image
@@ -24,6 +27,13 @@ const LMS_TO_OKLAB: Matrix3 = [
 const OKLAB_TO_LMS = invert(LMS_TO_OKLAB);
 const LMS_TO_LINEAR_SRGB = invert(LINEAR_SRGB_TO_LMS);
 
+/** Writes the OKLab coordinates of a linear sRGB color into out[0..2], allocating nothing. */
+function linearToOkLab(r: number, g: number, b: number, out: Float64Array): void {
+  transform(LINEAR_SRGB_TO_LMS, r, g, b, out);
+  // The cube root models the eye's compressed response to light.
+  transform(LMS_TO_OKLAB, Math.cbrt(out[0]), Math.cbrt(out[1]), Math.cbrt(out[2]), out);
+}
+
 /**
  * A color in OKLab (Björn Ottosson, 2020), a perceptual space: l is lightness
  * from 0 (black) to 1 (white), a runs from green to red and b from blue to
@@ -47,20 +57,33 @@ export class OkLab {
   }
 
   static fromLinear(color: LinearRgb): OkLab {
-    const [long, medium, short] = multiply(LINEAR_SRGB_TO_LMS, [color.r, color.g, color.b]);
-    // The cube root models the eye's compressed response to light.
-    const [l, a, b] = multiply(LMS_TO_OKLAB, [Math.cbrt(long), Math.cbrt(medium), Math.cbrt(short)]);
-    return new OkLab(l, a, b);
+    const out = new Float64Array(3);
+    linearToOkLab(color.r, color.g, color.b, out);
+    return new OkLab(out[0], out[1], out[2]);
   }
 
   static fromSrgb(color: Srgb): OkLab {
     return OkLab.fromLinear(LinearRgb.fromSrgb(color));
   }
 
+  /** The perceptual mean of an image's pixels: their OKLab coordinates averaged. */
+  static average(image: RgbaImage): OkLab | undefined {
+    const mean = meanOfPixels(image, (red, green, blue, out) =>
+      linearToOkLab(byteToLinear(red), byteToLinear(green), byteToLinear(blue), out),
+    );
+    return mean && new OkLab(...mean);
+  }
+
+  /** The color t of the way to another in perceptually even steps (CSS's "in oklab"). */
+  mix(other: OkLab, t: number): OkLab {
+    return new OkLab(lerp(this.l, other.l, t), lerp(this.a, other.a, t), lerp(this.b, other.b, t));
+  }
+
   toLinear(): LinearRgb {
-    const [long, medium, short] = multiply(OKLAB_TO_LMS, [this.l, this.a, this.b]);
-    const [r, g, b] = multiply(LMS_TO_LINEAR_SRGB, [long ** 3, medium ** 3, short ** 3]);
-    return new LinearRgb(r, g, b);
+    const out = new Float64Array(3);
+    transform(OKLAB_TO_LMS, this.l, this.a, this.b, out);
+    transform(LMS_TO_LINEAR_SRGB, out[0] ** 3, out[1] ** 3, out[2] ** 3, out);
+    return new LinearRgb(out[0], out[1], out[2]);
   }
 
   toSrgb(): Srgb {

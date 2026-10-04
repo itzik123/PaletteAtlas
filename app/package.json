@@ -8,6 +8,9 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@palette-atlas/color": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "catalog:",
     "vite": "^8.3.2"

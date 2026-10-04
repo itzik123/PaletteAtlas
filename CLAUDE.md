@@ -59,7 +59,7 @@ Claude never declares a phase complete on its own: present the passing tests and
 
 Four TypeScript libraries with no browser dependency, shared by an offline data pipeline and the site. The same code computes the gallery's strips offline and, in the browser, the strip of the image a user uploads.
 
-- `color`: correct averaging (OKLab, k-means)
+- `color`: correct averaging (linear light), k-means and color distances (OKLab)
 - `strip`: image to strip (Hilbert, TSP)
 - `vectorize`: strip to vector (soft histogram, Hellinger)
 - `hnsw`: index and search (search, trace)
@@ -73,6 +73,11 @@ Two design decisions from day one:
 
 - **Source map in `strip`**: every segment of the strip remembers which pixels it came from. Hover linking and fold-back are built on it.
 - **Trace in `hnsw`**: every search can record its steps (visiting a node, comparing, descending a layer). The Lab only replays the record, so the animation shows the real code, not a simulation of it.
+
+**Color spaces** (decided Oct 4, 2026, after comparing them on the benchmark images):
+
+- **Linear light for averaging**: strip segments and any downscaling, including the 256 px shrink before k-means. We shrink images ourselves by area averaging in linear light, because canvas and `createImageBitmap` scaling usually blend the encoded sRGB values.
+- **OKLab for perception**: gradients, k-means, color distances and palette ordering.
 
 ## Repository layout (target)
 
@@ -89,6 +94,7 @@ PaletteAtlas/
 │   ├── fetch/          Python: AIC dump, filter, polite download, PNGs
 │   └── build/          TypeScript (Node): strips, vectors, index build
 ├── notebooks/          Python: experiments and evaluation (optional)
+├── benchmark/          Itzik's ray-traced renders: the standard inputs for visual checks
 ├── app/                Studio, Atlas, Lab
 │   └── public/data/    pipeline output: binary index, metadata, thumbnails
 └── .github/workflows/  tests, build, deploy to GitHub Pages
@@ -138,7 +144,7 @@ After v1: video (decoded in the browser with WebCodecs) and personal photo album
 
 ## Verification
 
-Every part gets an automated test that runs in CI, and a screen where you can see with your own eyes that it works.
+Every part gets an automated test that runs in CI, and a screen where you can see with your own eyes that it works. Visual checks run on the six benchmark images in `benchmark/`, on a dev-only page (`app/benchmark.html`) that grows with each step and stays out of the production build.
 
 | Part | Automated test | Visual check |
 |---|---|---|
@@ -156,7 +162,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 - **Non-square images**: the classic Hilbert curve is defined on a square whose side is a power of 2. Needs a generalized version for rectangles, or padding and cropping.
 - **Data size in the browser**: tens of thousands of vectors and their graph can reach tens of megabytes. Fix: uint8 quantization, lazy loading, and starting from a subset of paintings.
 - **Museum data**: the Art Institute of Chicago (AIC) releases over 50,000 images under CC0 and asks for credit of artist, title and date. Its API docs recommend filtering the nightly data dump rather than querying the API, and downloading images one at a time, a second apart, at width 843.
-- **Performance**: downscale an image to about 256 px before k-means, and run it in a Worker.
+- **Performance**: downscale an image to about 256 px before k-means (area averaging in linear light, see Color spaces), and run it in a Worker.
 - **GitHub Pages while private** (not in the design doc): Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), and the published site is public even when the repo is private. Deferred: not a concern for now; revisit when deployment becomes relevant.
 
 ## What the project teaches
@@ -171,7 +177,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 
 ```bash
 pnpm install     # install all dependencies
-pnpm dev         # run the app locally at http://localhost:5173
+pnpm dev         # run the app locally at http://localhost:5173 (visual checks: /benchmark.html)
 pnpm build       # build every workspace package
 pnpm test        # run every package's tests
 pnpm typecheck   # type-check every package

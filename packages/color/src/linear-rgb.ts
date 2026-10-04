@@ -1,3 +1,6 @@
+import { lerp } from './lerp.ts';
+import { meanOfPixels } from './pixel-mean.ts';
+import { MAX_BYTE, type RgbaImage } from './rgba-image.ts';
 import { Srgb } from './srgb.ts';
 
 // The sRGB transfer curve (IEC 61966-2-1): a straight segment near black, then a power curve.
@@ -25,6 +28,14 @@ function encode(linear: number): number {
     : (1 + OFFSET) * linear ** (1 / GAMMA) - OFFSET;
 }
 
+/** Linear light for every 8-bit value, so pixel loops look it up instead of computing a power. */
+const BYTE_TO_LINEAR = Float64Array.from({ length: MAX_BYTE + 1 }, (_, byte) => decode(byte / MAX_BYTE));
+
+/** Decodes an 8-bit sRGB channel to linear light. */
+export function byteToLinear(byte: number): number {
+  return BYTE_TO_LINEAR[byte];
+}
+
 /**
  * A color in linear-light RGB: the sRGB primaries without the gamma curve, so
  * each channel is proportional to light intensity. Physically correct mixing
@@ -49,6 +60,24 @@ export class LinearRgb {
   /** Removes the gamma curve from an sRGB color. */
   static fromSrgb(color: Srgb): LinearRgb {
     return new LinearRgb(decode(color.r), decode(color.g), decode(color.b));
+  }
+
+  /**
+   * The physically correct mean of an image's pixels: the color the image emits as a whole, as
+   * if seen from so far away that its pixels blend.
+   */
+  static average(image: RgbaImage): LinearRgb | undefined {
+    const mean = meanOfPixels(image, (red, green, blue, out) => {
+      out[0] = BYTE_TO_LINEAR[red];
+      out[1] = BYTE_TO_LINEAR[green];
+      out[2] = BYTE_TO_LINEAR[blue];
+    });
+    return mean && new LinearRgb(...mean);
+  }
+
+  /** The color t of the way to another, mixing light intensities (CSS's "in srgb-linear"). */
+  mix(other: LinearRgb, t: number): LinearRgb {
+    return new LinearRgb(lerp(this.r, other.r, t), lerp(this.g, other.g, t), lerp(this.b, other.b, t));
   }
 
   /** Applies the gamma curve, giving the sRGB color a screen shows. */
