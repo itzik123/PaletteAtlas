@@ -123,9 +123,9 @@ The core and the site are TypeScript. Python is used only for parts that don't r
 
 ## Work phases
 
-Seven phases, each ending in something you can show. **Current phase: 1 (Infrastructure).**
+Seven phases, each ending in something you can show. **Current phase: 2 (Color library and strip engine).**
 
-1. **Infrastructure** (1 weekend): monorepo, CI, and deployment of an empty page to GitHub Pages. From here on, every push goes live. *Deployment is deferred for now; phase 1 covers the monorepo, CI and the empty page.*
+1. **Infrastructure** (1 weekend): monorepo, CI, and deployment of an empty page to GitHub Pages. From here on, every push goes live. *Deployment is deferred for now; phase 1 covers the monorepo, CI and the empty page.* Done Oct 4, 2026.
 2. **Color library and strip engine** (2–3 weekends): OKLab conversions and correct averaging, k-means, a column axis and a radial axis, a color axis with TSP ordering, and a Hilbert axis with fold-back. Deliverable: correct strips generated from a script, covered by tests.
 3. **Studio, first release v0.1** (2 weekends): image upload, axis switching, hover linking between strip and image, and PNG export. A README with a GIF and a link to the site. The first moment to share.
 4. **Data pipeline and gallery** (2–3 weekends): download public-domain paintings, compute their strips, a gallery page, and a career barcode for each artist.
