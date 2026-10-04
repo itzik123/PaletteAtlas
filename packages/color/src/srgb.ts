@@ -65,6 +65,7 @@ export class Srgb {
   }
 }
 
-function toByte(channel: number): number {
+/** An encoded channel as a byte: rounded, and clipped to 0-255 when outside the gamut. */
+export function toByte(channel: number): number {
   return Math.round(Math.min(Math.max(channel, 0), 1) * MAX_BYTE);
 }

@@ -28,7 +28,7 @@ const OKLAB_TO_LMS = invert(LMS_TO_OKLAB);
 const LMS_TO_LINEAR_SRGB = invert(LINEAR_SRGB_TO_LMS);
 
 /** Writes the OKLab coordinates of a linear sRGB color into out[0..2], allocating nothing. */
-function linearToOkLab(r: number, g: number, b: number, out: Float64Array): void {
+export function linearToOkLab(r: number, g: number, b: number, out: Float64Array): void {
   transform(LINEAR_SRGB_TO_LMS, r, g, b, out);
   // The cube root models the eye's compressed response to light.
   transform(LMS_TO_OKLAB, Math.cbrt(out[0]), Math.cbrt(out[1]), Math.cbrt(out[2]), out);

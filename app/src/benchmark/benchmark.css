@@ -124,3 +124,32 @@ header li {
   height: 36px;
   border-radius: 6px;
 }
+
+.shrinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.shrink {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.shrink canvas {
+  display: block;
+  max-width: 100%;
+  margin-bottom: 4px;
+}
+
+.palette-bar {
+  display: flex;
+  height: 36px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.palette .swatch {
+  width: 72px;
+}

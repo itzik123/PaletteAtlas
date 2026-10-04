@@ -1,7 +1,7 @@
 import { lerp } from './lerp.ts';
 import { meanOfPixels } from './pixel-mean.ts';
 import { MAX_BYTE, type RgbaImage } from './rgba-image.ts';
-import { Srgb } from './srgb.ts';
+import { Srgb, toByte } from './srgb.ts';
 
 // The sRGB transfer curve (IEC 61966-2-1): a straight segment near black, then a power curve.
 
@@ -34,6 +34,11 @@ const BYTE_TO_LINEAR = Float64Array.from({ length: MAX_BYTE + 1 }, (_, byte) => 
 /** Decodes an 8-bit sRGB channel to linear light. */
 export function byteToLinear(byte: number): number {
   return BYTE_TO_LINEAR[byte];
+}
+
+/** Encodes linear light as an 8-bit sRGB channel. */
+export function linearToByte(linear: number): number {
+  return toByte(encode(linear));
 }
 
 /**

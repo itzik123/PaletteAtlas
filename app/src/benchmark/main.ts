@@ -16,6 +16,11 @@ root.innerHTML = `
         OKLab averages perceived lightness and color.</li>
       <li><b>Gradient from A to B.</b> Click an image to move A, then B. sRGB dips dark between
         saturated colors, linear light leans toward the lighter end, and OKLab changes evenly.</li>
+      <li><b>Shrunk to 256 px.</b> Our area averaging in linear light keeps the image's light: its
+        mean matches the linear-light average above. The browser's canvas scaling blends stored
+        values, so fine bright detail comes out darker.</li>
+      <li><b>Palette.</b> k-means in OKLab on our shrunk image; each color's share is the part of
+        the image it stands for.</li>
     </ul>
   </header>
 `;

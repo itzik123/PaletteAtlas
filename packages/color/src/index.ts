@@ -1,4 +1,9 @@
+export { downscale } from './downscale.ts';
+export { type Cluster, KMeans, type WeightedPoints } from './kmeans.ts';
 export { LinearRgb } from './linear-rgb.ts';
 export { OkLab } from './oklab.ts';
+export { extractPalette, PALETTE_WORKING_SIZE, type PaletteColor } from './palette.ts';
+export { type Random, SeededRandom } from './random.ts';
 export { BYTES_PER_PIXEL, Channel, MAX_BYTE, type RgbaImage } from './rgba-image.ts';
 export { Srgb } from './srgb.ts';
+export { toe, toeInverse } from './toe.ts';

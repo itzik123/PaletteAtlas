@@ -1,4 +1,4 @@
-import { BYTES_PER_PIXEL, MAX_BYTE, type Srgb } from '@palette-atlas/color';
+import { BYTES_PER_PIXEL, MAX_BYTE, type RgbaImage, type Srgb } from '@palette-atlas/color';
 
 /** A color chip with its name and hex code underneath. */
 export class Swatch {
@@ -25,8 +25,7 @@ export class Swatch {
 
 /** Paints colorAt(t) across a one-pixel-high canvas, from t = 0 at the left edge to 1 at the right. */
 export function paintGradient(canvas: HTMLCanvasElement, colorAt: (t: number) => Srgb): void {
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Canvas 2D is not available');
+  const context = context2d(canvas);
   const { width } = canvas;
   const pixels = context.createImageData(width, 1);
   for (let x = 0; x < width; x++) {
@@ -34,4 +33,25 @@ export function paintGradient(canvas: HTMLCanvasElement, colorAt: (t: number) =>
     pixels.data.set([red, green, blue, MAX_BYTE], x * BYTES_PER_PIXEL);
   }
   context.putImageData(pixels, 0, 0);
+}
+
+/** A canvas showing an image at its own size. */
+export function imageCanvas(image: RgbaImage): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = image.width;
+  canvas.height = image.height;
+  context2d(canvas).putImageData(toImageData(image), 0, 0);
+  return canvas;
+}
+
+export function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas 2D is not available');
+  return context;
+}
+
+/** Adapter back to the browser: an RgbaImage as ImageData, copied unless it already is one. */
+function toImageData(image: RgbaImage): ImageData {
+  if (image instanceof ImageData) return image;
+  return new ImageData(new Uint8ClampedArray(image.data), image.width, image.height);
 }

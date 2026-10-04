@@ -77,7 +77,7 @@ Two design decisions from day one:
 **Color spaces** (decided Oct 4, 2026, after comparing them on the benchmark images):
 
 - **Linear light for averaging**: strip segments and any downscaling, including the 256 px shrink before k-means. We shrink images ourselves by area averaging in linear light, because canvas and `createImageBitmap` scaling usually blend the encoded sRGB values.
-- **OKLab for perception**: gradients, k-means, color distances and palette ordering.
+- **OKLab for perception**: gradients, k-means, color distances and palette ordering. k-means measures lightness through Ottosson's toe (L_r, as in Okhsl), so near-blacks that look alike share one palette color instead of taking several.
 
 ## Repository layout (target)
 
