@@ -1,12 +1,13 @@
 import { BYTES_PER_PIXEL, Channel, extractPalette, KMeans, MAX_BYTE, type RgbaImage, SeededRandom } from '@palette-atlas/color';
 import { describe, expect, it } from 'vitest';
-import { ColorAxis, ColumnAxis, RadialAxis, type StripAxis } from './index.ts';
+import { ColorAxis, ColumnAxis, HilbertAxis, RadialAxis, type StripAxis } from './index.ts';
 
 const SEED = 3;
 const PALETTE_SIZE = 4;
 const AXES: readonly (readonly [name: string, axis: StripAxis])[] = [
   ['ColumnAxis', new ColumnAxis()],
   ['RadialAxis', new RadialAxis()],
+  ['HilbertAxis', new HilbertAxis()],
   ['ColorAxis', new ColorAxis((image) => extractPalette(image, new KMeans(PALETTE_SIZE, new SeededRandom(SEED))))],
 ];
 const SIZES = [[1, 1], [7, 5], [5, 7], [64, 48]] as const;

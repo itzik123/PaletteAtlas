@@ -71,7 +71,7 @@ Both sides import the same libraries:
 
 Two design decisions from day one:
 
-- **Source map in `strip`**: every segment of the strip remembers which pixels it came from. Hover linking and fold-back are built on it. `SourceMap` holds each pixel's segment (or `NO_SEGMENT`); `Strip.read(image, axis, segments)` averages every segment in linear light, and `foldBack()` paints each segment back over its own pixels. Segments are all equally long, so an axis gives something more room by giving it more segments: the color axis lines up the pixels along its palette path and cuts them into equal runs (`SourceMap.fromSequence`), so each color gets segments in proportion to its share.
+- **Source map in `strip`**: every segment of the strip remembers which pixels it came from. Hover linking and fold-back are built on it. `SourceMap` holds each pixel's segment (or `NO_SEGMENT`); `Strip.read(image, axis, segments)` averages every segment in linear light, and `foldBack()` paints each segment back over its own pixels. Segments are all equally long, so an axis gives something more room by giving it more segments. `SourceMap.fromSequence` cuts any ordering of the pixels into equal runs: the Hilbert axis orders them along its curve, and the color axis along its palette path, so each color gets segments in proportion to its share.
 - **Trace in `hnsw`**: every search can record its steps (visiting a node, comparing, descending a layer). The Lab only replays the record, so the animation shows the real code, not a simulation of it.
 
 **Color spaces** (decided Oct 4, 2026, after comparing them on the benchmark images):
@@ -159,7 +159,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 
 - **Scope** is the main risk. The Lab is the heavy part, so it comes after there is already a product that stands on its own.
 - **Vector representation**: start with a soft histogram over a color vocabulary in OKLab, with Hellinger distance. Take the square root of each proportion and use plain Euclidean distance, so HNSW needs no special metric. A 3×3 grid of average colors can be added so layout counts too; decide by what looks right in the gallery.
-- **Non-square images**: the classic Hilbert curve is defined on a square whose side is a power of 2. Needs a generalized version for rectangles, or padding and cropping.
+- **Non-square images** (decided Oct 4, 2026): the classic Hilbert curve is defined on a square whose side is a power of 2, so the Hilbert axis uses Jakub Červený's generalized curve ("gilbert"), which fills any rectangle without jumps (at most one diagonal step) and matches the classic curve on those squares. No padding or cropping.
 - **Data size in the browser**: tens of thousands of vectors and their graph can reach tens of megabytes. Fix: uint8 quantization, lazy loading, and starting from a subset of paintings.
 - **Museum data**: the Art Institute of Chicago (AIC) releases over 50,000 images under CC0 and asks for credit of artist, title and date. Its API docs recommend filtering the nightly data dump rather than querying the API, and downloading images one at a time, a second apart, at width 843.
 - **Performance**: downscale an image to about 256 px before k-means (area averaging in linear light, see Color spaces), and run it in a Worker.

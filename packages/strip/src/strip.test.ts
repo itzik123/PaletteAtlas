@@ -1,6 +1,6 @@
 import { extractPalette, KMeans, OkLab, type RgbaImage, SeededRandom, Srgb } from '@palette-atlas/color';
 import { describe, expect, it } from 'vitest';
-import { ColorAxis, ColumnAxis, RadialAxis, Strip } from './index.ts';
+import { ColorAxis, ColumnAxis, HilbertAxis, RadialAxis, Strip } from './index.ts';
 
 type Pixel = readonly [red: number, green: number, blue: number, alpha: number];
 
@@ -43,6 +43,13 @@ describe('Strip', () => {
     expect(hexes(Strip.read(picture, new RadialAxis(), 2))).toEqual(['#ffffff', '#000000']);
   });
 
+  it('reads patches along the Hilbert curve, from the top-left corner around to the top-right', () => {
+    // Four 2×2 quadrants: red top left, black bottom left, white bottom right, blue top right.
+    const [R, K, W, B] = [RED, BLACK, WHITE, BLUE];
+    const picture = image(4, R, R, B, B, R, R, B, B, K, K, W, W, K, K, W, W);
+    expect(hexes(Strip.read(picture, new HilbertAxis(), 4))).toEqual(['#ff0000', '#000000', '#ffffff', '#0000ff']);
+  });
+
   it('reads colors along the shortest path through the palette, darker end first, each as long as its share', () => {
     // The shortest path in OKLab runs black, red, white, lime: neither by share nor by lightness.
     // The transparent pixel takes no room.
@@ -72,11 +79,14 @@ describe('Strip', () => {
     expect(Array.from(folded.data)).toEqual([...darkRed, ...darkRed, ...paleBlue, ...paleBlue]);
   });
 
+  // Columns need a single row for every pixel to be a segment of its own.
   it.each([
-    ['columns', new ColumnAxis()],
-    ['colors', colorAxis(2)],
-  ])('restores the image exactly when every pixel is its own segment, reading %s', (_, axis) => {
-    const picture = image(4, RED, BLACK, WHITE, BLUE);
-    expect(Strip.read(picture, axis, 4).foldBack().data).toEqual(picture.data);
+    ['columns', new ColumnAxis(), 6],
+    ['the Hilbert curve', new HilbertAxis(), 3],
+    ['colors', colorAxis(2), 3],
+  ])('restores the image exactly when every pixel is its own segment, reading %s', (_, axis, width) => {
+    const pixels = [RED, BLACK, WHITE, BLUE, LIME, PALE_LIME];
+    const picture = image(width, ...pixels);
+    expect(Strip.read(picture, axis, pixels.length).foldBack().data).toEqual(picture.data);
   });
 });

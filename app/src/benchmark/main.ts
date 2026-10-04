@@ -22,11 +22,13 @@ root.innerHTML = `
       <li><b>Palette.</b> k-means in OKLab on our shrunk image; each color's share is the part of
         the image it stands for. The bars show the colors largest first, and along the shortest
         path through them (an exact TSP), where neighbors look most alike.</li>
-      <li><b>Strips.</b> The image read left to right, from the center out, and by color: the
-        palette along its shortest path, each color as long as its share, with its pixels running
-        from the color before toward the color after. Each segment is the linear-light mean of its
-        pixels. Hover a strip to see where a segment came from; the square beside it is the
-        fold-back, every segment painted over its own pixels.</li>
+      <li><b>Strips.</b> The image read left to right, from the center out, along a Hilbert curve,
+        and by color. The Hilbert curve passes through every pixel without jumping, so each
+        segment is a compact patch and neighboring segments are neighboring patches. The color
+        strip lays the palette along its shortest path, each color as long as its share, with its
+        pixels running from the color before toward the color after. Each segment is the
+        linear-light mean of its pixels. Hover a strip to see where a segment came from; the square
+        beside it is the fold-back, every segment painted over its own pixels.</li>
     </ul>
   </header>
 `;

@@ -7,7 +7,7 @@ import {
   type RgbaImage,
   SeededRandom,
 } from '@palette-atlas/color';
-import { ColorAxis, ColumnAxis, RadialAxis, Strip, type StripAxis } from '@palette-atlas/strip';
+import { ColorAxis, ColumnAxis, HilbertAxis, RadialAxis, Strip, type StripAxis } from '@palette-atlas/strip';
 import type { BenchmarkImage } from './benchmark-images.ts';
 import { ColorPicker } from './color-picker.ts';
 import { COMPARED_SPACES } from './compared-spaces.ts';
@@ -34,6 +34,7 @@ function stripAxes(palette: readonly PaletteColor[]): readonly NamedAxis[] {
   return [
     { name: 'Columns', axis: new ColumnAxis() },
     { name: 'Radial', axis: new RadialAxis() },
+    { name: 'Hilbert', axis: new HilbertAxis() },
     { name: 'Color', axis: new ColorAxis(() => palette) },
   ];
 }
