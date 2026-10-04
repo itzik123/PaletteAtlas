@@ -11,12 +11,43 @@ Source: the design doc "Palette Atlas: Project Structure and Work Plan" (Oct 4, 
 - Start minimal: add folders, files and dependencies only when a step needs them.
 - The GitHub repository (`itzik123/PaletteAtlas`) stays private until launch (v1.0). Never make it public, deploy publicly or publish anything without explicit approval.
 
-## Commit messages (strict)
+## Commits (strict)
 
-- Subject: a few basic words saying what changed or was added, ideally one coherent sentence. Example: `Add OKLab conversions`.
-- If it takes more than a few words to describe, split it into smaller commits.
+- One commit per cohesive change with a central theme. Only fundamentally different changes go in separate commits; never split by file or by line. For scale: the setup, the project plan, the phase 1 infrastructure and the guidelines are about 3–4 commits in total.
+- Subject: a few basic words saying what changed or was added, ideally one coherent sentence, e.g. `Add OKLab conversions` or `Add X, Y and Z to CLAUDE.md`. If even a short list can't summarize it, the commit mixes unrelated themes.
 - Optional description: extra context, at most 3–4 sentences.
 - Credit both of us: Itzik is the commit author (from the local git config), and Claude is added with a `Co-Authored-By:` trailer.
+
+## Design principles
+
+- Follow SOLID and object-oriented design throughout: small classes with one responsibility, programming to interfaces, dependencies injected through constructors, composition over inheritance.
+- Use design patterns wherever they fit the problem, and name the pattern in the class's doc comment so the design stays readable. Don't force a pattern where plain code is clearer; speculative generality is itself a smell.
+- Avoid code smells and anti-patterns: god classes and long functions, duplicated logic, magic numbers (name them, e.g. the 843 px download width or the 256 px k-means size), deep inheritance, global mutable state and singletons.
+- In hot paths (pixel loops, distance computations), objects keep bulk data in typed arrays rather than one object per pixel or vector; encapsulation stays at the object boundary.
+
+Expected applications (names are illustrative; confirm as we reach them):
+
+- **Strategy + open/closed**: every strip axis implements one `StripAxis` interface, so a new axis is a new class with no edits elsewhere.
+- **Liskov substitution**: `HnswIndex` and the brute-force index implement one `VectorIndex` interface, so recall tests can swap them freely.
+- **Observer + Null Object**: the HNSW search reports its steps to a tracer; a no-op tracer costs nothing when the Lab isn't recording.
+- **Dependency inversion (ports and adapters)**: the libraries define the image types they need; the app (canvas `ImageData`) and the pipeline (PNG files) adapt their inputs to them.
+
+## Testing
+
+- Development is test-driven: write the failing test first, make it pass with the simplest code, then refactor.
+- No overly basic tests: skip getters, plain constructors, one-line delegation and behavior the language or a library already guarantees.
+- Unit tests only check baseline sanity: known reference values, round-trips and invariants (e.g. the Hilbert curve visits every pixel exactly once).
+- The substantive tests are integration tests between subsystems, e.g. image → strip → vector (an identical image gives distance zero), HNSW vs. brute force on real vectors (recall@10), and the pipeline's output loading in the app.
+- A test and the code that makes it pass go in the same commit, so `main` and CI stay green.
+
+## Phase completion
+
+A phase is done only when both hold:
+
+1. All key tests for the phase are written and pass, locally and in CI.
+2. Itzik has visually confirmed an output that shows the system's overall sanity or the phase's new mechanism working. The "Visual check" column under Verification and each phase's deliverable say what to show.
+
+Claude never declares a phase complete on its own: present the passing tests and the visual output, then wait for Itzik's confirmation before updating "Current phase".
 
 ## The product
 
