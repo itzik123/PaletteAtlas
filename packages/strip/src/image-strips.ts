@@ -1,9 +1,9 @@
 import {
   downscale,
   extractPalette,
-  KMeans,
   PALETTE_WORKING_SIZE,
   type PaletteColor,
+  paletteClusterer,
   type RgbaImage,
   SeededRandom,
 } from '@palette-atlas/color';
@@ -16,8 +16,8 @@ import type { StripAxis } from './strip-axis.ts';
 
 /** Segments in every strip. */
 export const STRIP_SEGMENTS = 128;
-/** Colors in the palette the color axis reads by. */
-export const PALETTE_SIZE = 8;
+/** Colors in the palette the color axis reads by, before it grows to cover the image (see PALETTE_COVERAGE). */
+const PALETTE_SIZE = 8;
 /** A fixed seed, so that an image always gets the same palette, and with it the same color strip. */
 const PALETTE_SEED = 1;
 
@@ -32,8 +32,8 @@ export interface NamedStrip {
 /**
  * An image read along every axis with the project's settings, so that the app and the pipeline
  * draw the same strips: shrunk to PALETTE_WORKING_SIZE by area averaging in linear light, its
- * palette found by k-means, and one strip of STRIP_SEGMENTS segments per axis, the color axis
- * reading by that palette.
+ * palette found by k-means and grown to cover the image, and one strip of STRIP_SEGMENTS segments
+ * per axis, the color axis reading by that palette.
  *
  * Facade: one call stands in for the color library's shrink and palette and the strip engine.
  */
@@ -53,7 +53,7 @@ export class ImageStrips {
 
   static read(image: RgbaImage): ImageStrips {
     const shrunk = downscale(image, PALETTE_WORKING_SIZE);
-    const palette = extractPalette(shrunk, new KMeans(PALETTE_SIZE, new SeededRandom(PALETTE_SEED)));
+    const palette = extractPalette(shrunk, paletteClusterer(PALETTE_SIZE, new SeededRandom(PALETTE_SEED)));
     const axes: readonly (readonly [AxisName, StripAxis])[] = [
       ['columns', new ColumnAxis()],
       ['radial', new RadialAxis()],

@@ -1,6 +1,17 @@
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { RgbaImage } from '@palette-atlas/color';
+import {
+  BYTES_PER_PIXEL,
+  Channel,
+  MAX_BYTE,
+  OkLab,
+  PALETTE_COVERAGE,
+  type PaletteColor,
+  type RgbaImage,
+  Srgb,
+  toe,
+} from '@palette-atlas/color';
+import { ImageStrips } from '@palette-atlas/strip';
 import { describe, expect, it } from 'vitest';
 import { readImage } from './image-file.ts';
 import { drawStrips } from './strip-images.ts';
@@ -21,6 +32,21 @@ function differingBytes(image: RgbaImage, reference: RgbaImage): number {
   return count;
 }
 
+/** The share of an image's visible pixels farther from every palette color than the coverage distance, in OKLrab. */
+function uncoveredShare({ data }: RgbaImage, palette: readonly PaletteColor[]): number {
+  const stops = palette.map(({ color }) => [toe(color.l), color.a, color.b]);
+  let uncovered = 0;
+  let visible = 0;
+  for (let offset = 0; offset < data.length; offset += BYTES_PER_PIXEL) {
+    const weight = data[offset + Channel.alpha] / MAX_BYTE;
+    const pixel = OkLab.fromSrgb(Srgb.fromBytes(data[offset + Channel.red], data[offset + Channel.green], data[offset + Channel.blue]));
+    const nearest = Math.min(...stops.map(([l, a, b]) => Math.hypot(toe(pixel.l) - l, pixel.a - a, pixel.b - b)));
+    if (nearest > PALETTE_COVERAGE.distance) uncovered += weight;
+    visible += weight;
+  }
+  return uncovered / visible;
+}
+
 describe.each(images)('%s', (name) => {
   it(
     'draws the same strips as its references in benchmark/strips, one for every axis',
@@ -33,6 +59,17 @@ describe.each(images)('%s', (name) => {
         expect([image.width, image.height]).toEqual([reference.width, reference.height]);
         expect(differingBytes(image, reference), `${name}-${axis}`).toBe(0);
       }
+    },
+    TIMEOUT_MS,
+  );
+
+  // Pixels with no palette color near them land inside the stretch of whichever color is nearest,
+  // and show there as a band of a color unlike the rest of it.
+  it(
+    'finds a palette color near every sizeable group of pixels, so the color strip has no foreign bands',
+    async () => {
+      const { shrunk, palette } = ImageStrips.read(await readImage(join(BENCHMARK, `${name}.webp`)));
+      expect(uncoveredShare(shrunk, palette)).toBeLessThanOrEqual(PALETTE_COVERAGE.uncoveredShare);
     },
     TIMEOUT_MS,
   );

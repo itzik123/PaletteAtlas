@@ -1,5 +1,5 @@
 import { PALETTE_WORKING_SIZE, type RgbaImage } from '@palette-atlas/color';
-import { type AxisName, ImageStrips, PALETTE_SIZE, STRIP_SEGMENTS } from '@palette-atlas/strip';
+import { type AxisName, ImageStrips, STRIP_SEGMENTS } from '@palette-atlas/strip';
 import type { BenchmarkImage } from './benchmark-images.ts';
 import { ColorPicker } from './color-picker.ts';
 import { COMPARED_SPACES } from './compared-spaces.ts';
@@ -58,7 +58,7 @@ export class BenchmarkCard {
       check('Average of all pixels', averages),
       check('Gradient from A to B', gradients.element),
       check(`Shrunk to ${PALETTE_WORKING_SIZE} px`, shrinkComparison(image, shrunk)),
-      check(`Palette: k-means in OKLab, ${PALETTE_SIZE} colors`, paletteView(palette)),
+      check(`Palette: k-means in OKLab, ${palette.length} colors`, paletteView(palette)),
       check(`Strips, ${STRIP_SEGMENTS} segments: hover to see each one's source`, strips),
     );
 

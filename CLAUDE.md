@@ -70,7 +70,7 @@ Both sides import the same libraries:
 - **pipeline** (offline, runs before each release): downloads public-domain paintings, computes strips and vectors, builds the index, and writes data files to `app/public/data`.
 - **app** (in the browser, no server): Studio, Atlas and Lab, reading the pipeline's data files.
 
-Both read strips through `ImageStrips.read(image)` in `strip`, the one place that holds the recipe and its settings (shrink to 256 px, an 8-color palette with a fixed seed, 128 segments per axis), so a gallery strip and a user's strip always come out the same way.
+Both read strips through `ImageStrips.read(image)` in `strip`, the one place that holds the recipe and its settings (shrink to 256 px, a palette of 8 or more colors with a fixed seed, 128 segments per axis), so a gallery strip and a user's strip always come out the same way.
 
 Two design decisions from day one:
 
@@ -81,6 +81,7 @@ Two design decisions from day one:
 
 - **Linear light for averaging**: strip segments and any downscaling, including the 256 px shrink before k-means. We shrink images ourselves by area averaging in linear light, because canvas and `createImageBitmap` scaling usually blend the encoded sRGB values.
 - **OKLab for perception**: gradients, k-means, color distances and palette ordering. k-means measures lightness through Ottosson's toe (L_r, as in Okhsl), so near-blacks that look alike share one palette color instead of taking several. Palette ordering and the color axis work in the same toe-corrected space (OKLrab), so each pixel joins the palette color k-means would put it with.
+- **Palettes cover their image** (decided Oct 4, 2026, after the Phase 2 audit): k-means alone folds a small distinct accent (the cube's green spheres) into a large cluster nearby, and its pixels then show as a foreign band inside that color's stretch of the strip. So a palette starts at 8 colors and grows while more than 0.5% of the pixels lie farther than 0.15 from every palette color, up to the 16 that Held-Karp orders (`CoveringKMeans`, `PALETTE_COVERAGE`).
 
 ## Repository layout (target)
 

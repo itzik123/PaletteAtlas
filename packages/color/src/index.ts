@@ -1,9 +1,10 @@
 export { BucketMeans } from './bucket-means.ts';
+export { type Coverage, CoveringKMeans } from './covering-kmeans.ts';
 export { downscale } from './downscale.ts';
 export { type Cluster, type Clusterer, KMeans, type WeightedPoints } from './kmeans.ts';
 export { LinearRgb } from './linear-rgb.ts';
 export { OkLab } from './oklab.ts';
-export { extractPalette, PALETTE_WORKING_SIZE, type PaletteColor } from './palette.ts';
+export { extractPalette, PALETTE_COVERAGE, PALETTE_WORKING_SIZE, type PaletteColor, paletteClusterer } from './palette.ts';
 export { PalettePath } from './palette-path.ts';
 export { type Random, SeededRandom } from './random.ts';
 export { BYTES_PER_PIXEL, Channel, MAX_BYTE, type RgbaImage } from './rgba-image.ts';

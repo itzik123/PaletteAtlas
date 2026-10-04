@@ -1,5 +1,5 @@
 import type { Vector3 } from './matrix3.ts';
-import type { Random } from './random.ts';
+import { drawIndex, type Random } from './random.ts';
 
 /** Coordinates per point. */
 export const DIMENSIONS = 3;
@@ -46,7 +46,16 @@ export class KMeans implements Clusterer {
 
   /** The non-empty clusters; fewer than k when the points sit at fewer than k distinct positions. */
   cluster(points: WeightedPoints): Cluster[] {
-    const centroids = this.#seed(points);
+    return this.#lloyd(points, this.#seed(points));
+  }
+
+  /** Lloyd iterations from the given centroids, whatever their number: the non-empty clusters they settle into. */
+  refine(points: WeightedPoints, centroids: readonly Vector3[]): Cluster[] {
+    return this.#lloyd(points, Float64Array.from(centroids.flat()));
+  }
+
+  /** Moves the centroids, in place, until no point changes cluster. */
+  #lloyd(points: WeightedPoints, centroids: Float64Array): Cluster[] {
     const assignments = new Int32Array(points.weights.length).fill(-1);
     let clusterWeights: Float64Array = new Float64Array(0);
     for (let iteration = 0; iteration < this.#maxIterations; iteration++) {
@@ -67,7 +76,7 @@ export class KMeans implements Clusterer {
     const candidates = BASE_CANDIDATES + Math.floor(Math.log(this.#k));
     const centroids: number[] = [];
     while (centroids.length < this.#k * DIMENSIONS) {
-      const chosen = centroids.length === 0 ? this.#draw(chances) : this.#bestCandidate(points, nearest, chances, candidates);
+      const chosen = centroids.length === 0 ? drawIndex(chances, this.#random) : this.#bestCandidate(points, nearest, chances, candidates);
       if (chosen < 0) break; // Every point already sits on a centroid.
       const offset = chosen * DIMENSIONS;
       centroids.push(...coordinates.subarray(offset, offset + DIMENSIONS));
@@ -88,7 +97,7 @@ export class KMeans implements Clusterer {
     let best = -1;
     let bestPotential = Number.POSITIVE_INFINITY;
     for (let trial = 0; trial < candidates; trial++) {
-      const candidate = this.#draw(chances);
+      const candidate = drawIndex(chances, this.#random);
       if (candidate < 0) return -1;
       let potential = 0;
       for (let point = 0; point < weights.length; point++) {
@@ -101,22 +110,6 @@ export class KMeans implements Clusterer {
       }
     }
     return best;
-  }
-
-  /** A point index drawn with probability proportional to its chance, or -1 if every chance is zero. */
-  #draw(chances: Float64Array): number {
-    let total = 0;
-    let lastPossible = -1;
-    for (let index = 0; index < chances.length; index++) {
-      total += chances[index];
-      if (chances[index] > 0) lastPossible = index;
-    }
-    let remaining = this.#random.next() * total;
-    for (let index = 0; index < chances.length; index++) {
-      remaining -= chances[index];
-      if (remaining < 0) return index;
-    }
-    return lastPossible; // Rounding can leave a sliver past the last point.
   }
 }
 

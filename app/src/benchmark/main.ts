@@ -19,8 +19,9 @@ root.innerHTML = `
       <li><b>Shrunk to 256 px.</b> Our area averaging in linear light keeps the image's light: its
         mean matches the linear-light average above. The browser's canvas scaling blends stored
         values, so fine bright detail comes out darker.</li>
-      <li><b>Palette.</b> k-means in OKLab on our shrunk image; each color's share is the part of
-        the image it stands for. The bars show the colors largest first, and along the shortest
+      <li><b>Palette.</b> k-means in OKLab on our shrunk image, with a color added for any
+        sizeable group of pixels that no palette color comes near; each color's share is the part
+        of the image it stands for. The bars show the colors largest first, and along the shortest
         path through them (an exact TSP), where neighbors look most alike.</li>
       <li><b>Strips.</b> The image read left to right, from the center out in rings of equal
         area, along a Hilbert curve, and by color. The Hilbert curve passes through every pixel without jumping, so each

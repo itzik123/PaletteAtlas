@@ -1,12 +1,32 @@
+import { type Coverage, CoveringKMeans } from './covering-kmeans.ts';
 import { downscale } from './downscale.ts';
-import { type Clusterer, DIMENSIONS, type WeightedPoints } from './kmeans.ts';
+import { type Clusterer, DIMENSIONS, KMeans, type WeightedPoints } from './kmeans.ts';
 import { OkLab } from './oklab.ts';
 import { bytesToOkLrab } from './oklrab.ts';
+import type { Random } from './random.ts';
 import { BYTES_PER_PIXEL, Channel, MAX_BYTE, type RgbaImage } from './rgba-image.ts';
+import { MAX_PATH_POINTS } from './shortest-path.ts';
 import { toeInverse } from './toe.ts';
 
 /** Images are shrunk until their longer side is at most this many pixels before clustering. */
 export const PALETTE_WORKING_SIZE = 256;
+
+/**
+ * How closely a palette covers its image, in OKLrab. A pixel is covered within 0.15 of a palette
+ * color: 7.5 times OKLab's just noticeable difference of 0.02 (as CSS Color 4 takes it), so
+ * farther than that it is another color, not a shade of the same one. Half a percent of the pixels
+ * may lie farther, about two thirds of a segment in a strip of 128: fewer show as no band of
+ * their own. A palette grows up to the most colors a palette path can order.
+ */
+export const PALETTE_COVERAGE: Coverage = { distance: 0.15, uncoveredShare: 0.005, maxClusters: MAX_PATH_POINTS };
+
+/**
+ * The clusterer palettes are made with: k-means for the given number of colors, growing past it
+ * while the palette leaves a sizeable group of pixels with no color near it (PALETTE_COVERAGE).
+ */
+export function paletteClusterer(size: number, random: Random): Clusterer {
+  return new CoveringKMeans(new KMeans(size, random), random, PALETTE_COVERAGE);
+}
 
 /** Levels per 8-bit channel, which number the 2^24 sRGB colors as (red × levels + green) × levels + blue. */
 const CHANNEL_LEVELS = MAX_BYTE + 1;
