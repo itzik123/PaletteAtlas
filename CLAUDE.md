@@ -100,11 +100,12 @@ PaletteAtlas/
 - **Build**: pnpm workspaces and Vite for the TypeScript part; a plain venv for the Python part.
 - **Drawing**: Canvas 2D for strips, Three.js for the 3D view in the Lab.
 - **Compute**: Web Workers for every heavy computation, so the interface never freezes.
-- **Tests**: Vitest for the libraries; Playwright for UI flows and for screenshots compared against reference images.
+- **Tests**: Vitest for the libraries, each test file next to its code as `*.test.ts`; Playwright for UI flows and for screenshots compared against reference images.
 - **CI/CD**: GitHub Actions run tests, build, and publish to GitHub Pages on every push to `main`.
 - **Toolchain**: Node 24 LTS, pnpm 12 (pinned by `packageManager`), TypeScript 6. Not TS 7 yet: it is very new (July 2026) and `typescript-eslint` only supports up to TS 6; revisit later.
-- **Workspace conventions**: packages are named `@palette-atlas/<name>`. Shared dependency versions live in the `catalog` in `pnpm-workspace.yaml`, and packages refer to them as `"catalog:"`. Each package has its own `typecheck` / `test` / `build` scripts; the root scripts run them across the workspace.
-- **TS config**: `tsconfig.base.json` is strict and deliberately has no DOM types, so the libraries can't touch browser APIs. The app adds `DOM`, and the Node pipeline adds `node` types. `erasableSyntaxOnly` bans TS-only runtime syntax (enums, namespaces, parameter properties); use union types or `as const` objects.
+- **Workspace conventions**: packages are named `@palette-atlas/<name>`. Shared dependency versions live in the `catalog` in `pnpm-workspace.yaml`, and packages refer to them as `"catalog:"`. Each package has its own `typecheck` and `test` scripts, plus `build` where there is something to build; the root scripts run them across the workspace.
+- **Libraries ship TypeScript source**: no build step. A library's `exports` points at `src/index.ts`, and Vite, Vitest and Node 24 (built-in type stripping) all run it directly.
+- **TS config**: `tsconfig.base.json` is strict and deliberately has no DOM types, so the libraries can't touch browser APIs. The app adds `DOM`, and the Node pipeline adds `node` types. `erasableSyntaxOnly` bans TS-only runtime syntax (enums, namespaces, parameter properties); use union types or `as const` objects. Nothing is compiled to JavaScript (`noEmit`), so relative imports end in `.ts`, as Node's type stripping requires. TypeScript compares classes by shape; where two classes share a shape but must not mix (e.g. color spaces), a type-only `private declare readonly brand` keeps them apart.
 
 ## Languages
 

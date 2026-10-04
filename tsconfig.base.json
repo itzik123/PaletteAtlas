@@ -12,6 +12,11 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    // No package compiles to JavaScript: Vite bundles the app, and Vitest and
+    // Node 24 run TypeScript directly. So relative imports end in ".ts", as
+    // Node's built-in type stripping requires.
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   }
 }
