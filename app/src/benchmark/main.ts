@@ -20,10 +20,13 @@ root.innerHTML = `
         mean matches the linear-light average above. The browser's canvas scaling blends stored
         values, so fine bright detail comes out darker.</li>
       <li><b>Palette.</b> k-means in OKLab on our shrunk image; each color's share is the part of
-        the image it stands for.</li>
-      <li><b>Strips.</b> The image read left to right and from the center out, each segment the
-        linear-light mean of its pixels. Hover a strip to see where a segment came from; the
-        square beside it is the fold-back, every segment painted over its own pixels.</li>
+        the image it stands for. The bars show the colors largest first, and along the shortest
+        path through them (an exact TSP), where neighbors look most alike.</li>
+      <li><b>Strips.</b> The image read left to right, from the center out, and by color: the
+        palette along its shortest path, each color as long as its share, with its pixels running
+        from the color before toward the color after. Each segment is the linear-light mean of its
+        pixels. Hover a strip to see where a segment came from; the square beside it is the
+        fold-back, every segment painted over its own pixels.</li>
     </ul>
   </header>
 `;

@@ -169,7 +169,8 @@ function toClusters(centroids: Float64Array, clusterWeights: Float64Array): Clus
   return clusters;
 }
 
-function squaredDistance(a: Float64Array, aOffset: number, b: Float64Array, bOffset: number): number {
+/** The squared distance between the point at aOffset in a and the one at bOffset in b. */
+export function squaredDistance(a: Float64Array, aOffset: number, b: Float64Array, bOffset: number): number {
   const d0 = a[aOffset] - b[bOffset];
   const d1 = a[aOffset + 1] - b[bOffset + 1];
   const d2 = a[aOffset + 2] - b[bOffset + 2];

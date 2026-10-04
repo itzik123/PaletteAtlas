@@ -59,7 +59,7 @@ Claude never declares a phase complete on its own: present the passing tests and
 
 Four TypeScript libraries with no browser dependency, shared by an offline data pipeline and the site. The same code computes the gallery's strips offline and, in the browser, the strip of the image a user uploads.
 
-- `color`: correct averaging (linear light), k-means and color distances (OKLab)
+- `color`: correct averaging (linear light), k-means, color distances (OKLab) and palette ordering (exact TSP)
 - `strip`: image to strip (Hilbert, TSP)
 - `vectorize`: strip to vector (soft histogram, Hellinger)
 - `hnsw`: index and search (search, trace)
@@ -71,13 +71,13 @@ Both sides import the same libraries:
 
 Two design decisions from day one:
 
-- **Source map in `strip`**: every segment of the strip remembers which pixels it came from. Hover linking and fold-back are built on it. `SourceMap` holds each pixel's segment (or `NO_SEGMENT`); `Strip.read(image, axis, segments)` averages every segment in linear light, and `foldBack()` paints each segment back over its own pixels.
+- **Source map in `strip`**: every segment of the strip remembers which pixels it came from. Hover linking and fold-back are built on it. `SourceMap` holds each pixel's segment (or `NO_SEGMENT`); `Strip.read(image, axis, segments)` averages every segment in linear light, and `foldBack()` paints each segment back over its own pixels. Segments are all equally long, so an axis gives something more room by giving it more segments: the color axis lines up the pixels along its palette path and cuts them into equal runs (`SourceMap.fromSequence`), so each color gets segments in proportion to its share.
 - **Trace in `hnsw`**: every search can record its steps (visiting a node, comparing, descending a layer). The Lab only replays the record, so the animation shows the real code, not a simulation of it.
 
 **Color spaces** (decided Oct 4, 2026, after comparing them on the benchmark images):
 
 - **Linear light for averaging**: strip segments and any downscaling, including the 256 px shrink before k-means. We shrink images ourselves by area averaging in linear light, because canvas and `createImageBitmap` scaling usually blend the encoded sRGB values.
-- **OKLab for perception**: gradients, k-means, color distances and palette ordering. k-means measures lightness through Ottosson's toe (L_r, as in Okhsl), so near-blacks that look alike share one palette color instead of taking several.
+- **OKLab for perception**: gradients, k-means, color distances and palette ordering. k-means measures lightness through Ottosson's toe (L_r, as in Okhsl), so near-blacks that look alike share one palette color instead of taking several. Palette ordering and the color axis work in the same toe-corrected space (OKLrab), so each pixel joins the palette color k-means would put it with.
 
 ## Repository layout (target)
 
@@ -168,7 +168,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 ## What the project teaches
 
 - Color science: gamma, linear light, OKLab, and why averaging raw sRGB values gives a dark, muddy strip.
-- Algorithms and geometry: space-filling curves, k-means, TSP heuristics.
+- Algorithms and geometry: space-filling curves, k-means, and the TSP solved exactly by dynamic programming (Held-Karp).
 - Vector search: HNSW from scratch, the trade-off between recall and speed, binary serialization.
 - Web engineering: Web Workers, Canvas and Three.js, performance with heavy data in the browser.
 - Infrastructure: monorepo, CI/CD, visual tests, a data pipeline you can rerun.

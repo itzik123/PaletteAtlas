@@ -125,7 +125,8 @@ header li {
   gap: 10px;
 }
 
-.gradient-row {
+.gradient-row,
+.palette-row {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
   align-items: center;
@@ -156,10 +157,13 @@ header li {
   margin-bottom: 4px;
 }
 
+.palette-row {
+  margin-bottom: 10px;
+}
+
 .palette-bar {
   display: flex;
   height: 36px;
-  margin-bottom: 10px;
   overflow: hidden;
   border-radius: 6px;
 }

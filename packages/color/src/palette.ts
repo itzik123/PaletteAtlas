@@ -1,9 +1,9 @@
 import { downscale } from './downscale.ts';
 import { DIMENSIONS, type KMeans, type WeightedPoints } from './kmeans.ts';
-import { byteToLinear } from './linear-rgb.ts';
-import { linearToOkLab, OkLab } from './oklab.ts';
+import { OkLab } from './oklab.ts';
+import { bytesToOkLrab } from './oklrab.ts';
 import { BYTES_PER_PIXEL, Channel, MAX_BYTE, type RgbaImage } from './rgba-image.ts';
-import { toe, toeInverse } from './toe.ts';
+import { toeInverse } from './toe.ts';
 
 /** Images are shrunk until their longer side is at most this many pixels before clustering. */
 export const PALETTE_WORKING_SIZE = 256;
@@ -31,10 +31,7 @@ export function extractPalette(image: RgbaImage, kmeans: KMeans): PaletteColor[]
     .sort((first, second) => second.share - first.share);
 }
 
-/**
- * An image's visible pixels as points to cluster, each weighted by its opacity: OKLab
- * coordinates with toe-corrected lightness (the space color.js calls OKLrab).
- */
+/** An image's visible pixels as points to cluster, in OKLrab, each weighted by its opacity. */
 function clusteringPoints({ data }: RgbaImage): WeightedPoints {
   const pixelCount = data.length / BYTES_PER_PIXEL;
   const coordinates = new Float64Array(pixelCount * DIMENSIONS);
@@ -44,13 +41,7 @@ function clusteringPoints({ data }: RgbaImage): WeightedPoints {
   for (let offset = 0; offset < data.length; offset += BYTES_PER_PIXEL) {
     const weight = data[offset + Channel.alpha] / MAX_BYTE;
     if (weight === 0) continue;
-    linearToOkLab(
-      byteToLinear(data[offset + Channel.red]),
-      byteToLinear(data[offset + Channel.green]),
-      byteToLinear(data[offset + Channel.blue]),
-      point,
-    );
-    point[0] = toe(point[0]);
+    bytesToOkLrab(data[offset + Channel.red], data[offset + Channel.green], data[offset + Channel.blue], point);
     coordinates.set(point, count * DIMENSIONS);
     weights[count] = weight;
     count++;

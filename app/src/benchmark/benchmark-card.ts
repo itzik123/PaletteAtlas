@@ -3,10 +3,11 @@ import {
   extractPalette,
   KMeans,
   PALETTE_WORKING_SIZE,
+  type PaletteColor,
   type RgbaImage,
   SeededRandom,
 } from '@palette-atlas/color';
-import { ColumnAxis, RadialAxis, Strip, type StripAxis } from '@palette-atlas/strip';
+import { ColorAxis, ColumnAxis, RadialAxis, Strip, type StripAxis } from '@palette-atlas/strip';
 import type { BenchmarkImage } from './benchmark-images.ts';
 import { ColorPicker } from './color-picker.ts';
 import { COMPARED_SPACES } from './compared-spaces.ts';
@@ -22,10 +23,20 @@ const PALETTE_SIZE = 8;
 const PALETTE_SEED = 1;
 /** Segments in each benchmark strip. */
 const STRIP_SEGMENTS = 128;
-const STRIP_AXES: readonly { readonly name: string; readonly axis: StripAxis }[] = [
-  { name: 'Columns', axis: new ColumnAxis() },
-  { name: 'Radial', axis: new RadialAxis() },
-];
+
+interface NamedAxis {
+  readonly name: string;
+  readonly axis: StripAxis;
+}
+
+/** The axes to read an image along; the color axis reads it by the palette already found for it. */
+function stripAxes(palette: readonly PaletteColor[]): readonly NamedAxis[] {
+  return [
+    { name: 'Columns', axis: new ColumnAxis() },
+    { name: 'Radial', axis: new RadialAxis() },
+    { name: 'Color', axis: new ColorAxis(() => palette) },
+  ];
+}
 
 /**
  * One benchmark image with the libraries' output for it: its mean color and a gradient between
@@ -57,7 +68,7 @@ export class BenchmarkCard {
     const palette = extractPalette(shrunk, new KMeans(PALETTE_SIZE, new SeededRandom(PALETTE_SEED)));
     const strips = document.createElement('div');
     strips.className = 'strips';
-    for (const { name, axis } of STRIP_AXES) {
+    for (const { name, axis } of stripAxes(palette)) {
       const strip = Strip.read(shrunk, axis, STRIP_SEGMENTS);
       const onHover = (segment: number | undefined): void =>
         segment === undefined ? highlight.clear() : highlight.show(strip.sourceMap, segment);

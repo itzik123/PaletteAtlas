@@ -30,6 +30,21 @@ export class SourceMap {
     this.#segments = segments;
   }
 
+  /**
+   * Cuts a sequence of pixels, given by index (y × width + x) in strip order, into at most
+   * `segments` runs of nearly equal length, one segment each. Pixels left out of the sequence
+   * belong to no segment.
+   */
+  static fromSequence(width: number, height: number, sequence: ArrayLike<number>, segments: number): SourceMap {
+    // At most one run per pixel, so that none is empty.
+    const count = Math.min(Math.max(1, segments), sequence.length);
+    const map = new Int32Array(width * height).fill(NO_SEGMENT);
+    for (let position = 0; position < sequence.length; position++) {
+      map[sequence[position]] = Math.floor((position * count) / sequence.length);
+    }
+    return new SourceMap(width, height, count, map);
+  }
+
   /** The segment of the pixel at (x, y), or NO_SEGMENT. */
   segmentAt(x: number, y: number): number {
     return this.#segments[y * this.width + x];

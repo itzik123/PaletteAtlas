@@ -4,6 +4,7 @@ export { type Cluster, KMeans, type WeightedPoints } from './kmeans.ts';
 export { LinearRgb } from './linear-rgb.ts';
 export { OkLab } from './oklab.ts';
 export { extractPalette, PALETTE_WORKING_SIZE, type PaletteColor } from './palette.ts';
+export { PalettePath } from './palette-path.ts';
 export { type Random, SeededRandom } from './random.ts';
 export { BYTES_PER_PIXEL, Channel, MAX_BYTE, type RgbaImage } from './rgba-image.ts';
 export { Srgb } from './srgb.ts';
