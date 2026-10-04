@@ -70,6 +70,8 @@ Both sides import the same libraries:
 - **pipeline** (offline, runs before each release): downloads public-domain paintings, computes strips and vectors, builds the index, and writes data files to `app/public/data`.
 - **app** (in the browser, no server): Studio, Atlas and Lab, reading the pipeline's data files.
 
+Both read strips through `ImageStrips.read(image)` in `strip`, the one place that holds the recipe and its settings (shrink to 256 px, an 8-color palette with a fixed seed, 128 segments per axis), so a gallery strip and a user's strip always come out the same way.
+
 Two design decisions from day one:
 
 - **Source map in `strip`**: every segment of the strip remembers which pixels it came from. Hover linking and fold-back are built on it. `SourceMap` holds each pixel's segment (or `NO_SEGMENT`); `Strip.read(image, axis, segments)` averages every segment in linear light, and `foldBack()` paints each segment back over its own pixels. Segments are all equally long, so an axis gives something more room by giving it more segments. `SourceMap.fromSequence` cuts any ordering of the pixels into equal runs: the Hilbert axis orders them along its curve, and the color axis along its palette path, so each color gets segments in proportion to its share.

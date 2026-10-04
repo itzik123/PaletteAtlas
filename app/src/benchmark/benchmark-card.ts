@@ -1,13 +1,5 @@
-import {
-  downscale,
-  extractPalette,
-  KMeans,
-  PALETTE_WORKING_SIZE,
-  type PaletteColor,
-  type RgbaImage,
-  SeededRandom,
-} from '@palette-atlas/color';
-import { ColorAxis, ColumnAxis, HilbertAxis, RadialAxis, Strip, type StripAxis } from '@palette-atlas/strip';
+import { PALETTE_WORKING_SIZE, type RgbaImage } from '@palette-atlas/color';
+import { type AxisName, ImageStrips, PALETTE_SIZE, STRIP_SEGMENTS } from '@palette-atlas/strip';
 import type { BenchmarkImage } from './benchmark-images.ts';
 import { ColorPicker } from './color-picker.ts';
 import { COMPARED_SPACES } from './compared-spaces.ts';
@@ -17,27 +9,13 @@ import { paletteView } from './palette-view.ts';
 import { shrinkComparison } from './shrink-comparison.ts';
 import { SourceHighlight, StripRow } from './strip-view.ts';
 
-/** Colors in each benchmark palette. */
-const PALETTE_SIZE = 8;
-/** A fixed seed, so every load shows the same palettes. */
-const PALETTE_SEED = 1;
-/** Segments in each benchmark strip. */
-const STRIP_SEGMENTS = 128;
-
-interface NamedAxis {
-  readonly name: string;
-  readonly axis: StripAxis;
-}
-
-/** The axes to read an image along; the color axis reads it by the palette already found for it. */
-function stripAxes(palette: readonly PaletteColor[]): readonly NamedAxis[] {
-  return [
-    { name: 'Columns', axis: new ColumnAxis() },
-    { name: 'Radial', axis: new RadialAxis() },
-    { name: 'Hilbert', axis: new HilbertAxis() },
-    { name: 'Color', axis: new ColorAxis(() => palette) },
-  ];
-}
+/** How each axis is labeled beside its strip. */
+const AXIS_LABELS: Readonly<Record<AxisName, string>> = {
+  columns: 'Columns',
+  radial: 'Radial',
+  hilbert: 'Hilbert',
+  color: 'Color',
+};
 
 /**
  * One benchmark image with the libraries' output for it: its mean color and a gradient between
@@ -65,15 +43,13 @@ export class BenchmarkCard {
     frame.append(picker.element, highlight.element);
 
     // Everything below works on the shrunk image, which keeps the light of every region.
-    const shrunk = downscale(image, PALETTE_WORKING_SIZE);
-    const palette = extractPalette(shrunk, new KMeans(PALETTE_SIZE, new SeededRandom(PALETTE_SEED)));
+    const { shrunk, palette, strips: namedStrips } = ImageStrips.read(image);
     const strips = document.createElement('div');
     strips.className = 'strips';
-    for (const { name, axis } of stripAxes(palette)) {
-      const strip = Strip.read(shrunk, axis, STRIP_SEGMENTS);
+    for (const { axis, strip } of namedStrips) {
       const onHover = (segment: number | undefined): void =>
         segment === undefined ? highlight.clear() : highlight.show(strip.sourceMap, segment);
-      strips.append(new StripRow(name, strip, onHover).element);
+      strips.append(new StripRow(AXIS_LABELS[axis], strip, onHover).element);
     }
 
     const checks = document.createElement('div');
