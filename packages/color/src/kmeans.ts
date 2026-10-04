@@ -16,6 +16,12 @@ export interface Cluster {
   readonly weight: number;
 }
 
+/** Groups weighted points into clusters. */
+export interface Clusterer {
+  /** The non-empty clusters of the points. */
+  cluster(points: WeightedPoints): Cluster[];
+}
+
 /** Lloyd iterations allowed before stopping; palettes settle long before this. */
 const DEFAULT_MAX_ITERATIONS = 100;
 /** Candidates tried for each centroid after the first: this plus ln k, as in scikit-learn. */
@@ -26,7 +32,7 @@ const BASE_CANDIDATES = 2;
  * Vassilvitskii, 2007), drawing from the injected random source so that a fixed seed gives the
  * same clusters, then runs Lloyd iterations until no point changes cluster.
  */
-export class KMeans {
+export class KMeans implements Clusterer {
   readonly #k: number;
   readonly #random: Random;
   readonly #maxIterations: number;

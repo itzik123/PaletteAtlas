@@ -1,6 +1,6 @@
 export { BucketMeans } from './bucket-means.ts';
 export { downscale } from './downscale.ts';
-export { type Cluster, KMeans, type WeightedPoints } from './kmeans.ts';
+export { type Cluster, type Clusterer, KMeans, type WeightedPoints } from './kmeans.ts';
 export { LinearRgb } from './linear-rgb.ts';
 export { OkLab } from './oklab.ts';
 export { extractPalette, PALETTE_WORKING_SIZE, type PaletteColor } from './palette.ts';
