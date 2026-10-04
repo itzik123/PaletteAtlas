@@ -65,12 +65,14 @@ PaletteAtlas/
 
 ## Tech stack
 
+- **UI**: plain TypeScript, no framework (decided in phase 1).
 - **Build**: pnpm workspaces and Vite for the TypeScript part; a plain venv for the Python part.
 - **Drawing**: Canvas 2D for strips, Three.js for the 3D view in the Lab.
 - **Compute**: Web Workers for every heavy computation, so the interface never freezes.
 - **Tests**: Vitest for the libraries; Playwright for UI flows and for screenshots compared against reference images.
 - **CI/CD**: GitHub Actions run tests, build, and publish to GitHub Pages on every push to `main`.
-- **Toolchain**: Node 24 LTS, pnpm 12 (pinned by `packageManager`), TypeScript 6. Not TS 7 yet: `svelte-check` and `typescript-eslint` only support up to TS 6; revisit when they catch up.
+- **Toolchain**: Node 24 LTS, pnpm 12 (pinned by `packageManager`), TypeScript 6. Not TS 7 yet: it is very new (July 2026) and `typescript-eslint` only supports up to TS 6; revisit later.
+- **Workspace conventions**: packages are named `@palette-atlas/<name>`. Shared dependency versions live in the `catalog` in `pnpm-workspace.yaml`, and packages refer to them as `"catalog:"`. Each package has its own `typecheck` / `test` / `build` scripts; the root scripts run them across the workspace.
 - **TS config**: `tsconfig.base.json` is strict and deliberately has no DOM types, so the libraries can't touch browser APIs. The app adds `DOM`, and the Node pipeline adds `node` types. `erasableSyntaxOnly` bans TS-only runtime syntax (enums, namespaces, parameter properties); use union types or `as const` objects.
 
 ## Languages
@@ -92,7 +94,7 @@ The core and the site are TypeScript. Python is used only for parts that don't r
 
 Seven phases, each ending in something you can show. **Current phase: 1 (Infrastructure).**
 
-1. **Infrastructure** (1 weekend): monorepo, CI, and deployment of an empty page to GitHub Pages. From here on, every push goes live.
+1. **Infrastructure** (1 weekend): monorepo, CI, and deployment of an empty page to GitHub Pages. From here on, every push goes live. *Deployment is deferred for now; phase 1 covers the monorepo, CI and the empty page.*
 2. **Color library and strip engine** (2–3 weekends): OKLab conversions and correct averaging, k-means, a column axis and a radial axis, a color axis with TSP ordering, and a Hilbert axis with fold-back. Deliverable: correct strips generated from a script, covered by tests.
 3. **Studio, first release v0.1** (2 weekends): image upload, axis switching, hover linking between strip and image, and PNG export. A README with a GIF and a link to the site. The first moment to share.
 4. **Data pipeline and gallery** (2–3 weekends): download public-domain paintings, compute their strips, a gallery page, and a career barcode for each artist.
@@ -123,8 +125,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 - **Data size in the browser**: tens of thousands of vectors and their graph can reach tens of megabytes. Fix: uint8 quantization, lazy loading, and starting from a subset of paintings.
 - **Museum data**: the Art Institute of Chicago (AIC) releases over 50,000 images under CC0 and asks for credit of artist, title and date. Its API docs recommend filtering the nightly data dump rather than querying the API, and downloading images one at a time, a second apart, at width 843.
 - **Performance**: downscale an image to about 256 px before k-means, and run it in a Worker.
-- **UI framework**: Svelte or plain TypeScript. Decide in phase 1; the libraries don't depend on the choice.
-- **GitHub Pages while private** (not in the design doc): Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), and the published site is public even when the repo is private. Decide in phase 1 how "every push goes live" fits with staying private until launch.
+- **GitHub Pages while private** (not in the design doc): Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), and the published site is public even when the repo is private. Deferred: not a concern for now; revisit when deployment becomes relevant.
 
 ## What the project teaches
 
@@ -138,6 +139,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 
 ```bash
 pnpm install     # install all dependencies
+pnpm dev         # run the app locally at http://localhost:5173
 pnpm build       # build every workspace package
 pnpm test        # run every package's tests
 pnpm typecheck   # type-check every package

@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build and test output
+dist/
+coverage/
+*.tsbuildinfo
+
+# Logs and local secrets
+*.log
+.env
+.env.*
+
+# Editor and OS files
+.idea/
+.DS_Store
+Thumbs.db

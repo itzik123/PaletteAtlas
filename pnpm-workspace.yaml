@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+  - pipeline/build
+  - app
+
+# Shared dependency versions; packages refer to them as "catalog:".
+catalog:
+  typescript: ^6.0.3

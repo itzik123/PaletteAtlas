@@ -1,0 +1,17 @@
+{
+  // Shared compiler settings; every package's tsconfig extends this file.
+  // There are deliberately no DOM types here: the libraries must stay
+  // browser-free. The app adds "DOM", and the Node pipeline adds "node" types.
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": [],
+    "strict": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "skipLibCheck": true
+  }
+}

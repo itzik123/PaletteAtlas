@@ -1,0 +1,10 @@
+{
+  // Browser code: adds DOM types, plus Vite's types for CSS imports and import.meta.env.
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "types": ["vite/client"],
+    "noEmit": true
+  },
+  "include": ["src"]
+}

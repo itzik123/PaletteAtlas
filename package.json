@@ -1,0 +1,20 @@
+{
+  "name": "palette-atlas",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Turn any image into a color strip and find paintings with a similar palette.",
+  "type": "module",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @palette-atlas/app dev",
+    "build": "pnpm -r --if-present run build",
+    "test": "pnpm -r --if-present run test",
+    "typecheck": "pnpm -r --if-present run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}
