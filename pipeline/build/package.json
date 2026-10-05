@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "strips": "node src/strips.ts",
+    "paintings": "node src/paintings.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

@@ -198,3 +198,71 @@ header li {
   height: 72px;
   border-radius: 4px;
 }
+
+.gallery-sample {
+  padding: 24px 0;
+  border-top: 1px solid rgb(128 128 128 / 0.35);
+}
+
+.gallery-sample h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.samples {
+  display: grid;
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.sample {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 220px) minmax(0, 1fr);
+  gap: 6px 18px;
+  align-items: start;
+  font-size: 0.85rem;
+}
+
+.sample img {
+  grid-row: span 2;
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  background: rgb(128 128 128 / 0.12);
+}
+
+.sample .strips {
+  gap: 6px;
+}
+
+.sample .strip {
+  height: 22px;
+  cursor: default;
+}
+
+.sample .strip-row {
+  grid-template-columns: 56px minmax(0, 1fr);
+}
+
+.verdict {
+  grid-column: 2 / -1;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .sample {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+
+  .sample img {
+    width: 96px;
+    height: 96px;
+  }
+
+  .sample .strips {
+    grid-column: 1 / -1;
+  }
+}

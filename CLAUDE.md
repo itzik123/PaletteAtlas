@@ -186,6 +186,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
   - **Download**: 500 px thumbnails, one at a time and resumable, within Wikimedia's robot policy (at most 2 at once, standard thumbnail sizes only, a User-Agent naming the site).
   - **Hosting**: the site loads thumbnails straight from `upload.wikimedia.org` at standard sizes (50,000 files exceed Cloudflare Pages' 20,000-file limit and don't belong in git), and hosts only strips, vectors and metadata. Each painting is credited with artist, title, date, collection and Wikimedia Commons.
   - **Quality varies**: in a random sample of 24, 17 were clean photos; the rest were black and white, framed, photographed in place or a drawing. The check page measures it; the museums' own images for the same works stay an option for later.
+  - **Color profiles**: the pipeline applies a file's embedded ICC profile as browsers do, so a painting keeps its true colors. For the files with a wide-gamut profile (Adobe RGB and the like, about 15% of the first 2,900 downloads), libvips (LittleCMS) and Chromium (skcms) round the conversion differently by ±1, and k-means can magnify that in the color strip, so the browser's strip of such a file can differ slightly from the gallery's. Files in sRGB or without a profile give the same strips byte for byte (the check page found no exception in 200 random paintings).
 - **Performance**: downscale an image to about 256 px before k-means (area averaging in linear light, see Color spaces), and run it in a Worker.
 - **Hosting while private** (decided Oct 5, 2026; not in the design doc): GitHub Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), so until the repo goes public at v1.0 the site lives on Cloudflare Pages, which serves private repos for free. CI uploads the tested `app/dist` with `wrangler`, using the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, to https://palette-atlas.pages.dev (live since Oct 5, 2026). The site is public either way. The build uses relative paths, so it already works under `/PaletteAtlas/` for the move to GitHub Pages.
 
@@ -209,6 +210,7 @@ pnpm typecheck   # type-check every package
 pnpm strips      # write the benchmark images' strips to benchmark/strips, the tests' reference images
 python pipeline/fetch/fetch.py catalog   # choose the paintings on Wikidata and Commons (about 30 min)
 python pipeline/fetch/fetch.py images    # download their images to pipeline/data (hours; rerun to resume)
+pnpm paintings   # read the downloaded paintings' strips into app/public/data (check: /benchmark.html)
 ```
 
 Development happens on Windows (PowerShell). `.gitattributes` keeps every text file LF.

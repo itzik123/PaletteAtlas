@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "pnpm --filter @palette-atlas/app dev",
     "strips": "pnpm --filter @palette-atlas/pipeline strips",
+    "paintings": "pnpm --filter @palette-atlas/pipeline paintings",
     "build": "pnpm -r --if-present run build",
     "test": "pnpm -r --if-present run test && pnpm run test:fetch",
     "test:fetch": "python -m unittest discover --start-directory pipeline/fetch --pattern \"*_test.py\"",

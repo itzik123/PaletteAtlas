@@ -1,5 +1,6 @@
 import './benchmark.css';
 import { BenchmarkCard } from './benchmark-card.ts';
+import { GallerySample } from './gallery-sample.ts';
 import { BENCHMARK_IMAGES } from './benchmark-images.ts';
 import { loadImage } from './load-image.ts';
 
@@ -33,6 +34,10 @@ root.innerHTML = `
     </ul>
   </header>
 `;
+
+const gallery = new GallerySample();
+root.append(gallery.element);
+void gallery.load();
 
 for (const entry of BENCHMARK_IMAGES) {
   root.append(new BenchmarkCard(entry, await loadImage(entry.url)).element);
