@@ -16,6 +16,8 @@ import { Toast } from './toast.ts';
 
 /** Segments at least this light (OKLab L) are uncovered from a dark veil, darker ones from a light one. */
 const LIGHT_SEGMENT = 0.6;
+/** What names a saved strip when its image's file name has nothing before the extension. */
+const UNTITLED = 'Untitled';
 /** The page's ink and paper, the two veils. */
 const INK = siteSrgb('ink');
 const PAPER = siteSrgb('paper');
@@ -132,33 +134,48 @@ export class Studio {
       this.#toast.show(`“${file.name}” is not an image.`);
       return;
     }
+    await this.#read(file.name, async () => file);
+  }
+
+  /** Opens a painting from the wall as if its file had been dropped, named after its title. */
+  async #openSample(sample: Sample): Promise<void> {
+    await this.#read(`${sample.title}.webp`, async () => {
+      const response = await fetch(sample.image);
+      if (!response.ok) throw new Error(`${sample.image}: ${response.status}`);
+      return response.blob();
+    });
+  }
+
+  /**
+   * Loads an image, reads it into its strips and shows it, unless another image has been handed in
+   * since: the latest one wins, however long each takes to arrive and be read. Any failure along the
+   * way ends in a message rather than a page left waiting.
+   */
+  async #read(name: string, load: () => Promise<Blob>): Promise<void> {
     const ticket = ++this.#latest;
     this.element.setAttribute('aria-busy', 'true');
-    const read = await this.#reader.read(file);
+    const read = await load()
+      .then((image) => this.#reader.read(image))
+      .catch(() => undefined);
     if (ticket !== this.#latest) {
       read?.picture.close();
       return;
     }
     this.element.removeAttribute('aria-busy');
-    if (read) this.#show(file.name, read);
-    else this.#toast.show(`Couldn’t open “${file.name}”.`);
-  }
-
-  /** Opens a painting from the wall as if its file had been dropped, named after its title. */
-  async #openSample(sample: Sample): Promise<void> {
-    const response = await fetch(sample.image);
-    if (!response.ok) {
-      this.#toast.show(`Couldn’t load “${sample.title}”.`);
-      return;
+    if (!read) {
+      this.#toast.show(`Couldn’t open “${name}”.`);
+    } else if (!showsAnything(read.strips)) {
+      read.picture.close();
+      this.#toast.show(`“${name}” has nothing visible to read.`);
+    } else {
+      this.#show(name, read);
     }
-    const image = await response.blob();
-    await this.#open(new File([image], `${sample.title}.webp`, { type: image.type }));
   }
 
   #show(name: string, { picture, strips }: ReadImage): void {
     this.#toast.hide();
     this.#strips = strips;
-    this.#title = name.replace(/\.[^.]*$/, '');
+    this.#title = name.replace(/\.[^.]*$/, '') || UNTITLED;
     this.#picture.show(picture, this.#title);
     this.#showAxis(this.#picker.axis);
     this.element.dataset.state = 'loaded';
@@ -173,8 +190,12 @@ export class Studio {
   async #save(format: StripFormat): Promise<void> {
     if (!this.#shown) return;
     const { axis } = this.#picker;
-    const picture = await format.draw(this.#shown, { title: this.#title, axis });
-    await savePng(picture, `${this.#title}-${axis}-${format.suffix}.png`);
+    try {
+      const picture = await format.draw(this.#shown, { title: this.#title, axis });
+      await savePng(picture, `${this.#title}-${axis}-${format.suffix}.png`);
+    } catch {
+      this.#toast.show(`Couldn’t save the ${format.label.toLowerCase()}.`);
+    }
   }
 
   #pointAtPicture(spot: Spot | undefined): void {
@@ -193,6 +214,16 @@ export class Studio {
     this.#picture.highlight(this.#shown.sourceMap, segment, color && OkLab.fromSrgb(color).l >= LIGHT_SEGMENT ? INK : PAPER);
     this.#strip.mark(segment, color);
   }
+}
+
+/**
+ * Whether any strip has a segment with a color. An image without a single visible pixel has none:
+ * its color strip has no segments at all, and every other segment is empty.
+ */
+function showsAnything(strips: readonly NamedStrip[]): boolean {
+  return strips.some(({ strip }) =>
+    Array.from({ length: strip.segmentCount }, (_, segment) => strip.colorAt(segment)).some((color) => color !== undefined),
+  );
 }
 
 /** Covers the page while a file is dragged over it (see FileIntake). */

@@ -244,3 +244,51 @@ test('a painting dragged from the sample wall onto the drop zone becomes its str
   await expect(page.getByRole('img', { name: 'The Great Wave' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Strip' })).toHaveJSProperty('width', 128);
 });
+
+test('an image without a single visible pixel is turned away', async ({ page }) => {
+  const dataTransfer = await page.evaluateHandle(async () => {
+    const transfer = new DataTransfer();
+    // A canvas never drawn on is transparent through and through.
+    const canvas = new OffscreenCanvas(8, 8);
+    canvas.getContext('2d');
+    const empty = await canvas.convertToBlob({ type: 'image/png' });
+    transfer.items.add(new File([empty], 'empty.png', { type: 'image/png' }));
+    return transfer;
+  });
+  const zone = page.getByRole('button', { name: /drop an image/i });
+  for (const event of ['dragenter', 'dragover', 'drop']) await zone.dispatchEvent(event, { dataTransfer });
+  await expect(page.getByRole('alert')).toContainText('nothing visible');
+  await expect(page.getByRole('img', { name: 'Strip' })).toBeHidden();
+});
+
+// The strip reader runs in a worker; a worker that never loads must not leave the page waiting.
+test('the page says so, rather than waiting forever, when the strip reader fails to load', async ({ page }) => {
+  await page.route(/strip-worker/, (route) => route.abort());
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(join(BENCHMARK, 'cube.webp'));
+  await expect(page.getByRole('alert')).toContainText('Couldn’t open “cube.webp”');
+  await expect(page.locator('.studio')).not.toHaveAttribute('aria-busy');
+});
+
+/** The full-size image of a painting on the sample wall, not its thumbnail. */
+const MONA_LISA_IMAGE = /\/mona-lisa-(?!thumb)[^/]*\.webp$/;
+
+test('a painting that fails to download says so', async ({ page }) => {
+  await page.route(MONA_LISA_IMAGE, (route) => route.abort());
+  await page.getByRole('button', { name: /Mona Lisa/ }).click();
+  await expect(page.getByRole('alert')).toContainText('Couldn’t open “Mona Lisa.webp”');
+});
+
+test('the image handed in last is the one shown, however long the one before takes to arrive', async ({ page }) => {
+  await page.route(MONA_LISA_IMAGE, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.continue();
+  });
+  await page.getByRole('button', { name: /Mona Lisa/ }).click();
+  await page.locator('input[type=file]').setInputFiles(join(BENCHMARK, 'cube.webp'));
+  await expect(page.getByRole('img', { name: 'cube' })).toBeVisible();
+  // Long enough for the painting to arrive and be read, had it been allowed to take over.
+  await page.waitForTimeout(3000);
+  await expect(page.getByRole('img', { name: 'cube' })).toBeVisible();
+  await expect(page.locator('.studio')).not.toHaveAttribute('aria-busy');
+});

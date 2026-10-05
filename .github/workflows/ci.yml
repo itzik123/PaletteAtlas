@@ -31,7 +31,7 @@ jobs:
       - run: pnpm build
 
       # The site as built and tested, handed to the deploy job; only main goes live.
-      - if: github.event_name == 'push'
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
           name: site
@@ -41,7 +41,7 @@ jobs:
   # private repo for free; GitHub Pages takes over once the repo goes public. Needs two repo
   # secrets: CLOUDFLARE_API_TOKEN (permission: Cloudflare Pages, Edit) and CLOUDFLARE_ACCOUNT_ID.
   deploy:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: check
     runs-on: ubuntu-latest
     environment:
