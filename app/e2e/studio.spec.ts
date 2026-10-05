@@ -6,6 +6,16 @@ const BENCHMARK = join(import.meta.dirname, '../../benchmark');
 /** Each segment's width in the reference strips that `pnpm strips` draws. */
 const REFERENCE_BAND_WIDTH = 8;
 
+/** The longest the page may stay busy at one stretch while an image is read; longer, and it visibly freezes. */
+const LONGEST_TASK_MS = 100;
+
+declare global {
+  interface Window {
+    /** How long each long task on the page's main thread took, in milliseconds. */
+    longTasks: number[];
+  }
+}
+
 /** The axes as the Studio names them, by the names of the reference strips' files. */
 const AXES = [
   { file: 'color', label: 'Color' },
@@ -109,6 +119,20 @@ test('an image chosen from the file picker becomes its color strip', async ({ pa
   await page.locator('input[type=file]').setInputFiles(join(BENCHMARK, 'laptop.webp'));
   await expect(page.getByRole('radio', { name: 'Color' })).toBeChecked();
   await expect.poll(() => stripColors(page)).toEqual(await referenceColors(page, 'laptop', 'color'));
+});
+
+// Reading the strips of a large image takes a few hundred milliseconds of work, which must happen
+// away from the page's main thread, or the page stops answering clicks and drawing meanwhile.
+test('reading an image never freezes the page', async ({ page }) => {
+  await page.evaluate(() => {
+    window.longTasks = [];
+    new PerformanceObserver((list) => window.longTasks.push(...list.getEntries().map(({ duration }) => duration))).observe({
+      type: 'longtask',
+    });
+  });
+  await page.locator('input[type=file]').setInputFiles(join(BENCHMARK, 'chess.webp'));
+  await expect.poll(() => stripColors(page)).toEqual(await referenceColors(page, 'chess', 'color'));
+  expect(Math.max(0, ...(await page.evaluate(() => window.longTasks)))).toBeLessThan(LONGEST_TASK_MS);
 });
 
 test('a dropped file that is not an image is turned away', async ({ page }) => {

@@ -2,6 +2,9 @@ import { extractPalette, KMeans, OkLab, type RgbaImage, SeededRandom, Srgb } fro
 import { describe, expect, it } from 'vitest';
 import { ColorAxis, ColumnAxis, HilbertAxis, RadialAxis, Strip } from './index.ts';
 
+// A function of browsers and Node, outside the plain ES library the packages are checked against.
+declare function structuredClone<T>(value: T): T;
+
 type Pixel = readonly [red: number, green: number, blue: number, alpha: number];
 
 const OPAQUE = 255;
@@ -78,6 +81,16 @@ describe('Strip', () => {
     const folded = Strip.read(image(4, RED, BLACK, WHITE, BLUE), new ColumnAxis(), 2).foldBack();
     const [darkRed, paleBlue] = [[188, 0, 0, OPAQUE], [188, 188, 255, OPAQUE]];
     expect(Array.from(folded.data)).toEqual([...darkRed, ...darkRed, ...paleBlue, ...paleBlue]);
+  });
+
+  // A Web Worker passes a strip to the page as plain data, copied by the structured clone algorithm,
+  // which keeps typed arrays but drops classes and their private fields.
+  it('comes back the same from its plain data, as a Web Worker passes it on', () => {
+    const picture = image(3, RED, BLACK, WHITE, BLUE, LIME, TRANSPARENT);
+    const strip = Strip.read(picture, new HilbertAxis(), 4);
+    const copy = Strip.fromData(structuredClone(strip.toData()));
+    expect(copy.toImage()).toEqual(strip.toImage());
+    expect(copy.foldBack()).toEqual(strip.foldBack());
   });
 
   // Columns need a single row for every pixel to be a segment of its own.

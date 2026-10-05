@@ -1,6 +1,15 @@
 /** Marks a pixel that belongs to no segment. */
 export const NO_SEGMENT = -1;
 
+/** A source map as plain data, which the structured clone algorithm copies whole (see SourceMap.toData). */
+export interface SourceMapData {
+  readonly width: number;
+  readonly height: number;
+  readonly segmentCount: number;
+  /** Each pixel's segment, row by row from the top left. */
+  readonly segments: Int32Array;
+}
+
 /**
  * Which strip segment each pixel of an image belongs to, so that every segment remembers the
  * pixels it came from; hover linking and fold-back are built on it. Segments are numbered
@@ -43,6 +52,20 @@ export class SourceMap {
       map[sequence[position]] = Math.floor((position * count) / sequence.length);
     }
     return new SourceMap(width, height, count, map);
+  }
+
+  /** A source map from its plain data, which it takes ownership of. */
+  static fromData({ width, height, segmentCount, segments }: SourceMapData): SourceMap {
+    return new SourceMap(width, height, segmentCount, segments);
+  }
+
+  /**
+   * The map as plain data with a copy of its entries, for passing it between threads: postMessage
+   * copies typed arrays, but not a class's private fields.
+   */
+  toData(): SourceMapData {
+    const { width, height, segmentCount } = this;
+    return { width, height, segmentCount, segments: this.#segments.slice() };
   }
 
   /** The segment of the pixel at (x, y), or NO_SEGMENT. */

@@ -5,5 +5,7 @@
     "lib": ["ES2023", "DOM"],
     "types": ["vite/client"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Checked on their own, with the WebWorker library instead of the DOM (see src/workers/tsconfig.json).
+  "exclude": ["src/workers"]
 }

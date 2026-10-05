@@ -1,6 +1,5 @@
-import type { RgbaImage, Srgb } from '@palette-atlas/color';
+import type { Srgb } from '@palette-atlas/color';
 import type { SourceMap } from '@palette-atlas/strip';
-import { paintImage } from '../image-adapters.ts';
 import { SourceHighlight } from '../source-highlight.ts';
 
 /** How much of the picture the veil hides around the segment it uncovers. */
@@ -45,10 +44,13 @@ export class PictureView {
     });
   }
 
-  show(image: RgbaImage, name: string): void {
-    paintImage(this.#picture, image);
+  /** Shows a decoded picture, taking it over: the canvas draws the bitmap as it is, without copying it. */
+  show(picture: ImageBitmap, name: string): void {
+    this.#stack.style.setProperty('--ratio', String(picture.width / picture.height));
+    const context = this.#picture.getContext('bitmaprenderer');
+    if (!context) throw new Error('Canvas bitmap rendering is not available');
+    context.transferFromImageBitmap(picture);
     this.#picture.setAttribute('aria-label', name);
-    this.#stack.style.setProperty('--ratio', String(image.width / image.height));
     this.#veil.clear();
   }
 

@@ -1,6 +1,13 @@
 import { BucketMeans, BYTES_PER_PIXEL, Channel, type RgbaImage, Srgb } from '@palette-atlas/color';
-import { NO_SEGMENT, type SourceMap } from './source-map.ts';
+import { NO_SEGMENT, SourceMap, type SourceMapData } from './source-map.ts';
 import type { StripAxis } from './strip-axis.ts';
+
+/** A strip as plain data, which the structured clone algorithm copies whole (see Strip.toData). */
+export interface StripData {
+  readonly sourceMap: SourceMapData;
+  /** One pixel per segment. */
+  readonly colors: RgbaImage;
+}
 
 /**
  * An image read along an axis: one color per segment, the mean of its pixels in linear light,
@@ -36,6 +43,20 @@ export class Strip {
       }
     }
     return new Strip(sourceMap, means.toImage());
+  }
+
+  /** A strip from its plain data, which it takes ownership of. */
+  static fromData({ sourceMap, colors }: StripData): Strip {
+    const map = SourceMap.fromData(sourceMap);
+    if (colors.width !== map.segmentCount || colors.height !== 1) {
+      throw new RangeError(`Expected ${map.segmentCount} × 1 colors, got ${colors.width} × ${colors.height}`);
+    }
+    return new Strip(map, colors);
+  }
+
+  /** The strip as plain data with copies of its colors and source map, for passing it between threads. */
+  toData(): StripData {
+    return { sourceMap: this.sourceMap.toData(), colors: this.toImage() };
   }
 
   get segmentCount(): number {

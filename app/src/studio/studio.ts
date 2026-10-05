@@ -1,11 +1,11 @@
 import './studio.css';
-import { OkLab, type RgbaImage, Srgb } from '@palette-atlas/color';
-import { type AxisName, ImageStrips, NO_SEGMENT, type Strip } from '@palette-atlas/strip';
-import { decodeImage } from '../image-adapters.ts';
+import { OkLab, Srgb } from '@palette-atlas/color';
+import { type AxisName, NO_SEGMENT, type NamedStrip, type Strip } from '@palette-atlas/strip';
 import { UPLOAD_ICON } from '../icons.ts';
 import { AxisPicker } from './axis-picker.ts';
 import { FileIntake, isImage } from './file-intake.ts';
 import { PictureView, type Spot } from './picture-view.ts';
+import type { ReadImage, StripReader } from './strip-reader.ts';
 import { StripView } from './strip-view.ts';
 import { Toast } from './toast.ts';
 
@@ -30,14 +30,16 @@ export class Studio {
   readonly #strip = new StripView((segment) => this.#point(segment));
   readonly #picker = new AxisPicker((axis) => this.#showAxis(axis));
   readonly #toast = new Toast();
+  readonly #reader: StripReader;
   readonly #intake: FileIntake;
-  #strips: ImageStrips | undefined;
+  #strips: readonly NamedStrip[] = [];
   /** The strip along the picked axis. */
   #shown: Strip | undefined;
   /** Counts the files handed in, so that only the latest one is shown when several arrive at once. */
   #latest = 0;
 
-  constructor() {
+  constructor(reader: StripReader) {
+    this.#reader = reader;
     this.element.className = 'studio';
     this.element.dataset.state = 'empty';
     this.#intake = new FileIntake(this.element, (file) => void this.#open(file));
@@ -97,24 +99,26 @@ export class Studio {
     }
     const ticket = ++this.#latest;
     this.element.setAttribute('aria-busy', 'true');
-    // The browser can't decode every image type (HEIC, for one) and turns away broken files.
-    const image = await decodeImage(file).catch(() => undefined);
-    if (ticket !== this.#latest) return;
+    const read = await this.#reader.read(file);
+    if (ticket !== this.#latest) {
+      read?.picture.close();
+      return;
+    }
     this.element.removeAttribute('aria-busy');
-    if (image) this.#show(file.name, image);
+    if (read) this.#show(file.name, read);
     else this.#toast.show(`Couldn’t open “${file.name}”.`);
   }
 
-  #show(name: string, image: RgbaImage): void {
+  #show(name: string, { picture, strips }: ReadImage): void {
     this.#toast.hide();
-    this.#strips = ImageStrips.read(image);
-    this.#picture.show(image, name);
+    this.#strips = strips;
+    this.#picture.show(picture, name);
     this.#showAxis(this.#picker.axis);
     this.element.dataset.state = 'loaded';
   }
 
   #showAxis(axis: AxisName): void {
-    this.#shown = this.#strips?.strips.find((strip) => strip.axis === axis)?.strip;
+    this.#shown = this.#strips.find((strip) => strip.axis === axis)?.strip;
     if (this.#shown) this.#strip.show(this.#shown);
     this.#picture.clear();
   }

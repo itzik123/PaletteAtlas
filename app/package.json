@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "playwright test",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p e2e"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/workers && tsc --noEmit -p e2e"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",

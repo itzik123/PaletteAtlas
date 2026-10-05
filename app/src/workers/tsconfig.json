@@ -1,0 +1,9 @@
+{
+  // Web Worker code: a worker has no document or window, so it gets the WebWorker library's types
+  // instead of the DOM's, and touching the page from here fails to type-check.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "WebWorker"]
+  },
+  "include": ["."]
+}

@@ -1,4 +1,5 @@
 import type { RgbaImage } from '@palette-atlas/color';
+import { bitmapPixels } from './bitmap-pixels.ts';
 
 // Adapters (ports and adapters) between the browser's images and the libraries' RgbaImage: canvas
 // ImageData already has its shape, so pixels pass straight through in both directions.
@@ -10,12 +11,9 @@ import type { RgbaImage } from '@palette-atlas/color';
  */
 export async function decodeImage(file: Blob): Promise<RgbaImage> {
   const bitmap = await createImageBitmap(file);
-  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Canvas 2D is not available');
-  context.drawImage(bitmap, 0, 0);
+  const pixels = bitmapPixels(bitmap);
   bitmap.close();
-  return context.getImageData(0, 0, canvas.width, canvas.height);
+  return pixels;
 }
 
 /** Paints an image onto a canvas, resized to the image's own size. */
