@@ -1,19 +1,22 @@
 import './studio.css';
-import { OkLab, Srgb } from '@palette-atlas/color';
+import { OkLab } from '@palette-atlas/color';
 import { type AxisName, NO_SEGMENT, type NamedStrip, type Strip } from '@palette-atlas/strip';
 import { UPLOAD_ICON } from '../icons.ts';
+import { siteSrgb } from '../site-colors.ts';
 import { AxisPicker } from './axis-picker.ts';
 import { FileIntake, isImage } from './file-intake.ts';
 import { PictureView, type Spot } from './picture-view.ts';
+import { savePng } from './save-png.ts';
+import { STRIP_FORMATS, type StripFormat } from './strip-formats.ts';
 import type { ReadImage, StripReader } from './strip-reader.ts';
 import { StripView } from './strip-view.ts';
 import { Toast } from './toast.ts';
 
 /** Segments at least this light (OKLab L) are uncovered from a dark veil, darker ones from a light one. */
 const LIGHT_SEGMENT = 0.6;
-/** The page's ink and paper (see style.css), the two veils. */
-const INK = Srgb.fromBytes(0x18, 0x14, 0x0f);
-const PAPER = Srgb.fromBytes(0xf7, 0xf1, 0xe6);
+/** The page's ink and paper, the two veils. */
+const INK = siteSrgb('ink');
+const PAPER = siteSrgb('paper');
 
 /**
  * The Studio: an image dropped, chosen or pasted in becomes its strip, read along the axis the
@@ -33,6 +36,8 @@ export class Studio {
   readonly #reader: StripReader;
   readonly #intake: FileIntake;
   #strips: readonly NamedStrip[] = [];
+  /** The image's file name without its extension, which names what the Studio saves. */
+  #title = '';
   /** The strip along the picked axis. */
   #shown: Strip | undefined;
   /** Counts the files handed in, so that only the latest one is shown when several arrive at once. */
@@ -69,13 +74,27 @@ export class Studio {
     another.className = 'pill another';
     another.innerHTML = `${UPLOAD_ICON}<span>New image</span>`;
     another.addEventListener('click', () => this.#intake.choose());
+    const saves = document.createElement('div');
+    saves.className = 'saves';
+    saves.append(...STRIP_FORMATS.map((format) => this.#saveButton(format)));
     const controls = document.createElement('div');
     controls.className = 'controls';
-    controls.append(this.#picker.element, another);
+    controls.append(this.#picker.element, saves);
+    // A tab on the picture's card: a new image takes this one's place.
+    this.#picture.element.append(another);
     const workspace = document.createElement('section');
     workspace.className = 'workspace';
     workspace.append(this.#picture.element, controls, this.#strip.element);
     return workspace;
+  }
+
+  #saveButton(format: StripFormat): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'pill dark';
+    button.innerHTML = `${format.icon}<span>${format.label}</span>`;
+    button.addEventListener('click', () => void this.#save(format));
+    return button;
   }
 
   #dropZone(): HTMLButtonElement {
@@ -112,6 +131,7 @@ export class Studio {
   #show(name: string, { picture, strips }: ReadImage): void {
     this.#toast.hide();
     this.#strips = strips;
+    this.#title = name.replace(/\.[^.]*$/, '');
     this.#picture.show(picture, name);
     this.#showAxis(this.#picker.axis);
     this.element.dataset.state = 'loaded';
@@ -121,6 +141,13 @@ export class Studio {
     this.#shown = this.#strips.find((strip) => strip.axis === axis)?.strip;
     if (this.#shown) this.#strip.show(this.#shown);
     this.#picture.clear();
+  }
+
+  async #save(format: StripFormat): Promise<void> {
+    if (!this.#shown) return;
+    const { axis } = this.#picker;
+    const picture = await format.draw(this.#shown, { title: this.#title, axis });
+    await savePng(picture, `${this.#title}-${axis}-${format.suffix}.png`);
   }
 
   #pointAtPicture(spot: Spot | undefined): void {

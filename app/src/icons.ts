@@ -24,6 +24,12 @@ export const QUESTION_ICON = icon(
 
 export const CLOSE_ICON = icon('<path d="M5 5l14 14M19 5L5 19"/>', OUTLINE.replace('2.5', '3'));
 
+/** A framed print with bands across, for saving the strip as a poster. */
+export const POSTER_ICON = icon('<rect x="4.5" y="2.5" width="15" height="19" rx="2"/><path d="M8.5 6.5v8M12 6.5v8M15.5 6.5v8M8.5 18h7"/>');
+
+/** A phone with bands down its screen, for saving the strip as a wallpaper. */
+export const PHONE_ICON = icon('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M9.5 7.5h5M9.5 11h5M9.5 14.5h5"/>');
+
 export const UPLOAD_ICON = icon('<path d="M12 16V4M6.5 9.5 12 4l5.5 5.5M4 20h16"/>');
 
 /** GitHub's mark, for the link to the project's repository. */

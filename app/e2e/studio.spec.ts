@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import { type Download, expect, type Locator, type Page, test } from '@playwright/test';
 
 const BENCHMARK = join(import.meta.dirname, '../../benchmark');
 /** Each segment's width in the reference strips that `pnpm strips` draws. */
@@ -101,6 +101,44 @@ function clearOnly(columns: readonly number[], width: number): string {
   return Array.from({ length: width }, (_, x) => (columns.includes(x) ? 'c' : 'v')).join('');
 }
 
+/** Colors as "r,g,b,a", four bytes each, with every run of one color counted once. */
+function runs(bytes: readonly number[]): string[] {
+  const colors: string[] = [];
+  for (let index = 0; index < bytes.length; index += 4) {
+    const color = bytes.slice(index, index + 4).join(',');
+    if (colors.at(-1) !== color) colors.push(color);
+  }
+  return colors;
+}
+
+/**
+ * A downloaded PNG's size, and its pixels along the vertical and the horizontal line through the
+ * point at the given fractions of its width and height, decoded by the browser.
+ */
+async function savedImage(page: Page, download: Download, at: { x: number; y: number }) {
+  const bytes = (await readFile(await download.path())).toString('base64');
+  return page.evaluate(
+    async ({ bytes, at }) => {
+      const png = new Blob([Uint8Array.from(atob(bytes), (char) => char.charCodeAt(0))], { type: 'image/png' });
+      const bitmap = await createImageBitmap(png, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+      const { width, height } = bitmap;
+      const context = new OffscreenCanvas(width, height).getContext('2d');
+      if (!context) throw new Error('Canvas 2D is not available');
+      context.drawImage(bitmap, 0, 0);
+      const column = context.getImageData(Math.floor(at.x * width), 0, 1, height).data;
+      const row = context.getImageData(0, Math.floor(at.y * height), width, 1).data;
+      return { width, height, column: Array.from(column), row: Array.from(row) };
+    },
+    { bytes, at },
+  );
+}
+
+/** Clicks a button that saves a file, and returns the download. */
+async function save(page: Page, button: string): Promise<Download> {
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: button }).click()]);
+  return download;
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
@@ -166,4 +204,31 @@ test('hovering the picture marks its segment on the strip and uncovers the pixel
   const marker = await page.locator('.segment-marker').boundingBox();
   if (!marker) throw new Error('The strip shows no marker');
   expect(marker.x + marker.width / 2).toBeCloseTo((await segmentPoint(page, 38)).x, 0);
+});
+
+test('the strip saves as a phone wallpaper, its colors running top to bottom from edge to edge', async ({ page }) => {
+  await page.locator('input[type=file]').setInputFiles(join(BENCHMARK, 'cube.webp'));
+  await page.getByRole('radio', { name: 'Radial' }).check();
+  await expect.poll(() => stripColors(page)).toEqual(await referenceColors(page, 'cube', 'radial'));
+  const download = await save(page, 'Wallpaper');
+  expect(download.suggestedFilename()).toBe('cube-radial-wallpaper.png');
+  const saved = await savedImage(page, download, { x: 0.5, y: 0.5 });
+  expect([saved.width, saved.height]).toEqual([1440, 3120]);
+  expect(runs(saved.column)).toEqual(runs(await stripColors(page)));
+  expect(runs(saved.row)).toHaveLength(1);
+});
+
+test('the strip saves as a poster, its colors running left to right inside a frame', async ({ page }) => {
+  await page.locator('input[type=file]').setInputFiles(join(BENCHMARK, 'chess.webp'));
+  await page.getByRole('radio', { name: 'Hilbert' }).check();
+  await expect.poll(() => stripColors(page)).toEqual(await referenceColors(page, 'chess', 'hilbert'));
+  const download = await save(page, 'Poster');
+  expect(download.suggestedFilename()).toBe('chess-hilbert-poster.png');
+  const saved = await savedImage(page, download, { x: 0.5, y: 0.4 });
+  expect([saved.width, saved.height]).toEqual([2400, 3600]);
+  const across = runs(saved.row);
+  const strip = runs(await stripColors(page));
+  // The strip's colors in order, with the paper and the frame on either side.
+  expect(across.join(' ')).toContain(strip.join(' '));
+  expect(across.length).toBeGreaterThan(strip.length);
 });

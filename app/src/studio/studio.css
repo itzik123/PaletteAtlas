@@ -264,6 +264,7 @@
 /* The picture sits matted on a card that fills its column, whatever its shape. */
 .picture-frame {
   grid-area: picture;
+  position: relative;
   /* Container query units (cqw, cqh) measure its content box, which the picture fits in. */
   container-type: size;
   display: grid;
@@ -397,8 +398,17 @@
   --tile-color: var(--green);
 }
 
+.saves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .another {
-  align-self: flex-start;
+  position: absolute;
+  top: -22px;
+  right: 28px;
+  background: var(--yellow);
 }
 
 .strip-stack {
@@ -541,7 +551,8 @@
   .picture-frame {
     container-type: inline-size;
     height: auto;
-    padding: 14px;
+    /* Room at the top for the New image tab. */
+    padding: 34px 14px 14px;
   }
 
   .picture-stack {
@@ -566,8 +577,16 @@
     font-size: 1.2rem;
   }
 
-  .another {
-    align-self: stretch;
+  .saves {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .saves .pill {
     justify-content: center;
+  }
+
+  .another {
+    right: 18px;
   }
 }
