@@ -1,4 +1,4 @@
-import { PALETTE_WORKING_SIZE, type RgbaImage } from '@palette-atlas/color';
+import { PALETTE_WORKING_SIZE, type RgbaImage, Srgb } from '@palette-atlas/color';
 import { type AxisName, ImageStrips, STRIP_SEGMENTS } from '@palette-atlas/strip';
 import type { BenchmarkImage } from './benchmark-images.ts';
 import { ColorPicker } from './color-picker.ts';
@@ -7,7 +7,8 @@ import { GradientRows } from './gradient-rows.ts';
 import { Swatch } from './paint.ts';
 import { paletteView } from './palette-view.ts';
 import { shrinkComparison } from './shrink-comparison.ts';
-import { SourceHighlight, StripRow } from './strip-view.ts';
+import { SourceHighlight } from '../source-highlight.ts';
+import { StripRow } from './strip-view.ts';
 
 /** How each axis is labeled beside its strip. */
 const AXIS_LABELS: Readonly<Record<AxisName, string>> = {
@@ -16,6 +17,10 @@ const AXIS_LABELS: Readonly<Record<AxisName, string>> = {
   hilbert: 'Hilbert',
   color: 'Color',
 };
+
+/** How much of the image the veil over pixels outside the hovered segment hides. */
+const VEIL_OPACITY = 0.69;
+const BLACK = new Srgb(0, 0, 0);
 
 /**
  * One benchmark image with the libraries' output for it: its mean color and a gradient between
@@ -37,7 +42,8 @@ export class BenchmarkCard {
 
     const gradients = new GradientRows();
     const picker = new ColorPicker(entry.url, image, entry.picks, (from, to) => gradients.show(from, to));
-    const highlight = new SourceHighlight();
+    const highlight = new SourceHighlight(VEIL_OPACITY);
+    highlight.element.className = 'highlight';
     const frame = document.createElement('div');
     frame.className = 'image-frame';
     frame.append(picker.element, highlight.element);
@@ -48,7 +54,7 @@ export class BenchmarkCard {
     strips.className = 'strips';
     for (const { axis, strip } of namedStrips) {
       const onHover = (segment: number | undefined): void =>
-        segment === undefined ? highlight.clear() : highlight.show(strip.sourceMap, segment);
+        segment === undefined ? highlight.clear() : highlight.show(strip.sourceMap, segment, BLACK);
       strips.append(new StripRow(AXIS_LABELS[axis], strip, onHover).element);
     }
 

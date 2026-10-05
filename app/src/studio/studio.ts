@@ -1,24 +1,39 @@
 import './studio.css';
-import type { RgbaImage } from '@palette-atlas/color';
-import { type AxisName, ImageStrips } from '@palette-atlas/strip';
-import { decodeImage, paintImage } from '../image-adapters.ts';
+import { OkLab, type RgbaImage, Srgb } from '@palette-atlas/color';
+import { type AxisName, ImageStrips, NO_SEGMENT, type Strip } from '@palette-atlas/strip';
+import { decodeImage } from '../image-adapters.ts';
 import { UPLOAD_ICON } from '../icons.ts';
 import { AxisPicker } from './axis-picker.ts';
 import { FileIntake, isImage } from './file-intake.ts';
+import { PictureView, type Spot } from './picture-view.ts';
+import { StripView } from './strip-view.ts';
 import { Toast } from './toast.ts';
+
+/** Segments at least this light (OKLab L) are uncovered from a dark veil, darker ones from a light one. */
+const LIGHT_SEGMENT = 0.6;
+/** The page's ink and paper (see style.css), the two veils. */
+const INK = Srgb.fromBytes(0x18, 0x14, 0x0f);
+const PAPER = Srgb.fromBytes(0xf7, 0xf1, 0xe6);
 
 /**
  * The Studio: an image dropped, chosen or pasted in becomes its strip, read along the axis the
- * user picks. Until the first image arrives, the page is one big invitation to drop it.
+ * user picks. Until the first image arrives, the page is one big invitation to drop it. Pointing
+ * at a segment of the strip uncovers the pixels it came from, and pointing at the picture pins
+ * the segment that pixel went into.
+ *
+ * Mediator: the picture, the strip and the axis picker know nothing of each other; the Studio
+ * links them through the source map of the strip on show.
  */
 export class Studio {
   readonly element = document.createElement('main');
-  readonly #picture = canvas('studio-picture');
-  readonly #strip = canvas('studio-strip', 'Strip');
+  readonly #picture = new PictureView((spot) => this.#pointAtPicture(spot));
+  readonly #strip = new StripView((segment) => this.#point(segment));
   readonly #picker = new AxisPicker((axis) => this.#showAxis(axis));
   readonly #toast = new Toast();
   readonly #intake: FileIntake;
   #strips: ImageStrips | undefined;
+  /** The strip along the picked axis. */
+  #shown: Strip | undefined;
   /** Counts the files handed in, so that only the latest one is shown when several arrive at once. */
   #latest = 0;
 
@@ -47,9 +62,6 @@ export class Studio {
 
   /** What the page shows with an image: the picture, the axis to read it by, and its strip. */
   #workspace(): HTMLElement {
-    const frame = document.createElement('div');
-    frame.className = 'picture-frame';
-    frame.append(this.#picture);
     const another = document.createElement('button');
     another.type = 'button';
     another.className = 'pill another';
@@ -60,7 +72,7 @@ export class Studio {
     controls.append(this.#picker.element, another);
     const workspace = document.createElement('section');
     workspace.className = 'workspace';
-    workspace.append(frame, controls, this.#strip);
+    workspace.append(this.#picture.element, controls, this.#strip.element);
     return workspace;
   }
 
@@ -96,15 +108,32 @@ export class Studio {
   #show(name: string, image: RgbaImage): void {
     this.#toast.hide();
     this.#strips = ImageStrips.read(image);
-    paintImage(this.#picture, image);
-    this.#picture.setAttribute('aria-label', name);
+    this.#picture.show(image, name);
     this.#showAxis(this.#picker.axis);
     this.element.dataset.state = 'loaded';
   }
 
   #showAxis(axis: AxisName): void {
-    const named = this.#strips?.strips.find((strip) => strip.axis === axis);
-    if (named) paintImage(this.#strip, named.strip.toImage());
+    this.#shown = this.#strips?.strips.find((strip) => strip.axis === axis)?.strip;
+    if (this.#shown) this.#strip.show(this.#shown);
+    this.#picture.clear();
+  }
+
+  #pointAtPicture(spot: Spot | undefined): void {
+    const map = this.#shown?.sourceMap;
+    this.#point(spot && map?.segmentAt(Math.floor(spot.x * map.width), Math.floor(spot.y * map.height)));
+  }
+
+  /** Shows where a segment came from on the picture and pins it on the strip, or shows none. */
+  #point(segment: number | undefined): void {
+    if (!this.#shown || segment === undefined || segment === NO_SEGMENT) {
+      this.#picture.clear();
+      this.#strip.unmark();
+      return;
+    }
+    const color = this.#shown.colorAt(segment);
+    this.#picture.highlight(this.#shown.sourceMap, segment, color && OkLab.fromSrgb(color).l >= LIGHT_SEGMENT ? INK : PAPER);
+    this.#strip.mark(segment, color);
   }
 }
 
@@ -115,12 +144,4 @@ function dropOverlay(): HTMLElement {
   overlay.setAttribute('aria-hidden', 'true');
   overlay.innerHTML = '<span>Drop it!</span>';
   return overlay;
-}
-
-function canvas(className: string, label?: string): HTMLCanvasElement {
-  const element = document.createElement('canvas');
-  element.className = className;
-  element.setAttribute('role', 'img');
-  if (label) element.setAttribute('aria-label', label);
-  return element;
 }

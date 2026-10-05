@@ -228,9 +228,10 @@
 /* The picture sits matted on a card that fills its column, whatever its shape. */
 .picture-frame {
   grid-area: picture;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Container query units (cqw, cqh) measure its content box, which the picture fits in. */
+  container-type: size;
+  display: grid;
+  place-items: center;
   min-width: 0;
   height: clamp(280px, 100vh - 380px, 640px);
   padding: 22px;
@@ -240,12 +241,30 @@
   box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
 }
 
-.studio-picture {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  border: var(--outline);
+/* The picture and its veil, one over the other, as large as the frame allows in the picture's shape. */
+.picture-stack {
+  --fit-height: 100cqh;
+  position: relative;
+  width: min(100cqw, var(--fit-height) * var(--ratio, 1));
+  aspect-ratio: var(--ratio, 1);
+  overflow: hidden;
   border-radius: 10px;
+  box-shadow: 0 0 0 3px var(--ink);
+  cursor: crosshair;
+  touch-action: pan-y pinch-zoom;
+}
+
+.picture-stack canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.source-veil {
+  pointer-events: none;
+  image-rendering: pixelated;
 }
 
 .controls {
@@ -346,15 +365,57 @@
   align-self: flex-start;
 }
 
-.studio-strip {
+.strip-stack {
+  --strip-border: 4px;
   grid-area: strip;
+  position: relative;
+}
+
+.studio-strip {
   display: block;
   width: 100%;
   height: clamp(110px, 19vh, 200px);
-  border: var(--outline-thick);
+  border: var(--strip-border) solid var(--ink);
   border-radius: 22px;
   box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
   image-rendering: pixelated;
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+/* A pin through one segment: a bracket around its band, topped by a drop of its color.
+   --at and --span place the segment as fractions of the strip, inside its border. */
+.segment-marker {
+  --inner: calc(100% - 2 * var(--strip-border));
+  position: absolute;
+  top: -12px;
+  bottom: -12px;
+  left: calc(var(--strip-border) + var(--inner) * (var(--at) + var(--span) / 2));
+  z-index: 1;
+  width: max(14px, calc(var(--inner) * var(--span) + 6px));
+  border: 3px solid var(--ink);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 2px var(--paper),
+    inset 0 0 0 2px var(--paper);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* A square with one sharp corner, turned so the corner points down at the bracket. Its shadow is
+   set before the turn: straight down, it falls down and to the right once turned. */
+.segment-marker::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  width: 46px;
+  height: 46px;
+  border: 3px solid var(--ink);
+  border-radius: 50% 50% 50% 0;
+  background: var(--color);
+  box-shadow: 0 4px 0 var(--ink);
+  transform: translateX(-50%) rotate(-45deg);
 }
 
 /* Dragging a file anywhere over the page */
@@ -442,12 +503,13 @@
   }
 
   .picture-frame {
+    container-type: inline-size;
     height: auto;
     padding: 14px;
   }
 
-  .studio-picture {
-    max-height: 60vh;
+  .picture-stack {
+    --fit-height: 60vh;
   }
 
   .workspace {

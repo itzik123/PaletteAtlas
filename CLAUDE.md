@@ -53,7 +53,7 @@ Claude never declares a phase complete on its own: present the passing tests and
 
 ## The product
 
-- **Studio**: upload an image, pick an axis (color, Hilbert, columns or radial) and get a strip. Hovering over the strip highlights the region of the image it came from, and the strip exports as a poster or a phone wallpaper.
+- **Studio**: upload an image, pick an axis (color, Hilbert, columns or radial) and get a strip. Hovering over the strip highlights the region of the image it came from (and hovering over the image pins the segment each pixel went into), and the strip exports as a poster or a phone wallpaper.
 - **Atlas**: a gallery of public-domain paintings with their strips, a "career barcode" for each artist, and a search for paintings whose color scheme resembles an uploaded image.
 - **Lab**: an interactive explanation of HNSW. Watch the graph being built and the search descending through the layers, next to the exact answer. Two modes: points on a plane, and color space itself, where each point is painted the color it represents.
 
