@@ -1,0 +1,475 @@
+.studio {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 16px 32px 48px;
+}
+
+.studio[data-state='empty'] .workspace,
+.studio[data-state='loaded'] .intro {
+  display: none;
+}
+
+.studio[aria-busy='true'] {
+  cursor: progress;
+}
+
+/* Before the first image: a headline and a big target to drop it on */
+
+.intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 56px;
+  min-height: calc(100vh - 170px);
+  padding: 24px 0;
+}
+
+.intro h1 {
+  margin: 0;
+  font-size: clamp(3.2rem, 7.4vw, 6.9rem);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+}
+
+/* The word "strip" sits on one: the site's palette in five bands. */
+.strip-word {
+  padding: 0 0.06em;
+  background: linear-gradient(
+      90deg,
+      var(--red) 0 20%,
+      var(--yellow) 20% 40%,
+      var(--green) 40% 60%,
+      var(--blue) 60% 80%,
+      var(--pink) 80%
+    )
+    0 86% / 100% 0.3em no-repeat;
+}
+
+.drop-stage {
+  position: relative;
+  isolation: isolate;
+}
+
+.shape {
+  position: absolute;
+  z-index: -1;
+  border: var(--outline-thick);
+  transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.shape.circle {
+  top: -48px;
+  right: -44px;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background: var(--red);
+}
+
+.shape.arch {
+  bottom: -40px;
+  left: -52px;
+  width: 190px;
+  height: 95px;
+  border-radius: 95px 95px 0 0;
+  background: var(--blue);
+}
+
+.shape.square {
+  right: 18%;
+  bottom: -34px;
+  width: 74px;
+  height: 74px;
+  border-radius: 10px;
+  background: var(--yellow);
+  transform: rotate(14deg);
+}
+
+.drop-stage:hover .shape.circle,
+.is-dragging .shape.circle {
+  transform: translate(-6px, -12px) scale(1.06);
+}
+
+.drop-stage:hover .shape.arch,
+.is-dragging .shape.arch {
+  transform: translate(-10px, 6px);
+}
+
+.drop-stage:hover .shape.square,
+.is-dragging .shape.square {
+  transform: rotate(-12deg) translateY(8px);
+}
+
+.drop-zone {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 32px;
+  border: 4px dashed var(--ink);
+  border-radius: 36px;
+  background: var(--card);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.drop-zone:hover,
+.is-dragging .drop-zone {
+  border-style: solid;
+  background: var(--yellow);
+  box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
+  transform: translate(-4px, -4px);
+}
+
+.drop-zone:active {
+  box-shadow: 0 0 0 var(--ink);
+  transform: translate(2px, 2px);
+}
+
+/* A picture of a picture: sun, hill and peak cut from paper. */
+.drop-art {
+  position: relative;
+  width: 140px;
+  height: 104px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: var(--outline-thick);
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+.drop-art i {
+  position: absolute;
+  border: var(--outline);
+}
+
+.drop-art .sun {
+  top: 12px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--red);
+  transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.drop-art .hill {
+  bottom: -46px;
+  left: -26px;
+  width: 112px;
+  height: 92px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.drop-art .peak {
+  right: -10px;
+  bottom: -3px;
+  width: 92px;
+  height: 64px;
+  border: none;
+  background: var(--blue);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.drop-zone:hover .sun,
+.is-dragging .drop-zone .sun {
+  transform: translate(-14px, 8px) scale(1.15);
+}
+
+.drop-title {
+  display: block;
+  font-size: clamp(2rem, 3.4vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.drop-hint {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.drop-zone .touch-only {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .drop-zone .touch-only {
+    display: block;
+  }
+
+  .drop-zone .pointer-only {
+    display: none;
+  }
+}
+
+/* With an image: the picture, the axis to read it by, and its strip */
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'picture controls'
+    'strip strip';
+  gap: 32px 40px;
+  padding-top: 16px;
+}
+
+/* The picture sits matted on a card that fills its column, whatever its shape. */
+.picture-frame {
+  grid-area: picture;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: clamp(280px, 100vh - 380px, 640px);
+  padding: 22px;
+  border: var(--outline-thick);
+  border-radius: 28px;
+  background: var(--card);
+  box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
+}
+
+.studio-picture {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border: var(--outline);
+  border-radius: 10px;
+}
+
+.controls {
+  grid-area: controls;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.axis-picker {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.axis-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 230px;
+  padding: 10px 22px 10px 10px;
+  border: var(--outline);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+  font-size: 1.4rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.12s ease;
+}
+
+/* The radio button itself is invisible and covers its tile, so a click anywhere on the tile picks it. */
+.axis-tile input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.axis-tile .icon {
+  width: 48px;
+  height: 48px;
+  padding: 8px;
+  border: var(--outline);
+  border-radius: 12px;
+  background: var(--tile-color);
+  color: var(--tile-ink, var(--ink));
+}
+
+.axis-tile:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: calc(var(--lift) + 2px) calc(var(--lift) + 2px) 0 var(--ink);
+}
+
+.axis-tile:has(input:checked) {
+  background: var(--tile-color);
+  color: var(--tile-ink, var(--ink));
+  box-shadow: 0 0 0 var(--ink);
+  transform: translate(var(--lift), var(--lift));
+}
+
+.axis-tile:has(input:checked) .icon {
+  background: var(--card);
+  color: var(--ink);
+}
+
+.axis-tile:has(input:focus-visible) {
+  outline: 4px solid var(--blue);
+  outline-offset: 4px;
+}
+
+.axis-color {
+  --tile-color: var(--red);
+}
+
+.axis-hilbert {
+  --tile-color: var(--blue);
+  --tile-ink: var(--paper);
+}
+
+.axis-columns {
+  --tile-color: var(--yellow);
+}
+
+.axis-radial {
+  --tile-color: var(--green);
+}
+
+.another {
+  align-self: flex-start;
+}
+
+.studio-strip {
+  grid-area: strip;
+  display: block;
+  width: 100%;
+  height: clamp(110px, 19vh, 200px);
+  border: var(--outline-thick);
+  border-radius: 22px;
+  box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
+  image-rendering: pixelated;
+}
+
+/* Dragging a file anywhere over the page */
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  place-items: center;
+  border: 12px dashed var(--ink);
+  background: rgb(255 200 31 / 0.9);
+  pointer-events: none;
+}
+
+.is-dragging .drop-overlay {
+  display: grid;
+}
+
+.drop-overlay span {
+  font-size: clamp(4rem, 15vw, 12rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  animation: wobble 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes wobble {
+  from {
+    transform: rotate(-4deg) scale(0.96);
+  }
+
+  to {
+    transform: rotate(4deg) scale(1.04);
+  }
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 60;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 14px 24px;
+  border: var(--outline);
+  border-radius: 18px;
+  background: var(--red);
+  color: var(--card);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+  font-weight: 750;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 860px) {
+  .studio {
+    padding: 8px 16px 48px;
+  }
+
+  .intro {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+    min-height: 0;
+    padding: 16px 0 56px;
+  }
+
+  .intro h1 {
+    font-size: clamp(2.8rem, 12vw, 4.6rem);
+  }
+
+  .drop-zone {
+    aspect-ratio: 4 / 3;
+  }
+
+  .shape.circle {
+    top: -32px;
+    right: -12px;
+    width: 110px;
+    height: 110px;
+  }
+
+  .shape.arch {
+    left: -12px;
+    width: 130px;
+    height: 65px;
+  }
+
+  .picture-frame {
+    height: auto;
+    padding: 14px;
+  }
+
+  .studio-picture {
+    max-height: 60vh;
+  }
+
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'picture'
+      'strip'
+      'controls';
+    gap: 24px;
+  }
+
+  .axis-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .axis-tile {
+    min-width: 0;
+    font-size: 1.2rem;
+  }
+
+  .another {
+    align-self: stretch;
+    justify-content: center;
+  }
+}

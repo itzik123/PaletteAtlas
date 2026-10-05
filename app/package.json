@@ -6,13 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "typecheck": "tsc --noEmit"
+    "test": "playwright test",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p e2e"
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@palette-atlas/color": "workspace:*",
     "@palette-atlas/strip": "workspace:*"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "^8.3.2"
   }

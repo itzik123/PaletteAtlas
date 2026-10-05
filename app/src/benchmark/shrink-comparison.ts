@@ -1,5 +1,5 @@
 import { LinearRgb, type RgbaImage } from '@palette-atlas/color';
-import { context2d, imageCanvas } from './paint.ts';
+import { context2d, imageCanvas } from '../image-adapters.ts';
 
 /**
  * An image shrunk twice, side by side: by our area averaging in linear light (passed in), and

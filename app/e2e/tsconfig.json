@@ -1,0 +1,10 @@
+{
+  // UI tests: Playwright runs them in Node, and the callbacks they pass to the page run in the
+  // browser, so they need both Node's and the DOM's types.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"]
+  },
+  "include": [".", "../playwright.config.ts"]
+}

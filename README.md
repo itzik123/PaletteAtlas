@@ -49,6 +49,7 @@ Requires Node.js 24+ and pnpm.
 
 ```bash
 pnpm install
+pnpm --filter @palette-atlas/app exec playwright install chromium   # once, for the UI tests
 pnpm build
 pnpm test
 ```

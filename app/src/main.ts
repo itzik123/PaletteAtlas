@@ -1,9 +1,9 @@
+import '@fontsource-variable/bricolage-grotesque/standard.css';
 import './style.css';
+import { SiteHeader } from './site/site-header.ts';
+import { Studio } from './studio/studio.ts';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Missing #app element');
 
-app.innerHTML = `
-  <h1>Palette Atlas</h1>
-  <p>Turn any image into a color strip. Coming soon.</p>
-`;
+app.append(new SiteHeader().element, new Studio().element);

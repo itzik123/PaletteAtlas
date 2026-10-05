@@ -1,6 +1,6 @@
 import { BYTES_PER_PIXEL, Channel } from '@palette-atlas/color';
 import type { SourceMap, Strip } from '@palette-atlas/strip';
-import { context2d, imageCanvas } from './paint.ts';
+import { context2d, imageCanvas } from '../image-adapters.ts';
 
 /** How dark the veil over pixels outside the hovered segment is, out of 255. */
 const VEIL_ALPHA = 176;

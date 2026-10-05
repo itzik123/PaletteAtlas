@@ -24,6 +24,8 @@ jobs:
           node-version: 24
 
       - run: pnpm install --frozen-lockfile
+      # The app's UI tests drive a real browser.
+      - run: pnpm --filter @palette-atlas/app exec playwright install --with-deps chromium
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build

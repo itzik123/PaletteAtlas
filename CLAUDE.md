@@ -38,7 +38,8 @@ Expected applications (names are illustrative; confirm as we reach them):
 - No overly basic tests: skip getters, plain constructors, one-line delegation and behavior the language or a library already guarantees.
 - Unit tests only check baseline sanity: known reference values, round-trips and invariants (e.g. the Hilbert curve visits every pixel exactly once).
 - The substantive tests are integration tests between subsystems, e.g. image → strip → vector (an identical image gives distance zero), HNSW vs. brute force on real vectors (recall@10), and the pipeline's output loading in the app.
-- Reference images: `benchmark/strips` holds every axis's strip of the benchmark images, and a test compares the pipeline's output with them pixel for pixel. After an intended change, rerun `pnpm strips`, review the new images and commit them.
+- Reference images: `benchmark/strips` holds every axis's strip of the benchmark images, and tests compare the pipeline's output and the Studio's strips with them pixel for pixel. After an intended change, rerun `pnpm strips`, review the new images and commit them.
+- UI tests (Playwright) live in `app/e2e` and run against the production build (`vite build && vite preview`) in Playwright's own Chromium, which each machine installs once (see Commands).
 - A test and the code that makes it pass go in the same commit, so `main` and CI stay green.
 
 ## Phase completion
@@ -52,9 +53,18 @@ Claude never declares a phase complete on its own: present the passing tests and
 
 ## The product
 
-- **Studio**: upload an image, pick an axis (color, space, columns or radial) and get a strip. Hovering over the strip highlights the region of the image it came from, and the strip exports as a poster or a phone wallpaper.
+- **Studio**: upload an image, pick an axis (color, Hilbert, columns or radial) and get a strip. Hovering over the strip highlights the region of the image it came from, and the strip exports as a poster or a phone wallpaper.
 - **Atlas**: a gallery of public-domain paintings with their strips, a "career barcode" for each artist, and a search for paintings whose color scheme resembles an uploaded image.
 - **Lab**: an interactive explanation of HNSW. Watch the graph being built and the search descending through the layers, next to the exact answer. Two modes: points on a plane, and color space itself, where each point is painted the color it represents.
+
+## Site design
+
+Decided Oct 5, 2026, at the start of phase 3:
+
+- **Bold, like a cut-paper poster**: cream paper, ink-black outlines 3–4 px thick, hard offset shadows that press down when clicked, and a painter's bold colors (vermilion, cobalt, cadmium yellow, green, pink) in big geometric shapes. The colors are tokens on `:root` in `app/src/style.css`.
+- **Big, heavy type**: Bricolage Grotesque, a variable font, self-hosted through Fontsource, so no request goes out to a font server.
+- **Few words**: icons and shapes carry the interface. The explanation waits behind the "How it works" button in the header, beside a link to the GitHub repository.
+- **Images come in every way**: dropped anywhere on the page, chosen in the file picker, or pasted.
 
 ## Architecture
 
@@ -100,6 +110,7 @@ PaletteAtlas/
 ├── notebooks/          Python: experiments and evaluation (optional)
 ├── benchmark/          Itzik's ray-traced renders: the standard inputs for visual checks
 ├── app/                Studio, Atlas, Lab
+│   ├── e2e/            Playwright UI tests
 │   └── public/data/    pipeline output: binary index, metadata, thumbnails
 └── .github/workflows/  tests, build, deploy to GitHub Pages
 ```
@@ -184,7 +195,8 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 pnpm install     # install all dependencies
 pnpm dev         # run the app locally at http://localhost:5173 (visual checks: /benchmark.html)
 pnpm build       # build every workspace package
-pnpm test        # run every package's tests
+pnpm test        # run every package's tests, the app's UI tests included
+pnpm --filter @palette-atlas/app exec playwright install chromium   # once per machine, for the UI tests
 pnpm typecheck   # type-check every package
 pnpm strips      # write the benchmark images' strips to benchmark/strips, the tests' reference images
 ```

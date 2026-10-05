@@ -5,5 +5,6 @@ packages:
 
 # Shared dependency versions; packages refer to them as "catalog:".
 catalog:
+  '@types/node': ^24.19.1
   typescript: ^6.0.3
   vitest: ^5.0.3
