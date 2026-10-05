@@ -10,8 +10,17 @@ function icon(shapes: string, attributes = OUTLINE): string {
 
 /** One icon per axis, a picture of the path it takes through the image. */
 export const AXIS_ICONS: Readonly<Record<AxisName, string>> = {
-  // Three overlapping lights, as colors mix.
-  color: icon('<circle cx="8.5" cy="9" r="5"/><circle cx="15.5" cy="9" r="5"/><circle cx="12" cy="15.5" r="5"/>'),
+  // A painter's palette with dabs of the three primaries, clear of its edges.
+  color: icon(
+    '<path style="fill: var(--card)" d="M12 1.8C5.9 1.8 1.5 6.2 1.5 11.6s4.4 9.6 9.8 9.6c1.6 0 2.5-1 2.5-2.1 0-1.1-.8-1.6-.8-2.7 0-1.2 1-2.1 2.3-2.1H18c2.6 0 4.5-2 4.5-4.7 0-4.4-4.7-7.8-10.5-7.8z"/>' +
+      [
+        [6.4, 12.4, 'red'],
+        [10.4, 7, 'yellow'],
+        [16.6, 7.8, 'blue'],
+      ]
+        .map(([x, y, color]) => `<circle cx="${x}" cy="${y}" r="1.9" stroke-width="1.1" style="fill: var(--${color})"/>`)
+        .join(''),
+  ),
   // A Hilbert curve on a 4 × 4 grid, as the space axis walks it.
   hilbert: icon('<polyline points="3,3 9,3 9,9 3,9 3,15 3,21 9,21 9,15 15,15 15,21 21,21 21,15 21,9 15,9 15,3 21,3"/>'),
   columns: icon('<path d="M4 3v18M12 3v18M20 3v18"/>'),

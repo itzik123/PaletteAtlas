@@ -154,8 +154,10 @@
 .sample:focus-visible {
   /* Above the other frames, so its label lies over them. */
   z-index: 1;
-  transform: translate(-2px, -3px) rotate(-1.5deg);
-  box-shadow: calc(var(--lift) + 3px) calc(var(--lift) + 4px) 0 var(--ink);
+  /* A lift by whole pixels, as every control on the site does: a turned frame would show hairline
+     seams between its border, its shadow and its bands. */
+  transform: translate(-3px, -3px);
+  box-shadow: calc(var(--lift) + 3px) calc(var(--lift) + 3px) 0 var(--ink);
 }
 
 .sample:active {
@@ -191,7 +193,7 @@
 .frame-carved-gilt:hover,
 .frame-carved-gilt:focus-visible {
   box-shadow:
-    calc(var(--lift) + 3px) calc(var(--lift) + 4px) 0 var(--ink),
+    calc(var(--lift) + 3px) calc(var(--lift) + 3px) 0 var(--ink),
     inset 0 0 0 3px #6b4510;
 }
 
@@ -297,7 +299,8 @@
 
 .shape.circle {
   top: -48px;
-  right: -44px;
+  /* Within the Studio's padding, which clips anything reaching past it. */
+  right: -28px;
   width: 170px;
   height: 170px;
   border-radius: 50%;
