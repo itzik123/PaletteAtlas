@@ -12,7 +12,8 @@
     "dev": "pnpm --filter @palette-atlas/app dev",
     "strips": "pnpm --filter @palette-atlas/pipeline strips",
     "build": "pnpm -r --if-present run build",
-    "test": "pnpm -r --if-present run test",
+    "test": "pnpm -r --if-present run test && pnpm run test:fetch",
+    "test:fetch": "python -m unittest discover --start-directory pipeline/fetch --pattern \"*_test.py\"",
     "typecheck": "pnpm -r --if-present run typecheck"
   },
   "devDependencies": {

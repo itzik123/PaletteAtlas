@@ -1,0 +1,128 @@
+{
+ "source": "Wikidata (queried through QLever) and Wikimedia Commons",
+ "created": "2026-10-05",
+ "works": [
+  {
+   "id": "Q1747569",
+   "title": "The Madonna in the Church",
+   "artist": "Q102272",
+   "year": 1440,
+   "precision": "year",
+   "collection": "Gemäldegalerie Berlin",
+   "sitelinks": 22,
+   "file": "Jan van Eyck - Madonna in the Church - WGA7590.jpg",
+   "license": "pd",
+   "width": 670,
+   "height": 1500,
+   "thumbnail": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Jan_van_Eyck_-_Madonna_in_the_Church_-_WGA7590.jpg/500px-Jan_van_Eyck_-_Madonna_in_the_Church_-_WGA7590.jpg",
+   "image": "images/Q1747569.jpg"
+  },
+  {
+   "id": "Q1217187",
+   "title": "Calumny of Apelles",
+   "artist": "Q5669",
+   "year": 1497,
+   "precision": "decade",
+   "collection": "Uffizi Gallery",
+   "sitelinks": 19,
+   "file": "Sandro Botticelli La calumnia de Apeles.jpg",
+   "license": "pd",
+   "width": 3000,
+   "height": 2009,
+   "thumbnail": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Sandro_Botticelli_La_calumnia_de_Apeles.jpg/500px-Sandro_Botticelli_La_calumnia_de_Apeles.jpg",
+   "image": "images/Q1217187.jpg"
+  },
+  {
+   "id": "Q20278622",
+   "title": "Guitar Player",
+   "artist": "Q245947",
+   "year": 1644,
+   "precision": "century",
+   "collection": "Statens Museum for Kunst",
+   "sitelinks": 0,
+   "file": "Anthonie Palamedesz - Guitar Player - KMSst320 - Statens Museum for Kunst.jpg",
+   "license": "pd",
+   "width": 768,
+   "height": 580,
+   "thumbnail": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/Anthonie_Palamedesz_-_Guitar_Player_-_KMSst320_-_Statens_Museum_for_Kunst.jpg/500px-Anthonie_Palamedesz_-_Guitar_Player_-_KMSst320_-_Statens_Museum_for_Kunst.jpg",
+   "image": "images/Q20278622.jpg"
+  },
+  {
+   "id": "Q17812507",
+   "title": "View of the IJ from the East",
+   "artist": "Q578067",
+   "year": 1601,
+   "precision": "decade",
+   "collection": "Amsterdam Museum",
+   "sitelinks": 0,
+   "file": "SA 3034-Het IJ vanuit het oosten-Het IJ naar het westen gezien met rechts het profiel van de stad.jpg",
+   "license": "pd",
+   "width": 1400,
+   "height": 508,
+   "thumbnail": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/SA_3034-Het_IJ_vanuit_het_oosten-Het_IJ_naar_het_westen_gezien_met_rechts_het_profiel_van_de_stad.jpg/500px-SA_3034-Het_IJ_vanuit_het_oosten-Het_IJ_naar_het_westen_gezien_met_rechts_het_profiel_van_de_stad.jpg",
+   "image": "images/Q17812507.jpg"
+  },
+  {
+   "id": "Q20172799",
+   "title": "Annie Sargent Jewett",
+   "artist": "Q248707",
+   "year": 1905,
+   "precision": "year",
+   "collection": "Metropolitan Museum of Art",
+   "sitelinks": 0,
+   "file": "Annie Sargent Jewett MET ap1970.123.1.jpg",
+   "license": "cc0",
+   "width": 1572,
+   "height": 2467,
+   "thumbnail": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/Annie_Sargent_Jewett_MET_ap1970.123.1.jpg/500px-Annie_Sargent_Jewett_MET_ap1970.123.1.jpg",
+   "image": "images/Q20172799.jpg"
+  },
+  {
+   "id": "Q18748372",
+   "title": "Female Saint Holding a Book",
+   "artist": "Q470846",
+   "year": 1515,
+   "precision": "decade",
+   "collection": "Walters Art Museum",
+   "sitelinks": 0,
+   "file": "Amico Aspertini - Female Saint Holding a Book - Walters 37441.jpg",
+   "license": "pd",
+   "width": 1291,
+   "height": 1800,
+   "thumbnail": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Amico_Aspertini_-_Female_Saint_Holding_a_Book_-_Walters_37441.jpg/500px-Amico_Aspertini_-_Female_Saint_Holding_a_Book_-_Walters_37441.jpg",
+   "image": "images/Q18748372.jpg"
+  }
+ ],
+ "artists": {
+  "Q102272": {
+   "name": "Jan van Eyck",
+   "born": 1390,
+   "died": 1441
+  },
+  "Q245947": {
+   "name": "Anthonie Palamedesz.",
+   "born": 1602,
+   "died": 1673
+  },
+  "Q248707": {
+   "name": "Maurice Prendergast",
+   "born": 1858,
+   "died": 1924
+  },
+  "Q470846": {
+   "name": "Amico Aspertini",
+   "born": 1475,
+   "died": 1552
+  },
+  "Q5669": {
+   "name": "Sandro Botticelli",
+   "born": 1445,
+   "died": 1510
+  },
+  "Q578067": {
+   "name": "Hendrick Cornelisz Vroom",
+   "born": 1562,
+   "died": 1640
+  }
+ }
+}

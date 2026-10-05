@@ -22,7 +22,7 @@ Source: the design doc "Palette Atlas: Project Structure and Work Plan" (Oct 4, 
 
 - Follow SOLID and object-oriented design throughout: small classes with one responsibility, programming to interfaces, dependencies injected through constructors, composition over inheritance.
 - Use design patterns wherever they fit the problem, and name the pattern in the class's doc comment so the design stays readable. Don't force a pattern where plain code is clearer; speculative generality is itself a smell.
-- Avoid code smells and anti-patterns: god classes and long functions, duplicated logic, magic numbers (name them, e.g. the 843 px download width or the 256 px k-means size), deep inheritance, global mutable state and singletons.
+- Avoid code smells and anti-patterns: god classes and long functions, duplicated logic, magic numbers (name them, e.g. the 500 px download width or the 256 px k-means size), deep inheritance, global mutable state and singletons.
 - In hot paths (pixel loops, distance computations), objects keep bulk data in typed arrays rather than one object per pixel or vector; encapsulation stays at the object boundary.
 
 Expected applications (names are illustrative; confirm as we reach them):
@@ -77,7 +77,7 @@ Four TypeScript libraries with no browser dependency, shared by an offline data 
 
 Both sides import the same libraries:
 
-- **pipeline** (offline, runs before each release): downloads public-domain paintings, computes strips and vectors, builds the index, and writes data files to `app/public/data`.
+- **pipeline** (offline, runs before each release): downloads public-domain paintings (Wikidata and Wikimedia Commons, see Painting data), computes strips and vectors, builds the index, and writes data files to `app/public/data`.
 - **app** (in the browser, no server): Studio, Atlas and Lab, reading the pipeline's data files.
 
 Both read strips through `ImageStrips.read(image)` in `strip`, the one place that holds the recipe and its settings (shrink to 256 px, a palette of 8 or more colors with a fixed seed, 128 segments per axis), so a gallery strip and a user's strip always come out the same way.
@@ -105,24 +105,25 @@ PaletteAtlas/
 │   ├── vectorize/      strip to vector (soft histogram, Hellinger)
 │   └── hnsw/           index, brute force, recall, trace, serialization
 ├── pipeline/
-│   ├── fetch/          Python: AIC dump, filter, polite download, PNGs
-│   └── build/          TypeScript (Node): strips, vectors, index build
+│   ├── fetch/          Python: Wikidata catalog, Commons licenses, polite download
+│   ├── build/          TypeScript (Node): strips, vectors, index build
+│   └── data/           downloaded paintings and their metadata (not in git)
 ├── notebooks/          Python: experiments and evaluation (optional)
 ├── benchmark/          Itzik's ray-traced renders: the standard inputs for visual checks
 ├── docs/               README media (the Studio GIF)
 ├── app/                Studio, Atlas, Lab
 │   ├── e2e/            Playwright UI tests
-│   └── public/data/    pipeline output: binary index, metadata, thumbnails
+│   └── public/data/    pipeline output: metadata, strips, vectors, binary index
 └── .github/workflows/  tests, build, deploy
 ```
 
 ## Tech stack
 
 - **UI**: plain TypeScript, no framework (decided in phase 1).
-- **Build**: pnpm workspaces and Vite for the TypeScript part; a plain venv for the Python part.
+- **Build**: pnpm workspaces and Vite for the TypeScript part. The Python part uses only the standard library (Python 3.14), so it needs no packages and no venv yet.
 - **Drawing**: Canvas 2D for strips, Three.js for the 3D view in the Lab.
 - **Compute**: Web Workers for every heavy computation, so the interface never freezes.
-- **Tests**: Vitest for the libraries and the pipeline, each test file next to its code as `*.test.ts`; Playwright for UI flows and for screenshots of the app compared against reference images.
+- **Tests**: Vitest for the libraries and the pipeline's build, each test file next to its code as `*.test.ts`; `unittest` for the Python fetch step, likewise as `*_test.py`; Playwright for UI flows and for screenshots of the app compared against reference images.
 - **Images in Node**: `sharp` (libvips) decodes and encodes image files in the pipeline, WebP and PNG included. Its strips of the benchmark images match the browser's exactly.
 - **CI/CD**: GitHub Actions run tests and build on every push, and every green push to `main` publishes the tested build: to Cloudflare Pages (with `wrangler`) while the repo is private, to GitHub Pages once it is public. Only the deploy job changes between the two.
 - **Toolchain**: Node 24 LTS, pnpm 12 (pinned by `packageManager`), TypeScript 6. Not TS 7 yet: it is very new (July 2026) and `typescript-eslint` only supports up to TS 6; revisit later.
@@ -139,10 +140,10 @@ The core and the site are TypeScript. Python is used only for parts that don't r
 | Libraries: color, strip, vectorize, hnsw | TypeScript | They run both in the browser and in the pipeline, so user strips and gallery strips come from the same code |
 | Site: Studio, Atlas, Lab | TypeScript | Only JavaScript and WebAssembly run in the browser |
 | Data build (`pipeline/build`) | TypeScript (Node) | Builds strips, vectors and the index with the same libraries |
-| Data download (`pipeline/fetch`) | Python | Filters the data dump, downloads politely and shrinks images to PNG; none of the project's algorithms live here |
+| Data download (`pipeline/fetch`) | Python | Queries Wikidata, checks each file's license on Commons and downloads politely; none of the project's algorithms live here |
 | Notebooks (optional) | Python | Compare vector representations and chart recall vs. speed; whatever is chosen gets implemented in TypeScript |
 
-- The contract between download and build is a folder of PNGs plus a JSON metadata file, so neither side depends on the other's code.
+- The contract between download and build is a folder of images, as Commons serves them, plus a JSON metadata file (`pipeline/data/wikidata`), so neither side depends on the other's code.
 - C++ through WebAssembly stays an option for later, only if measurements show a bottleneck.
 
 ## Work phases
@@ -152,7 +153,7 @@ Seven phases, each ending in something you can show. **Current phase: 4 (Data pi
 1. **Infrastructure** (1 weekend): monorepo, CI, and deployment of an empty page to GitHub Pages. From here on, every push goes live. *Deployment was deferred; phase 1 covered the monorepo, CI and the empty page, and the site went live in phase 3 (see Hosting while private).* Done Oct 4, 2026.
 2. **Color library and strip engine** (2–3 weekends): OKLab conversions and correct averaging, k-means, a column axis and a radial axis, a color axis with TSP ordering, and a Hilbert axis with fold-back. Deliverable: correct strips generated from a script, covered by tests. Done Oct 4, 2026.
 3. **Studio, first release v0.1** (2 weekends): image upload, axis switching, hover linking between strip and image, and PNG export. A README with a GIF and a link to the site. The first moment to share. Done Oct 5, 2026: live at https://palette-atlas.pages.dev, with a sample wall of famous paintings and poster and wallpaper export.
-4. **Data pipeline and gallery** (2–3 weekends): download public-domain paintings, compute their strips, a gallery page, and a career barcode for each artist.
+4. **Data pipeline and gallery** (2–3 weekends): download about 50,000 public-domain paintings, compute their strips, a gallery page, and a career barcode for each artist.
 5. **HNSW and search, v0.2** (3–4 weekends): implementation from scratch, brute force for checking, recall measurement, saving to a binary file, and building the index in the pipeline. In the browser: upload an image and get the closest paintings.
 6. **Lab** (3–5 weekends): the search trace becomes an animation, in plane mode and in color-space mode. Controls for `M` and `ef`, and failure scenarios, such as clustered data without the neighbor-selection heuristic.
 7. **Polish and launch, v1.0** (1–2 weekends): performance, mobile, accessibility, a GIF for each part, and a launch post.
@@ -169,7 +170,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 | strip | Hilbert fold-back at full resolution restores the image pixel for pixel; reference strips for every axis (`benchmark/strips`) | Hovering over the strip highlights the source region in the image |
 | vectorize | An identical image gives distance zero; a small color change gives a small distance | The nearest results and their strips next to the query strip |
 | hnsw | recall@10 vs. brute force above a set target (e.g. 0.95); deterministic build with a seed | In the Lab: the true neighbors marked next to what HNSW found |
-| pipeline | Only works marked as public domain; record counts and file schema | A check page with 20 random works and their strips |
+| pipeline | Only files Commons marks public domain or CC0; record counts and file schema | A check page with 20 random works and their strips |
 | app | Playwright: upload, axis switch, export | A manual pass on a phone before every release |
 
 ## Open decisions and risks
@@ -177,8 +178,14 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 - **Scope** is the main risk. The Lab is the heavy part, so it comes after there is already a product that stands on its own.
 - **Vector representation**: start with a soft histogram over a color vocabulary in OKLab, with Hellinger distance. Take the square root of each proportion and use plain Euclidean distance, so HNSW needs no special metric. A 3×3 grid of average colors can be added so layout counts too; decide by what looks right in the gallery.
 - **Non-square images** (decided Oct 4, 2026): the classic Hilbert curve is defined on a square whose side is a power of 2, so the Hilbert axis uses Jakub Červený's generalized curve ("gilbert"), which fills any rectangle without jumps (at most one diagonal step) and matches the classic curve on those squares. No padding or cropping.
-- **Data size in the browser**: tens of thousands of vectors and their graph can reach tens of megabytes. Fix: uint8 quantization, lazy loading, and starting from a subset of paintings.
-- **Museum data**: the Art Institute of Chicago (AIC) releases over 50,000 images under CC0 and asks for credit of artist, title and date. Its API docs recommend filtering the nightly data dump rather than querying the API, and downloading images one at a time, a second apart, at width 843.
+- **Data size in the browser**: 50,000 vectors and their graph can reach tens of megabytes, and their strips along all four axes about 77 MB. Fix: uint8 quantization, loading in chunks as needed, and fewer axes where one is enough.
+- **Painting data** (decided Oct 5, 2026, at the start of phase 4; replaces the design doc's AIC data dump): the AIC has only 1,875 public-domain paintings with images, too few to find a painting that truly resembles a user's photo, and too few to give HNSW a real job. Five museum APIs together (the Met, Rijksmuseum, SMK, Cleveland, AIC) hold about 30,000; Wikidata lists 247,000 paintings with a Commons image by artists who died over 70 years ago, from hundreds of museums. So:
+  - **Catalog**: Wikidata, queried through QLever (`qlever.dev/api/wikidata`), which returns the whole catalog in about 25 s; the official query service times out at 60 s on it. A painting qualifies with one artist, an image, a collection and a date, its artist dead for 70 years or more.
+  - **Selection**: about 50,000 (a setting), the most famous first (by how many Wikipedias have an article on it), then a seeded draw from the rest.
+  - **Licenses**: only files Commons marks `pd` or `cc0`, which it checks for both the US and the source country, at least 500 px wide. Photos that claim their own license (e.g. CC BY-SA) are left out, and black-and-white photos are dropped by the build.
+  - **Download**: 500 px thumbnails, one at a time and resumable, within Wikimedia's robot policy (at most 2 at once, standard thumbnail sizes only, a User-Agent naming the site).
+  - **Hosting**: the site loads thumbnails straight from `upload.wikimedia.org` at standard sizes (50,000 files exceed Cloudflare Pages' 20,000-file limit and don't belong in git), and hosts only strips, vectors and metadata. Each painting is credited with artist, title, date, collection and Wikimedia Commons.
+  - **Quality varies**: in a random sample of 24, 17 were clean photos; the rest were black and white, framed, photographed in place or a drawing. The check page measures it; the museums' own images for the same works stay an option for later.
 - **Performance**: downscale an image to about 256 px before k-means (area averaging in linear light, see Color spaces), and run it in a Worker.
 - **Hosting while private** (decided Oct 5, 2026; not in the design doc): GitHub Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), so until the repo goes public at v1.0 the site lives on Cloudflare Pages, which serves private repos for free. CI uploads the tested `app/dist` with `wrangler`, using the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, to https://palette-atlas.pages.dev (live since Oct 5, 2026). The site is public either way. The build uses relative paths, so it already works under `/PaletteAtlas/` for the move to GitHub Pages.
 
@@ -196,15 +203,19 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 pnpm install     # install all dependencies
 pnpm dev         # run the app locally at http://localhost:5173 (visual checks: /benchmark.html)
 pnpm build       # build every workspace package
-pnpm test        # run every package's tests, the app's UI tests included
+pnpm test        # run every package's tests, the app's UI tests and the fetch step's Python tests included
 pnpm --filter @palette-atlas/app exec playwright install chromium   # once per machine, for the UI tests
 pnpm typecheck   # type-check every package
 pnpm strips      # write the benchmark images' strips to benchmark/strips, the tests' reference images
+python pipeline/fetch/fetch.py catalog   # choose the paintings on Wikidata and Commons (about 30 min)
+python pipeline/fetch/fetch.py images    # download their images to pipeline/data (hours; rerun to resume)
 ```
 
 Development happens on Windows (PowerShell). `.gitattributes` keeps every text file LF.
 
 ## Sources
 
-- [Art Institute of Chicago: Open Access Images](https://www.artic.edu/open-access/open-access-images)
-- [Art Institute of Chicago API: Documentation](https://api.artic.edu/docs)
+- [QLever: SPARQL over Wikidata](https://qlever.dev/wikidata)
+- [MediaWiki API: imageinfo](https://www.mediawiki.org/wiki/API:Imageinfo) (Commons file sizes, licenses and thumbnail URLs)
+- [Wikimedia robot policy](https://wikitech.wikimedia.org/wiki/Robot_policy) and [standard thumbnail sizes](https://www.mediawiki.org/wiki/Common_thumbnail_sizes)
+- [Art Institute of Chicago: Open Access Images](https://www.artic.edu/open-access/open-access-images) (three of the Studio's samples)

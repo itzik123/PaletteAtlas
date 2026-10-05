@@ -23,6 +23,11 @@ jobs:
         with:
           node-version: 24
 
+      # The fetch step's tests (pipeline/fetch) run on the standard library alone.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
       - run: pnpm install --frozen-lockfile
       # The app's UI tests drive a real browser.
       - run: pnpm --filter @palette-atlas/app exec playwright install --with-deps chromium

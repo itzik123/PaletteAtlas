@@ -18,3 +18,11 @@ blob-report/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Downloaded paintings (pipeline/fetch), and the strips built from them (pnpm paintings); rebuilt
+# by rerunning them. How the site ships its share is decided with the gallery.
+pipeline/data/
+app/public/data/
+
+# Python bytecode
+__pycache__/
