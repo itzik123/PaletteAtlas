@@ -64,7 +64,7 @@ Decided Oct 5, 2026, at the start of phase 3:
 - **Bold, like a cut-paper poster**: cream paper, ink-black outlines 3–4 px thick, hard offset shadows that press down when clicked, and a painter's bold colors (vermilion, cobalt, cadmium yellow, green, pink) in big geometric shapes. The colors are tokens on `:root` in `app/src/style.css`.
 - **Big, heavy type**: Bricolage Grotesque, a variable font, self-hosted through Fontsource, so no request goes out to a font server.
 - **Few words**: icons and shapes carry the interface. The explanation waits behind the "How it works" button in the header, beside a link to the GitHub repository.
-- **Images come in every way**: dropped anywhere on the page, chosen in the file picker, or pasted.
+- **Images come in every way**: dropped anywhere on the page, chosen in the file picker, pasted, or picked from the sample wall: four famous public-domain paintings (the Mona Lisa from Wikimedia Commons, three CC0 works from the AIC), each in a flat version of its museum's frame, credited in "How it works". A feature that can't fit this look is left out rather than added anyway.
 
 ## Architecture
 

@@ -26,6 +26,7 @@ export class ExplainDialog {
           <p><b>The path becomes 128 stripes,</b> each the true average light of the pixels it passes.</p>
         </li>
       </ol>
+      <p class="credits">The sample paintings are in the public domain: the Mona Lisa (Louvre) by way of Wikimedia Commons, and the others courtesy of the Art Institute of Chicago.</p>
     `;
     // A click on the backdrop lands on the dialog itself, but outside its box.
     this.element.addEventListener('click', (event) => {

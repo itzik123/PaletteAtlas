@@ -196,7 +196,7 @@ test('hovering the strip uncovers the pixels its segment came from, and leaving 
 test('hovering the picture marks its segment on the strip and uncovers the pixels of that segment', async ({ page }) => {
   await dropFile(page, page.getByRole('button', { name: /drop an image/i }), join(BENCHMARK, 'cube.webp'), 'image/webp');
   await page.getByRole('radio', { name: 'Columns' }).check();
-  const picture = await page.getByRole('img', { name: 'cube.webp' }).boundingBox();
+  const picture = await page.getByRole('img', { name: 'cube' }).boundingBox();
   if (!picture) throw new Error('The picture is not shown');
   // 30% across the picture is column 76 of the shrunk image, in segment 38.
   await page.mouse.move(picture.x + 0.3 * picture.width, picture.y + 0.5 * picture.height);
@@ -231,4 +231,16 @@ test('the strip saves as a poster, its colors running left to right inside a fra
   // The strip's colors in order, with the paper and the frame on either side.
   expect(across.join(' ')).toContain(strip.join(' '));
   expect(across.length).toBeGreaterThan(strip.length);
+});
+
+test('a painting clicked on the sample wall becomes its strip', async ({ page }) => {
+  await page.getByRole('button', { name: /Mona Lisa/ }).click();
+  await expect(page.getByRole('img', { name: 'Mona Lisa' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Strip' })).toHaveJSProperty('width', 128);
+});
+
+test('a painting dragged from the sample wall onto the drop zone becomes its strip', async ({ page }) => {
+  await page.getByRole('button', { name: /The Great Wave/ }).dragTo(page.getByRole('button', { name: /drop an image/i }));
+  await expect(page.getByRole('img', { name: 'The Great Wave' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Strip' })).toHaveJSProperty('width', 128);
 });

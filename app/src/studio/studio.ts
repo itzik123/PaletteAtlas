@@ -6,6 +6,8 @@ import { siteSrgb } from '../site-colors.ts';
 import { AxisPicker } from './axis-picker.ts';
 import { FileIntake, isImage } from './file-intake.ts';
 import { PictureView, type Spot } from './picture-view.ts';
+import { SampleWall } from './sample-wall.ts';
+import { SAMPLES, type Sample } from './samples.ts';
 import { savePng } from './save-png.ts';
 import { STRIP_FORMATS, type StripFormat } from './strip-formats.ts';
 import type { ReadImage, StripReader } from './strip-reader.ts';
@@ -47,22 +49,36 @@ export class Studio {
     this.#reader = reader;
     this.element.className = 'studio';
     this.element.dataset.state = 'empty';
-    this.#intake = new FileIntake(this.element, (file) => void this.#open(file));
+    this.#intake = new FileIntake(this.element, {
+      onFile: (file) => void this.#open(file),
+      onSample: (id) => {
+        const sample = SAMPLES.find((candidate) => candidate.id === id);
+        if (sample) void this.#openSample(sample);
+      },
+    });
     this.element.append(this.#intro(), this.#workspace(), dropOverlay(), this.#toast.element);
   }
 
-  /** What the page shows before the first image: a headline and a big target to drop it on. */
+  /**
+   * What the page shows before the first image: a headline over a wall of famous paintings to
+   * try, and a big target to drop an image on.
+   */
   #intro(): HTMLElement {
     const intro = document.createElement('section');
     intro.className = 'intro';
     intro.innerHTML = `
-      <h1>Turn any image into a <span class="strip-word">strip</span> of color.</h1>
+      <div class="intro-text">
+        <h1>Turn any image into a <span class="strip-word">strip</span> of color.</h1>
+        <p class="wall-hint pointer-only">or drag in a classic →</p>
+        <p class="wall-hint touch-only">or tap a classic</p>
+      </div>
       <div class="drop-stage">
         <span class="shape circle" aria-hidden="true"></span>
         <span class="shape arch" aria-hidden="true"></span>
         <span class="shape square" aria-hidden="true"></span>
       </div>
     `;
+    intro.querySelector('.intro-text')?.append(new SampleWall(SAMPLES, (sample) => void this.#openSample(sample)).element);
     intro.querySelector('.drop-stage')?.append(this.#dropZone());
     return intro;
   }
@@ -128,11 +144,22 @@ export class Studio {
     else this.#toast.show(`Couldn’t open “${file.name}”.`);
   }
 
+  /** Opens a painting from the wall as if its file had been dropped, named after its title. */
+  async #openSample(sample: Sample): Promise<void> {
+    const response = await fetch(sample.image);
+    if (!response.ok) {
+      this.#toast.show(`Couldn’t load “${sample.title}”.`);
+      return;
+    }
+    const image = await response.blob();
+    await this.#open(new File([image], `${sample.title}.webp`, { type: image.type }));
+  }
+
   #show(name: string, { picture, strips }: ReadImage): void {
     this.#toast.hide();
     this.#strips = strips;
     this.#title = name.replace(/\.[^.]*$/, '');
-    this.#picture.show(picture, name);
+    this.#picture.show(picture, this.#title);
     this.#showAxis(this.#picker.axis);
     this.element.dataset.state = 'loaded';
   }

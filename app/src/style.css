@@ -32,8 +32,6 @@
 body {
   margin: 0;
   min-height: 100vh;
-  /* Decorative shapes may reach past the edge; they never make the page scroll sideways. */
-  overflow-x: clip;
   font-size: 1.25rem;
   line-height: 1.35;
   background: var(--paper);
@@ -292,6 +290,13 @@ input {
     var(--green) 60% 80%,
     var(--blue) 80%
   );
+}
+
+.explain .credits {
+  margin: 24px 0 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.7;
 }
 
 .explain .close {
