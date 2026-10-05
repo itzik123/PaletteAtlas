@@ -109,6 +109,7 @@ PaletteAtlas/
 │   └── build/          TypeScript (Node): strips, vectors, index build
 ├── notebooks/          Python: experiments and evaluation (optional)
 ├── benchmark/          Itzik's ray-traced renders: the standard inputs for visual checks
+├── docs/               README media (the Studio GIF)
 ├── app/                Studio, Atlas, Lab
 │   ├── e2e/            Playwright UI tests
 │   └── public/data/    pipeline output: binary index, metadata, thumbnails

@@ -1,18 +1,20 @@
 # Palette Atlas
 
-Turn any image into a continuous color strip, and find paintings with a similar color scheme.
+Turn any image into a strip of color, and find paintings with a similar color scheme.
+
+![The Studio: the Mona Lisa becomes a strip of color, read by color, along a Hilbert curve and from the center out, each stripe uncovering the pixels it came from](docs/studio.gif)
 
 A static site with no server, in three parts:
 
-- **Studio**: upload an image, pick an axis and get a strip you can export as a poster or a phone wallpaper.
-- **Atlas**: a gallery of public-domain paintings with their strips, a "career barcode" for each artist, and search by color scheme.
-- **Lab**: an interactive explanation of the HNSW index behind the search.
+- **Studio**: drop in an image, pick a path through it and get its strip. Point at the strip to see where each stripe came from, and save it as a poster or a phone wallpaper.
+- **Atlas** (coming): a gallery of public-domain paintings with their strips, a "career barcode" for each artist, and search by color scheme.
+- **Lab** (coming): an interactive explanation of the HNSW index behind the search.
 
 Your images never leave your computer.
 
-> Status: early development.
+> Status: v0.1, the Studio.
 
-## So far
+## How a strip is read
 
 Each ray-traced render below becomes a strip of 128 colors, read four ways (top to bottom): left to right, from the center out, along a Hilbert curve, and by color. Every segment is the average of its pixels' light, the color they blend into from a distance.
 
@@ -42,6 +44,10 @@ Each ray-traced render below becomes a strip of 128 colors, read four ways (top 
 <td><img src="benchmark/strips/laptop-columns.png" width="448" alt="Laptop, read left to right"><br><img src="benchmark/strips/laptop-radial.png" width="448" alt="Laptop, read from the center out"><br><img src="benchmark/strips/laptop-hilbert.png" width="448" alt="Laptop, read along a Hilbert curve"><br><img src="benchmark/strips/laptop-color.png" width="448" alt="Laptop, read by color"></td>
 </tr>
 </table>
+
+## Credits
+
+The sample paintings are in the public domain: the Mona Lisa (Louvre) by way of Wikimedia Commons, and A Sunday on La Grande Jatte, The Bedroom and The Great Wave courtesy of the Art Institute of Chicago (CC0).
 
 ## Development
 
