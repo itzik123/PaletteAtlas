@@ -12,7 +12,7 @@ A static site with no server, in three parts:
 
 Your images never leave your computer.
 
-> Status: v0.1, the Studio.
+> Status: v0.1, the Studio. **Try it: [palette-atlas.pages.dev](https://palette-atlas.pages.dev)**
 
 ## How a strip is read
 

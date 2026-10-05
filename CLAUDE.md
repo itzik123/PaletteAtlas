@@ -149,7 +149,7 @@ The core and the site are TypeScript. Python is used only for parts that don't r
 
 Seven phases, each ending in something you can show. **Current phase: 3 (Studio, first release v0.1).**
 
-1. **Infrastructure** (1 weekend): monorepo, CI, and deployment of an empty page to GitHub Pages. From here on, every push goes live. *Deployment is deferred for now; phase 1 covers the monorepo, CI and the empty page.* Done Oct 4, 2026.
+1. **Infrastructure** (1 weekend): monorepo, CI, and deployment of an empty page to GitHub Pages. From here on, every push goes live. *Deployment was deferred; phase 1 covered the monorepo, CI and the empty page, and the site went live in phase 3 (see Hosting while private).* Done Oct 4, 2026.
 2. **Color library and strip engine** (2–3 weekends): OKLab conversions and correct averaging, k-means, a column axis and a radial axis, a color axis with TSP ordering, and a Hilbert axis with fold-back. Deliverable: correct strips generated from a script, covered by tests. Done Oct 4, 2026.
 3. **Studio, first release v0.1** (2 weekends): image upload, axis switching, hover linking between strip and image, and PNG export. A README with a GIF and a link to the site. The first moment to share.
 4. **Data pipeline and gallery** (2–3 weekends): download public-domain paintings, compute their strips, a gallery page, and a career barcode for each artist.
@@ -180,7 +180,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 - **Data size in the browser**: tens of thousands of vectors and their graph can reach tens of megabytes. Fix: uint8 quantization, lazy loading, and starting from a subset of paintings.
 - **Museum data**: the Art Institute of Chicago (AIC) releases over 50,000 images under CC0 and asks for credit of artist, title and date. Its API docs recommend filtering the nightly data dump rather than querying the API, and downloading images one at a time, a second apart, at width 843.
 - **Performance**: downscale an image to about 256 px before k-means (area averaging in linear light, see Color spaces), and run it in a Worker.
-- **Hosting while private** (decided Oct 5, 2026; not in the design doc): GitHub Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), so until the repo goes public at v1.0 the site lives on Cloudflare Pages, which serves private repos for free. CI uploads the tested `app/dist` with `wrangler`, using the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The site is public either way. The build uses relative paths, so it already works under `/PaletteAtlas/` for the move to GitHub Pages.
+- **Hosting while private** (decided Oct 5, 2026; not in the design doc): GitHub Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), so until the repo goes public at v1.0 the site lives on Cloudflare Pages, which serves private repos for free. CI uploads the tested `app/dist` with `wrangler`, using the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, to https://palette-atlas.pages.dev (live since Oct 5, 2026). The site is public either way. The build uses relative paths, so it already works under `/PaletteAtlas/` for the move to GitHub Pages.
 
 ## What the project teaches
 
