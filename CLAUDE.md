@@ -1,6 +1,6 @@
 # Palette Atlas
 
-A static site, with no server, that turns any image into a continuous color strip and finds paintings with a similar color scheme, using an HNSW index built from scratch. Users' images never leave their computer, and the site is hosted for free on GitHub Pages.
+A static site, with no server, that turns any image into a continuous color strip and finds paintings with a similar color scheme, using an HNSW index built from scratch. Users' images never leave their computer, and the site is hosted for free: on Cloudflare Pages while the repo is private, on GitHub Pages once it goes public.
 
 Source: the design doc "Palette Atlas: Project Structure and Work Plan" (Oct 4, 2026). This file summarizes it; update it when decisions change.
 
@@ -113,7 +113,7 @@ PaletteAtlas/
 ├── app/                Studio, Atlas, Lab
 │   ├── e2e/            Playwright UI tests
 │   └── public/data/    pipeline output: binary index, metadata, thumbnails
-└── .github/workflows/  tests, build, deploy to GitHub Pages
+└── .github/workflows/  tests, build, deploy
 ```
 
 ## Tech stack
@@ -124,7 +124,7 @@ PaletteAtlas/
 - **Compute**: Web Workers for every heavy computation, so the interface never freezes.
 - **Tests**: Vitest for the libraries and the pipeline, each test file next to its code as `*.test.ts`; Playwright for UI flows and for screenshots of the app compared against reference images.
 - **Images in Node**: `sharp` (libvips) decodes and encodes image files in the pipeline, WebP and PNG included. Its strips of the benchmark images match the browser's exactly.
-- **CI/CD**: GitHub Actions run tests, build, and publish to GitHub Pages on every push to `main`.
+- **CI/CD**: GitHub Actions run tests and build on every push, and every green push to `main` publishes the tested build: to Cloudflare Pages (with `wrangler`) while the repo is private, to GitHub Pages once it is public. Only the deploy job changes between the two.
 - **Toolchain**: Node 24 LTS, pnpm 12 (pinned by `packageManager`), TypeScript 6. Not TS 7 yet: it is very new (July 2026) and `typescript-eslint` only supports up to TS 6; revisit later.
 - **Workspace conventions**: packages are named `@palette-atlas/<name>`. Shared dependency versions live in the `catalog` in `pnpm-workspace.yaml`, and packages refer to them as `"catalog:"`. Each package has its own `typecheck` and `test` scripts, plus `build` where there is something to build; the root scripts run them across the workspace.
 - **Libraries ship TypeScript source**: no build step. A library's `exports` points at `src/index.ts`, and Vite, Vitest and Node 24 (built-in type stripping) all run it directly.
@@ -180,7 +180,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 - **Data size in the browser**: tens of thousands of vectors and their graph can reach tens of megabytes. Fix: uint8 quantization, lazy loading, and starting from a subset of paintings.
 - **Museum data**: the Art Institute of Chicago (AIC) releases over 50,000 images under CC0 and asks for credit of artist, title and date. Its API docs recommend filtering the nightly data dump rather than querying the API, and downloading images one at a time, a second apart, at width 843.
 - **Performance**: downscale an image to about 256 px before k-means (area averaging in linear light, see Color spaces), and run it in a Worker.
-- **GitHub Pages while private** (not in the design doc): Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), and the published site is public even when the repo is private. Deferred: not a concern for now; revisit when deployment becomes relevant.
+- **Hosting while private** (decided Oct 5, 2026; not in the design doc): GitHub Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), so until the repo goes public at v1.0 the site lives on Cloudflare Pages, which serves private repos for free. CI uploads the tested `app/dist` with `wrangler`, using the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The site is public either way. The build uses relative paths, so it already works under `/PaletteAtlas/` for the move to GitHub Pages.
 
 ## What the project teaches
 
