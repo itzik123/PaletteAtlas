@@ -1,0 +1,342 @@
+/* The mockups of the artist pages' career barcodes (a dev-only page): one artist's career drawn in
+   every design, one under another, in the site's own look. */
+
+.mockups {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 8px 32px 64px;
+  /* Labels near the edge are cut off there rather than widening the page. */
+  overflow-x: clip;
+}
+
+.mockups h1 {
+  margin: 24px 0 12px;
+  font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.mockups-note {
+  max-width: 64ch;
+  margin: 0 0 28px;
+  font-size: 1.05rem;
+  font-weight: 550;
+}
+
+/* While the gallery loads, stripes march across the word. */
+.mockups-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 18px 22px;
+  border: var(--outline);
+  border-radius: 22px;
+  background: var(--card);
+  font-weight: 700;
+}
+
+.mockups[aria-busy='true'] .mockups-status {
+  background-image: linear-gradient(
+    45deg,
+    rgb(24 20 15 / 0.1) 25%,
+    transparent 25% 50%,
+    rgb(24 20 15 / 0.1) 50% 75%,
+    transparent 75%
+  );
+  background-size: 40px 40px;
+  animation: march 0.6s linear infinite;
+}
+
+.mockups-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 28px;
+}
+
+.mockups-controls:empty {
+  display: none;
+}
+
+.artist-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.artist-picker .chip {
+  cursor: pointer;
+}
+
+.artist-picker .chip:hover {
+  background: var(--yellow);
+}
+
+.artist-picker .chip[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.artist-search {
+  width: 200px;
+  padding: 4px 14px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+/* What each painting shows: three options on one capsule, the picked one inked. */
+.fill-picker {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 4px;
+  border: var(--outline);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+}
+
+.fill-picker label {
+  position: relative;
+  padding: 4px 16px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.fill-picker input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fill-picker label:hover {
+  background: var(--yellow);
+}
+
+.fill-picker label:has(input:checked) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.fill-picker label:has(input:focus-visible) {
+  outline: 4px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.artist-head {
+  margin: 44px 0 28px;
+}
+
+.artist-head h2 {
+  margin: 0 0 6px;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+}
+
+.artist-head p {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+/* One design: its letter and what it shows, over the barcode and the years marked under it. */
+.barcode-mockup {
+  margin: 0 0 76px;
+}
+
+.barcode-mockup figcaption {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  font-weight: 550;
+}
+
+.barcode-mockup figcaption b {
+  margin-right: 0.2em;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.design-letter {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: var(--outline);
+  border-radius: 12px;
+  background: var(--red);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.barcode-mockup:nth-of-type(2) .design-letter {
+  background: var(--blue);
+  color: var(--paper);
+}
+
+.barcode-mockup:nth-of-type(3) .design-letter {
+  background: var(--yellow);
+}
+
+.barcode-frame {
+  position: relative;
+}
+
+/* The sequence and the timeline lie on a card, like the site's strips. */
+.barcode-frame[data-carded] {
+  border: var(--outline);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+}
+
+.barcode-clip {
+  overflow: hidden;
+}
+
+/* Hatched where no painting lies, so a gap in the timeline never passes for a pale painting. */
+.barcode-frame[data-carded] .barcode-clip {
+  border-radius: 11px;
+  background: repeating-linear-gradient(-45deg, rgb(24 20 15 / 0.2) 0 2px, transparent 2px 9px);
+}
+
+.barcode-clip canvas {
+  display: block;
+  width: 100%;
+}
+
+.barcode-frame[data-empty] .barcode-clip {
+  min-height: 96px;
+}
+
+.barcode-frame[data-empty] .barcode-clip::before {
+  content: 'No painting dated closely enough to place';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+/* The skyline's columns stand on the ground, each cut out in ink with its own shadow: the
+   outline lies just outside the column, round its paintings. */
+.barcode-frame:not([data-carded])::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: -12px;
+  left: -12px;
+  height: calc(3px + var(--lift));
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.barcode-outlines span {
+  position: absolute;
+  box-sizing: content-box;
+  margin: -3px;
+  border: var(--outline);
+  border-radius: 4px;
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+  pointer-events: none;
+}
+
+/* The years, each marked where its paintings begin. */
+.barcode-ruler {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.barcode-frame:not([data-carded]) .barcode-ruler {
+  top: calc(100% + 3px + var(--lift) + 6px);
+}
+
+.barcode-tick {
+  position: absolute;
+  top: 0;
+  padding: 12px 0 0 6px;
+  border-left: 3px solid var(--ink);
+  font-size: 0.95rem;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* The painting pointed at, outlined in ink, with a ring of paper so it shows on dark bars too. */
+.barcode-cursor {
+  position: absolute;
+  z-index: 2;
+  border: 3px solid var(--ink);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 2.5px var(--card),
+    inset 0 0 0 2.5px var(--card);
+  pointer-events: none;
+}
+
+/* Its museum label, under the barcode: the picture, its title and its date. */
+.barcode-label {
+  position: absolute;
+  top: calc(100% + 16px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: min(380px, 100%);
+  padding: 8px 16px 8px 8px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.85rem;
+  font-weight: 550;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+.barcode-label img {
+  display: block;
+  flex: none;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.barcode-label b {
+  display: block;
+  font-weight: 800;
+}
+
+.barcode-cursor[hidden],
+.barcode-label[hidden] {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .mockups {
+    padding: 8px 16px 48px;
+  }
+
+  .artist-search {
+    width: 100%;
+  }
+}
