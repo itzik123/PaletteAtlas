@@ -1,6 +1,7 @@
 import type { RgbaImage } from '@palette-atlas/color';
 import {
   type Artist,
+  type ChunkFiles,
   CommonsImage,
   type Columns,
   chunkOf,
@@ -16,9 +17,7 @@ import { decodeImage } from '../image-adapters.ts';
 export const DATA_URL = './data/';
 
 /** A painting of the gallery, with all a page needs to show it. */
-export interface GalleryEntry {
-  /** Its place in the gallery, the most famous first. */
-  readonly position: number;
+export interface PaintingEntry {
   readonly painting: Painting;
   readonly artist: Artist;
   readonly image: CommonsImage;
@@ -26,21 +25,38 @@ export interface GalleryEntry {
   readonly strip: RgbaImage;
 }
 
+/** A painting at its place in the gallery. */
+export interface GalleryEntry extends PaintingEntry {
+  /** Its place in the gallery, the most famous first. */
+  readonly position: number;
+}
+
+/** An artist's career: their paintings dated closely enough to place, in the order they made them (see careers). */
+export interface Career {
+  readonly artist: Artist;
+  readonly paintings: readonly PaintingEntry[];
+}
+
 /**
  * The gallery's data, fetched only as pages need it: the manifest at the start, then chunks of
- * paintings with their strips, and the list of every painting's id only to find one by it.
+ * paintings with their strips, in gallery order or in the order of the artists' careers, and the
+ * lists of every painting's id and of every career's length only to find what a page shows.
  *
  * Virtual Proxy: each file is fetched and decoded on first use, once, however many ask for it.
  */
 export class GalleryData {
   readonly #url: string;
   readonly #manifest: GalleryManifest;
-  readonly #chunks = new Map<number, Promise<GalleryEntry[]>>();
+  readonly #gallery: PaintingChunks;
+  readonly #careers: PaintingChunks;
   #ids: Promise<readonly string[]> | undefined;
+  #careerLengths: Promise<readonly number[]> | undefined;
 
   private constructor(url: string, manifest: GalleryManifest) {
     this.#url = url;
     this.#manifest = manifest;
+    this.#gallery = new PaintingChunks(url, GALLERY_FILES.gallery, manifest);
+    this.#careers = new PaintingChunks(url, GALLERY_FILES.careers, manifest);
   }
 
   /** Fetches the gallery's manifest. */
@@ -55,13 +71,8 @@ export class GalleryData {
 
   /** The paintings from a position on, up to `count` of them. */
   async entries(from: number, count: number): Promise<GalleryEntry[]> {
-    const { chunkSize } = this.#manifest;
-    const end = Math.min(from + count, this.count);
-    if (from >= end) return [];
-    const first = chunkOf(from, chunkSize).chunk;
-    const last = chunkOf(end - 1, chunkSize).chunk;
-    const chunks = await Promise.all(Array.from({ length: last - first + 1 }, (_, index) => this.#chunk(first + index)));
-    return chunks.flat().slice(from - first * chunkSize, end - first * chunkSize);
+    const paintings = await this.#gallery.read(from, Math.min(from + count, this.count));
+    return paintings.map((entry, index) => ({ ...entry, position: from + index }));
   }
 
   /** The painting with a Wikidata item, if the gallery has it. */
@@ -71,7 +82,53 @@ export class GalleryData {
     return position < 0 ? undefined : (await this.entries(position, 1))[0];
   }
 
-  #chunk(chunk: number): Promise<GalleryEntry[]> {
+  /** How many paintings each artist's career has, in the order of the manifest's artists (Painting.artist). */
+  careerLengths(): Promise<readonly number[]> {
+    this.#careerLengths ??= fetchJson<readonly number[]>(`${this.#url}${GALLERY_FILES.careerLengths}`);
+    return this.#careerLengths;
+  }
+
+  /** The career of the artist with a Wikidata item, if the gallery has the artist. */
+  async career(id: string): Promise<Career | undefined> {
+    const artist = this.#manifest.artists.id.indexOf(id);
+    if (artist < 0) return undefined;
+    const lengths = await this.careerLengths();
+    // The careers lie one after another, in the order of the manifest's artists.
+    const start = lengths.slice(0, artist).reduce((sum, length) => sum + length, 0);
+    const paintings = await this.#careers.read(start, start + (lengths[artist] ?? 0));
+    return { artist: recordAt(this.#manifest.artists, artist), paintings };
+  }
+}
+
+/**
+ * Paintings stored in chunks (see ChunkFiles), read a run at a time: the gallery's, or the
+ * careers'.
+ *
+ * Virtual Proxy: each chunk is fetched and decoded on first use, once, however many ask for it.
+ */
+class PaintingChunks {
+  readonly #url: string;
+  readonly #files: ChunkFiles;
+  readonly #manifest: GalleryManifest;
+  readonly #chunks = new Map<number, Promise<PaintingEntry[]>>();
+
+  constructor(url: string, files: ChunkFiles, manifest: GalleryManifest) {
+    this.#url = url;
+    this.#files = files;
+    this.#manifest = manifest;
+  }
+
+  /** The paintings from `from` up to `end` (exclusive). */
+  async read(from: number, end: number): Promise<PaintingEntry[]> {
+    if (from >= end) return [];
+    const { chunkSize } = this.#manifest;
+    const first = chunkOf(from, chunkSize).chunk;
+    const last = chunkOf(end - 1, chunkSize).chunk;
+    const chunks = await Promise.all(Array.from({ length: last - first + 1 }, (_, index) => this.#chunk(first + index)));
+    return chunks.flat().slice(from - first * chunkSize, end - first * chunkSize);
+  }
+
+  #chunk(chunk: number): Promise<PaintingEntry[]> {
     let entries = this.#chunks.get(chunk);
     if (!entries) {
       entries = this.#readChunk(chunk);
@@ -82,10 +139,10 @@ export class GalleryData {
     return entries;
   }
 
-  async #readChunk(chunk: number): Promise<GalleryEntry[]> {
+  async #readChunk(chunk: number): Promise<PaintingEntry[]> {
     const [paintings, strips] = await Promise.all([
-      fetchJson<Columns<Painting>>(`${this.#url}${GALLERY_FILES.paintings(chunk)}`),
-      fetchOk(`${this.#url}${GALLERY_FILES.strips(chunk)}`).then(async (response) =>
+      fetchJson<Columns<Painting>>(`${this.#url}${this.#files.paintings(chunk)}`),
+      fetchOk(`${this.#url}${this.#files.strips(chunk)}`).then(async (response) =>
         // The strips are data: their bytes are colors already, to be taken as they are.
         decodeImage(await response.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' }),
       ),
@@ -93,7 +150,6 @@ export class GalleryData {
     return Array.from({ length: strips.height }, (_, row) => {
       const painting = recordAt(paintings, row);
       return {
-        position: chunk * this.#manifest.chunkSize + row,
         painting,
         artist: recordAt(this.#manifest.artists, painting.artist),
         image: new CommonsImage(painting.file, painting.hash, painting.width),

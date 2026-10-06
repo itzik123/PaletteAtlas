@@ -1,39 +1,12 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { THUMBNAIL_WIDTHS } from '@palette-atlas/gallery';
-import { expect, type Locator, type Page, test } from '@playwright/test';
-import { FIXTURE_CHUNK_SIZE, FIXTURE_GALLERY, FIXTURE_PAINTINGS, serveFixtureGallery } from './fixture-gallery.ts';
+import { GALLERY_FILES, THUMBNAIL_WIDTHS } from '@palette-atlas/gallery';
+import { expect, test } from '@playwright/test';
+import { FIXTURE_PAINTINGS, serveFixtureGallery } from './fixture-gallery.ts';
+import { canvasColors, storedStrip } from './stored-strips.ts';
 
 /** The axes' strips on a painting's page, by their accessible names. */
 const AXIS_STRIPS = ['Color strip', 'Hilbert strip', 'Columns strip', 'Radial strip'];
 
 test.beforeEach(({ page }) => serveFixtureGallery(page));
-
-/** A canvas's colors, four bytes per pixel. */
-function canvasColors(canvas: Locator): Promise<number[]> {
-  return canvas.evaluate((element: HTMLCanvasElement) => {
-    const context = element.getContext('2d');
-    if (!context) throw new Error('Canvas 2D is not available');
-    return Array.from(context.getImageData(0, 0, element.width, element.height).data);
-  });
-}
-
-/** A painting's color strip as the pipeline stored it in the fixture gallery, four bytes per segment, decoded by the browser. */
-async function storedStrip(page: Page, position: number): Promise<number[]> {
-  const file = join(FIXTURE_GALLERY, 'strips', `${Math.floor(position / FIXTURE_CHUNK_SIZE)}.png`);
-  const bytes = (await readFile(file)).toString('base64');
-  return page.evaluate(
-    async ({ bytes, row }) => {
-      const png = new Blob([Uint8Array.from(atob(bytes), (char) => char.charCodeAt(0))], { type: 'image/png' });
-      const bitmap = await createImageBitmap(png, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
-      const context = new OffscreenCanvas(bitmap.width, bitmap.height).getContext('2d');
-      if (!context) throw new Error('Canvas 2D is not available');
-      context.drawImage(bitmap, 0, 0);
-      return Array.from(context.getImageData(0, row, bitmap.width, 1).data);
-    },
-    { bytes, row: position % FIXTURE_CHUNK_SIZE },
-  );
-}
 
 test('hangs the paintings on the wall in gallery order, each over the color strip the pipeline stored', async ({ page }) => {
   await page.goto('/atlas.html');
@@ -51,7 +24,7 @@ test('hangs the paintings on the wall in gallery order, each over the color stri
     const src = await tile.locator('img').getAttribute('src');
     expect(src).toMatch(/^https:\/\/thumb\.wikimedia\.org\//);
     expect(THUMBNAIL_WIDTHS).toContain(Number(/\/(\d+)px-[^/]*$/.exec(src ?? '')?.[1]));
-    expect(await canvasColors(tile.locator('canvas')), title).toEqual(await storedStrip(page, position));
+    expect(await canvasColors(tile.locator('canvas')), title).toEqual(await storedStrip(page, GALLERY_FILES.gallery, position));
   }
 });
 
@@ -93,7 +66,7 @@ test('opens a painting’s page: its details, its credit, and its strips read in
   await expect(page.getByRole('link', { name: 'Wikidata' })).toHaveAttribute('href', 'https://www.wikidata.org/wiki/Q1217187');
   // Only the browser's reading draws the other axes; with it, the color strip is the browser's too.
   for (const name of AXIS_STRIPS) await expect(page.getByRole('img', { name })).toBeVisible();
-  expect(await canvasColors(page.getByRole('img', { name: 'Color strip' }))).toEqual(await storedStrip(page, 1));
+  expect(await canvasColors(page.getByRole('img', { name: 'Color strip' }))).toEqual(await storedStrip(page, GALLERY_FILES.gallery, 1));
 });
 
 test('opens a painting in the Studio from its page, read from the same image', async ({ page }) => {
@@ -102,7 +75,7 @@ test('opens a painting in the Studio from its page, read from the same image', a
   await expect(page).toHaveURL(/\/\?painting=Q1217187$/);
   await expect(page.locator('.studio')).toHaveAttribute('data-state', 'loaded');
   await expect(page.getByRole('img', { name: 'Calumny of Apelles' })).toBeVisible();
-  expect(await canvasColors(page.getByRole('img', { name: 'Strip' }))).toEqual(await storedStrip(page, 1));
+  expect(await canvasColors(page.getByRole('img', { name: 'Strip' }))).toEqual(await storedStrip(page, GALLERY_FILES.gallery, 1));
 });
 
 test('says so when a painting isn’t in the Atlas, and leads back to it', async ({ page }) => {

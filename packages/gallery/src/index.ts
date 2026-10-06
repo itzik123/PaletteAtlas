@@ -1,8 +1,10 @@
+export { careers, placedYear } from './careers.ts';
 export { type Columns, columnsOf, recordAt, recordCount } from './columns.ts';
 export { CommonsImage, THUMBNAIL_WIDTHS, type ThumbnailWidth, thumbnailWidthAtLeast } from './commons-image.ts';
 export {
   ARTIST_FIELDS,
   type Artist,
+  type ChunkFiles,
   type DatePrecision,
   GALLERY_FILES,
   type GalleryManifest,

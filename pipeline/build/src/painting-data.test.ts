@@ -1,7 +1,9 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { RgbaImage } from '@palette-atlas/color';
 import {
+  type ChunkFiles,
   type Columns,
   CommonsImage,
   chunkOf,
@@ -15,6 +17,7 @@ import {
 } from '@palette-atlas/gallery';
 import { ImageStrips } from '@palette-atlas/strip';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { buildCareers } from './career-data.ts';
 import { readCatalog } from './catalog.ts';
 import { readImage } from './image-file.ts';
 import { type BuildReport, buildPaintings } from './painting-data.ts';
@@ -34,6 +37,20 @@ const HELD_BACK = { ids: ['Q1747569'], position: 2 };
 /** Starting worker threads and reading three images can take seconds on a slow machine. */
 const TIMEOUT_MS = 30_000;
 
+/** The first `count` paintings stored in chunks, with their strips, read straight from the files. */
+async function readStored(folder: string, files: ChunkFiles, count: number): Promise<{ paintings: Painting[]; strips: RgbaImage[] }> {
+  const positions = Array.from({ length: count }, (_, position) => chunkOf(position, CHUNK_SIZE));
+  const chunks = [...new Set(positions.map(({ chunk }) => chunk))];
+  const records = await Promise.all(
+    chunks.map(async (chunk) => JSON.parse(await readFile(join(folder, files.paintings(chunk)), 'utf8')) as Columns<Painting>),
+  );
+  const images = await Promise.all(chunks.map((chunk) => readImage(join(folder, files.strips(chunk)))));
+  return {
+    paintings: positions.map(({ chunk, row }) => recordAt(records[chunk], row)),
+    strips: positions.map(({ chunk, row }) => stripInRow(images[chunk], row)),
+  };
+}
+
 describe('buildPaintings', () => {
   let output: string;
   let report: BuildReport;
@@ -48,10 +65,8 @@ describe('buildPaintings', () => {
     } finally {
       await pool.close();
     }
-    const read = async <T>(file: string): Promise<T> => JSON.parse(await readFile(join(output, file), 'utf8')) as T;
-    manifest = await read(GALLERY_FILES.manifest);
-    const chunks = await Promise.all([0, 1].map((chunk) => read<Columns<Painting>>(GALLERY_FILES.paintings(chunk))));
-    paintings = chunks.flatMap((columns) => Array.from({ length: recordCount(columns) }, (_, row) => recordAt(columns, row)));
+    manifest = JSON.parse(await readFile(join(output, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
+    ({ paintings } = await readStored(output, GALLERY_FILES.gallery, manifest.count));
   }, TIMEOUT_MS);
 
   afterAll(() => rm(output, { recursive: true, force: true }));
@@ -84,11 +99,34 @@ describe('buildPaintings', () => {
         const { strips } = ImageStrips.read(await readImage(join(FIXTURE, 'images', `${painting.id}.jpg`)));
         const expected = strips.find(({ axis }) => axis === 'color')?.strip.toImage();
         const { chunk, row } = chunkOf(position, manifest.chunkSize);
-        const stored = stripInRow(await readImage(join(output, GALLERY_FILES.strips(chunk))), row);
+        const stored = stripInRow(await readImage(join(output, GALLERY_FILES.gallery.strips(chunk))), row);
         expect(stored.width).toBe(manifest.segments);
         expect(Buffer.from(stored.data).equals(Buffer.from(expected?.data ?? [])), painting.id).toBe(true);
       }
     },
     TIMEOUT_MS,
   );
+
+  it('writes every artist’s career: their dated paintings in the order they made them, artist after artist, with their strips', async () => {
+    const lengths = JSON.parse(await readFile(join(output, GALLERY_FILES.careerLengths), 'utf8')) as number[];
+    // Each artist has one painting here, dated closely enough to place.
+    expect(lengths).toEqual([1, 1, 1, 1]);
+    expect(recordCount(manifest.artists)).toBe(lengths.length);
+    const gallery = await readStored(output, GALLERY_FILES.gallery, manifest.count);
+    const career = await readStored(output, GALLERY_FILES.careers, 4);
+    expect(career.paintings.map(({ artist }) => artist)).toEqual([0, 1, 2, 3]);
+    for (const [index, painting] of career.paintings.entries()) {
+      const position = paintings.findIndex(({ id }) => id === painting.id);
+      expect(painting).toEqual(paintings[position]);
+      expect(Buffer.from(career.strips[index].data).equals(Buffer.from(gallery.strips[position].data)), painting.id).toBe(true);
+    }
+  });
+
+  it('rebuilds the very same careers from the gallery’s own files, reading no image again', async () => {
+    const files = [GALLERY_FILES.careerLengths, ...[0, 1].flatMap((chunk) => [GALLERY_FILES.careers.paintings(chunk), GALLERY_FILES.careers.strips(chunk)])];
+    const written = await Promise.all(files.map((file) => readFile(join(output, file))));
+    await Promise.all([GALLERY_FILES.careerLengths, ...GALLERY_FILES.careers.folders].map((name) => rm(join(output, name), { recursive: true })));
+    expect(await buildCareers(output)).toEqual({ artists: 4, paintings: 4 });
+    for (const [index, file] of files.entries()) expect((await readFile(join(output, file))).equals(written[index]), file).toBe(true);
+  });
 });

@@ -8,17 +8,22 @@ interface Span {
 }
 
 /**
- * Shrinks an image until its longer side is at most maxSide pixels, by area averaging in
- * linear light: each new pixel holds the light of the source area it covers, with partly
- * covered pixels weighted by their overlap. Canvas and createImageBitmap scaling usually blend
- * the encoded sRGB values instead, which darkens fine bright detail. An image that already
- * fits comes back as it is.
+ * Shrinks an image until its longer side is at most maxSide pixels, by area averaging in linear
+ * light (see resize). An image that already fits comes back as it is.
  */
 export function downscale(image: RgbaImage, maxSide: number): RgbaImage {
   const scale = maxSide / Math.max(image.width, image.height);
   if (scale >= 1) return image;
-  const width = Math.max(1, Math.round(image.width * scale));
-  const height = Math.max(1, Math.round(image.height * scale));
+  return resize(image, Math.max(1, Math.round(image.width * scale)), Math.max(1, Math.round(image.height * scale)));
+}
+
+/**
+ * Resizes an image to width × height pixels, larger or smaller and each side on its own, by area
+ * averaging in linear light: each new pixel holds the light of the source area it covers, with
+ * partly covered pixels weighted by their overlap. Canvas and createImageBitmap scaling usually
+ * blend the encoded sRGB values instead, which darkens fine bright detail.
+ */
+export function resize(image: RgbaImage, width: number, height: number): RgbaImage {
   const columns = spans(image.width, width);
   const rows = spans(image.height, height);
   const data = new Uint8ClampedArray(width * height * BYTES_PER_PIXEL);

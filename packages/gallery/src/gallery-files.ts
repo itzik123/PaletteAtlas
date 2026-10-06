@@ -4,22 +4,49 @@ import type { ThumbnailWidth } from './commons-image.ts';
 // The gallery's data as the pipeline writes it (pnpm paintings) and the site reads it, in
 // app/public/data:
 //
-//   gallery.json          the manifest: GalleryManifest, with every artist
-//   ids.json              every painting's Wikidata item, in gallery order, to find one by it
-//   paintings/<k>.json    chunk k's paintings, as Columns<Painting>
-//   strips/<k>.png        chunk k's color strips, a row each (see packStrips)
+//   gallery.json            the manifest: GalleryManifest, with every artist
+//   ids.json                every painting's Wikidata item, in gallery order, to find one by it
+//   paintings/<k>.json      chunk k of the paintings in gallery order, as Columns<Painting>
+//   strips/<k>.png          their color strips, a row each (see packStrips)
+//   careers.json            how many paintings each artist's career has, in the manifest's order
+//   careers/<k>.json        chunk k of the careers (see careers), artist after artist in that order
+//   career-strips/<k>.png   their color strips
 
-const PAINTINGS_FOLDER = 'paintings';
-const STRIPS_FOLDER = 'strips';
+/**
+ * Paintings stored in chunks of GalleryManifest.chunkSize (see chunkOf): a file of their records
+ * and an image of their color strips per chunk.
+ */
+export interface ChunkFiles {
+  /** Chunk k's paintings, as Columns<Painting>. */
+  readonly paintings: (chunk: number) => string;
+  /** Chunk k's color strips, a row each (see packStrips). */
+  readonly strips: (chunk: number) => string;
+  /** The folders that hold the chunks. */
+  readonly folders: readonly string[];
+}
+
+function chunkFiles(paintingsFolder: string, stripsFolder: string): ChunkFiles {
+  return {
+    paintings: (chunk) => `${paintingsFolder}/${chunk}.json`,
+    strips: (chunk) => `${stripsFolder}/${chunk}.png`,
+    folders: [paintingsFolder, stripsFolder],
+  };
+}
 
 /** The gallery's files, relative to its data folder. */
 export const GALLERY_FILES = {
   manifest: 'gallery.json',
   ids: 'ids.json',
-  paintings: (chunk: number): string => `${PAINTINGS_FOLDER}/${chunk}.json`,
-  strips: (chunk: number): string => `${STRIPS_FOLDER}/${chunk}.png`,
-  /** The folders that hold the chunks. */
-  folders: [PAINTINGS_FOLDER, STRIPS_FOLDER],
+  /** The paintings in gallery order, the most famous first. */
+  gallery: chunkFiles('paintings', 'strips'),
+  /** How many paintings each artist's career has, in the order of the manifest's artists. */
+  careerLengths: 'careers.json',
+  /**
+   * The artists' careers (see careers), one after another in the order of the manifest's artists:
+   * an artist's page loads their paintings in the order they made them from a chunk or two,
+   * rather than from every chunk of the gallery.
+   */
+  careers: chunkFiles('careers', 'career-strips'),
 } as const;
 
 /**

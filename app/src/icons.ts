@@ -49,6 +49,27 @@ export const ATLAS_ICON = icon(
 
 export const BACK_ICON = icon('<path d="M19 12H5M11 6l-6 6 6 6"/>');
 
+/** Bars of a barcode, for an artist's Career Barcode. */
+export const BARCODE_ICON = icon(
+  [
+    [3, 2.2],
+    [6.6, 1.2],
+    [9.2, 2.6],
+    [13.2, 1.2],
+    [15.8, 2.2],
+    [19.4, 1.6],
+  ]
+    .map(([x, width]) => `<rect x="${x}" y="4" width="${width}" height="16" rx="0.6"/>`)
+    .join(''),
+  'fill="currentColor"',
+);
+
+/** A bar banded like a strip, for a barcode whose bars show each painting's color strip. */
+export const STRIP_FILL_ICON = icon('<rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 8.5h12M6 13h12M6 17.5h12"/>');
+
+/** A solid bar, for a barcode whose bars show each painting's average color. */
+export const AVERAGE_FILL_ICON = icon('<rect x="6" y="2.5" width="12" height="19" rx="2" fill="currentColor"/>');
+
 /** An arrow out of a box, for a link to another site. */
 export const OUT_ICON = icon('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>');
 

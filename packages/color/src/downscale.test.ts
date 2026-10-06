@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BYTES_PER_PIXEL, downscale, LinearRgb, type RgbaImage } from './index.ts';
+import { BYTES_PER_PIXEL, downscale, LinearRgb, type RgbaImage, resize } from './index.ts';
 
 type Pixel = readonly [red: number, green: number, blue: number, alpha: number];
 
@@ -40,5 +40,25 @@ describe('downscale', () => {
   it('returns an image that already fits as it is', () => {
     const small = image(2, BLACK, WHITE);
     expect(downscale(small, 2)).toBe(small);
+  });
+});
+
+describe('resize', () => {
+  it('enlarges by area as well, blending only where a new pixel straddles two old ones', () => {
+    const blackWhite = image(2, BLACK, WHITE);
+    expect(pixelsOf(resize(blackWhite, 4, 1))).toEqual([BLACK, BLACK, WHITE, WHITE]);
+    // The middle pixel is half black and half white: half the light.
+    const half = [...new LinearRgb(0.5, 0.5, 0.5).toSrgb().toBytes(), OPAQUE];
+    expect(pixelsOf(resize(blackWhite, 3, 1))).toEqual([BLACK, half, WHITE]);
+  });
+
+  it('scales each side on its own', () => {
+    const blackOverWhite = image(1, BLACK, WHITE);
+    expect(pixelsOf(resize(blackOverWhite, 3, 4))).toEqual([...Array(6).fill(BLACK), ...Array(6).fill(WHITE)]);
+  });
+
+  it('shrinks as downscale does', () => {
+    const checkerboard = image(2, BLACK, WHITE, WHITE, BLACK);
+    expect(resize(checkerboard, 1, 1)).toEqual(downscale(checkerboard, 1));
   });
 });

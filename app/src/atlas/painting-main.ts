@@ -15,15 +15,22 @@ app.append(new SiteHeader('atlas').element);
 // The painting is named by its Wikidata item: painting.html?id=Q12418.
 const id = new URLSearchParams(location.search).get('id');
 GalleryData.load()
-  .then((data) => (id ? data.find(id) : undefined))
+  .then((data) =>
+    Promise.all([
+      id ? data.find(id) : undefined,
+      // Without them, the page shows no way to the artist's Career Barcode.
+      data.careerLengths().catch((): readonly number[] => []),
+    ]),
+  )
   .then(
-    (entry) => {
+    ([entry, careerLengths]) => {
       if (!entry) {
         app.append(missingPage('This painting isn’t in the Atlas.'));
         return;
       }
       document.title = `${titleOf(entry.painting)} · Palette Atlas`;
-      app.append(new PaintingPage(entry, new StripReader()).element);
+      const hasCareer = (careerLengths[entry.painting.artist] ?? 0) > 0;
+      app.append(new PaintingPage(entry, new StripReader(), hasCareer).element);
     },
     () => app.append(missingPage('This painting didn’t load.')),
   );

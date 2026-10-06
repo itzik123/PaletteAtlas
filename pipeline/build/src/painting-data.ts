@@ -1,4 +1,4 @@
-import { access, mkdir, rm, writeFile } from 'node:fs/promises';
+import { access, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { RgbaImage } from '@palette-atlas/color';
 import {
@@ -8,14 +8,13 @@ import {
   columnsOf,
   GALLERY_FILES,
   type GalleryManifest,
-  PAINTING_FIELDS,
   type Painting,
-  packStrips,
   SOURCE_WIDTH,
 } from '@palette-atlas/gallery';
 import { type AxisName, STRIP_SEGMENTS } from '@palette-atlas/strip';
+import { writeCareers } from './career-data.ts';
 import { type Catalog, CATALOG_FILE, readCatalog, type Work } from './catalog.ts';
-import { writePng } from './image-file.ts';
+import { writeChunks } from './chunk-files.ts';
 import type { StripPool } from './strip-pool.ts';
 
 /** Paintings per chunk (see chunkOf): a chunk's strips take about 150 KB. */
@@ -63,9 +62,9 @@ export interface BuildReport {
 
 /**
  * Reads the color strip of every downloaded painting in the fetch step's catalog folder and
- * writes the gallery's files (see GALLERY_FILES) to the output folder, replacing any earlier
- * build there. Left out: the colorless paintings, those whose image fails to decode, and those
- * whose image the site couldn't link to.
+ * writes the gallery's files (see GALLERY_FILES) to the output folder, the artists' careers
+ * included, replacing any earlier build there. Left out: the colorless paintings, those whose
+ * image fails to decode, and those whose image the site couldn't link to.
  */
 export async function buildPaintings(
   catalogFolder: string,
@@ -152,7 +151,7 @@ function holdBack(paintings: readonly KeptPainting[], { ids, position }: HeldBac
   return others;
 }
 
-/** Writes the gallery's files, emptying their folders first so nothing of an earlier build stays. */
+/** Writes the gallery's files, then the artists' careers drawn up from them. */
 async function writeGallery(paintings: readonly KeptPainting[], catalog: Catalog, folder: string, chunkSize: number): Promise<void> {
   const artistIds = [...new Set(paintings.map(({ work }) => work.artist))];
   const artistIndex = new Map(artistIds.map((id, index) => [id, index]));
@@ -164,25 +163,15 @@ async function writeGallery(paintings: readonly KeptPainting[], catalog: Catalog
     segments: STRIP_SEGMENTS,
     artists: columnsOf(artists, ARTIST_FIELDS),
   };
-  const records = paintings.map(({ work, image }) => painting(work, image, artistIndex.get(work.artist) ?? -1));
+  const gallery = {
+    paintings: paintings.map(({ work, image }) => painting(work, image, artistIndex.get(work.artist) ?? -1)),
+    strips: paintings.map(({ strip }) => strip),
+  };
 
-  for (const subfolder of GALLERY_FILES.folders.map((name) => join(folder, name))) {
-    await rm(subfolder, { recursive: true, force: true });
-    await mkdir(subfolder, { recursive: true });
-  }
   await writeFile(join(folder, GALLERY_FILES.manifest), JSON.stringify(manifest));
-  await writeFile(join(folder, GALLERY_FILES.ids), JSON.stringify(records.map(({ id }) => id)));
-  const strips = packStrips(
-    paintings.map(({ strip }) => strip),
-    STRIP_SEGMENTS,
-    chunkSize,
-  );
-  for (const [chunk, image] of strips.entries()) {
-    const chunkRecords = records.slice(chunk * chunkSize, (chunk + 1) * chunkSize);
-    await writeFile(join(folder, GALLERY_FILES.paintings(chunk)), JSON.stringify(columnsOf(chunkRecords, PAINTING_FIELDS)));
-    // Every strip is opaque, so the alpha channel would only take room.
-    await writePng(join(folder, GALLERY_FILES.strips(chunk)), image, { opaque: true });
-  }
+  await writeFile(join(folder, GALLERY_FILES.ids), JSON.stringify(gallery.paintings.map(({ id }) => id)));
+  await writeChunks(folder, GALLERY_FILES.gallery, gallery, chunkSize);
+  await writeCareers(folder, gallery, artists, chunkSize);
 }
 
 function painting(work: Work, image: CommonsImage, artist: number): Painting {

@@ -1,11 +1,13 @@
-import { SOURCE_WIDTH } from '@palette-atlas/gallery';
-import { BACK_ICON, OUT_ICON, PAN_ICON, STUDIO_ICON } from '../icons.ts';
+import { type Artist, SOURCE_WIDTH } from '@palette-atlas/gallery';
+import { BACK_ICON, BARCODE_ICON, OUT_ICON, PAN_ICON, STUDIO_ICON } from '../icons.ts';
 import type { StripReader } from '../studio/strip-reader.ts';
 import { AxisStrips } from './axis-strips.ts';
 import type { GalleryEntry } from './gallery-data.ts';
 import { dateOf, lifespanOf, nameOf, titleOf } from './painting-text.ts';
 import { PaintingView } from './painting-view.ts';
 
+/** What the site calls an artist's page. */
+const CAREER_BARCODE = 'Career Barcode';
 /** The axis of the strip the gallery stores for every painting. */
 const STORED_AXIS = 'color';
 /** Paintings at least this many times as wide as they are tall span the page, their details below them. */
@@ -19,11 +21,12 @@ const TITLE_LENGTHS = { long: 30, longer: 70 } as const;
 /**
  * One painting of the Atlas: the picture large, its details and credit, and its strip along every
  * axis, read in the browser from the same image on Commons that the gallery's strip was read from.
+ * Beside the artist's name, a button leads to their Career Barcode, if they have one.
  */
 export class PaintingPage {
   readonly element = document.createElement('main');
 
-  constructor(entry: GalleryEntry, reader: StripReader) {
+  constructor(entry: GalleryEntry, reader: StripReader, hasCareer: boolean) {
     const { painting, artist, image } = entry;
     const aspect = painting.width / painting.height;
     this.element.className = 'painting-page';
@@ -35,7 +38,7 @@ export class PaintingPage {
       </div>
       <section class="painting-info">
         <h1></h1>
-        <p class="painting-artist"><b></b> <span></span></p>
+        <div class="painting-byline"><p class="painting-artist"><b></b> <span></span></p></div>
         <p class="painting-when"><b class="painting-date"></b> <span class="painting-collection"></span></p>
         <p class="painting-links">
           <span class="chip license">${painting.license === 'cc0' ? 'CC0' : 'Public domain'}</span>
@@ -51,6 +54,7 @@ export class PaintingPage {
     title.dataset.length = length > TITLE_LENGTHS.longer ? 'longer' : length > TITLE_LENGTHS.long ? 'long' : 'short';
     this.element.querySelector('.painting-artist b')!.textContent = nameOf(artist);
     this.element.querySelector('.painting-artist span')!.textContent = `(${lifespanOf(artist)})`;
+    if (hasCareer) this.element.querySelector('.painting-byline')?.append(careerLink(artist));
     this.element.querySelector('.painting-date')!.textContent = dateOf(painting);
     this.element.querySelector('.painting-collection')!.textContent = painting.collection ?? '';
     this.element.querySelector('.back')?.addEventListener('click', (event) => {
@@ -78,6 +82,16 @@ export class PaintingPage {
       })
       .catch(() => strips.done());
   }
+}
+
+/** The way to an artist's Career Barcode: a barcode, named in a tooltip while pointed at. */
+function careerLink(artist: Artist): HTMLAnchorElement {
+  const link = document.createElement('a');
+  link.className = 'career-link';
+  link.href = `./artist.html?id=${artist.id}`;
+  link.setAttribute('aria-label', CAREER_BARCODE);
+  link.innerHTML = `${BARCODE_ICON}<span class="tooltip" aria-hidden="true">${CAREER_BARCODE}</span>`;
+  return link;
 }
 
 /** Whether the visitor came to this page from the Atlas's wall, in this same tab. */

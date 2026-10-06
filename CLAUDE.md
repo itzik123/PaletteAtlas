@@ -66,6 +66,7 @@ Decided Oct 5, 2026, at the start of phase 3:
 - **Few words**: icons and shapes carry the interface. The explanation waits behind the "How it works" button in the header, beside a link to the GitHub repository.
 - **Images come in every way**: dropped anywhere on the page, chosen in the file picker, pasted, or picked from the sample wall: four famous public-domain paintings (the Mona Lisa from Wikimedia Commons, three CC0 works from the AIC), each in a flat version of its museum's frame, credited in "How it works". A feature that can't fit this look is left out rather than added anyway.
 - **Studio | Atlas** (Oct 6, 2026): a two-tab switch in the header, which floats at the bottom of the screen on a phone. The Atlas is a wall of paintings at their own shapes in justified rows, each over its color strip, with a museum label on hover (chosen over a card grid and a shelf of strips), and coming back to it from a painting returns to the same place on the wall. Each painting has its own page, with nothing over the picture: the picture on a card, and beside it "← Atlas", the details, the four strips and "Open in Studio" under them. Every painting's page fits a desktop window without scrolling (checked for all of them at 1280×720, 1440×800, 1536×730 and 1920×950). A painting wider than 2:1 spans the page with the rest below it, and one too wide to see whole (a handscroll) pans sideways.
+- **Career Barcode** (Oct 6, 2026): each artist's page (`artist.html?id=`) draws their career as a barcode, every painting one bar of the same width, oldest first (chosen over a timeline with the years to scale and a skyline of each year's paintings piled up). A painting has a place in it if Wikidata dates it to the year or the decade (placed in the decade's middle) within the artist's life; 698 of the 9,071 artists have none. A switch shows each bar as the painting's color strip on end, darker end at the bottom (first), or as its average color. The barcode takes the height the artist's name leaves on the screen, so the page fits a desktop window like a painting's; pointing at a bar shows the painting's museum label, and a click opens its page. Every painting's page leads there by a barcode button beside the artist's name, with a "Career Barcode" tooltip, unless the artist has no career.
 
 ## Architecture
 
@@ -75,7 +76,7 @@ TypeScript libraries with no browser dependency, shared by an offline data pipel
 - `strip`: image to strip (Hilbert, TSP)
 - `vectorize`: strip to vector (soft histogram, Hellinger)
 - `hnsw`: index and search (search, trace)
-- `gallery` (added Oct 6, 2026): the gallery's data format, which the pipeline writes and the site reads: paintings stored by column, color strips packed into chunk images, and Commons links rebuilt from file names (`CommonsImage`)
+- `gallery` (added Oct 6, 2026): the gallery's data format, which the pipeline writes and the site reads: paintings stored by column, color strips packed into chunk images, Commons links rebuilt from file names (`CommonsImage`), and the artists' careers, their paintings in the order made (`careers`)
 
 Both sides import the same libraries:
 
@@ -91,7 +92,7 @@ Two design decisions from day one:
 
 **Color spaces** (decided Oct 4, 2026, after comparing them on the benchmark images):
 
-- **Linear light for averaging**: strip segments and any downscaling, including the 256 px shrink before k-means. We shrink images ourselves by area averaging in linear light, because canvas and `createImageBitmap` scaling usually blend the encoded sRGB values.
+- **Linear light for averaging**: strip segments and any resizing, including the 256 px shrink before k-means and the career barcodes. We resize images ourselves by area averaging in linear light (`resize`), because canvas and `createImageBitmap` scaling usually blend the encoded sRGB values.
 - **OKLab for perception**: gradients, k-means, color distances and palette ordering. k-means measures lightness through Ottosson's toe (L_r, as in Okhsl), so near-blacks that look alike share one palette color instead of taking several. Palette ordering and the color axis work in the same toe-corrected space (OKLrab), so each pixel joins the palette color k-means would put it with.
 - **Palettes cover their image** (decided Oct 4, 2026, after the Phase 2 audit): k-means alone folds a small distinct accent (the cube's green spheres) into a large cluster nearby, and its pixels then show as a foreign band inside that color's stretch of the strip. So a palette starts at 8 colors and grows while more than 0.5% of the pixels lie farther than 0.15 from every palette color, up to the 16 that Held-Karp orders (`CoveringKMeans`, `PALETTE_COVERAGE`).
 
@@ -181,7 +182,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 - **Scope** is the main risk. The Lab is the heavy part, so it comes after there is already a product that stands on its own.
 - **Vector representation**: start with a soft histogram over a color vocabulary in OKLab, with Hellinger distance. Take the square root of each proportion and use plain Euclidean distance, so HNSW needs no special metric. A 3×3 grid of average colors can be added so layout counts too; decide by what looks right in the gallery.
 - **Non-square images** (decided Oct 4, 2026): the classic Hilbert curve is defined on a square whose side is a power of 2, so the Hilbert axis uses Jakub Červený's generalized curve ("gilbert"), which fills any rectangle without jumps (at most one diagonal step) and matches the classic curve on those squares. No padding or cropping.
-- **Data size in the browser**: 50,000 vectors and their graph can reach tens of megabytes. Fix: uint8 quantization and loading in chunks as needed. The strips were settled on Oct 6, 2026: only the color axis ships (about 7.5 MB for 50,000), and pages load a chunk at a time.
+- **Data size in the browser**: 50,000 vectors and their graph can reach tens of megabytes. Fix: uint8 quantization and loading in chunks as needed. The strips were settled on Oct 6, 2026: only the color axis ships (about 7.5 MB for 50,000), and pages load a chunk at a time. The careers repeat the dated paintings and their strips in each artist's order (about 14 MB more), so an artist's page loads a chunk or two rather than the whole gallery.
 - **Painting data** (decided Oct 5, 2026, at the start of phase 4; replaces the design doc's AIC data dump): the AIC has only 1,875 public-domain paintings with images, too few to find a painting that truly resembles a user's photo, and too few to give HNSW a real job. Five museum APIs together (the Met, Rijksmuseum, SMK, Cleveland, AIC) hold about 30,000; Wikidata lists 247,000 paintings with a Commons image by artists who died over 70 years ago, from hundreds of museums. So:
   - **Catalog**: Wikidata, queried through QLever (`qlever.dev/api/wikidata`), which returns the whole catalog in about 25 s; the official query service times out at 60 s on it. A painting qualifies with one artist, an image, a collection and a date, its artist dead for 70 years or more.
   - **Selection**: about 50,000 (a setting), the most famous first (by how many Wikipedias have an article on it), then a seeded draw from the rest.
@@ -215,6 +216,7 @@ pnpm strips      # write the benchmark images' strips to benchmark/strips, the t
 python pipeline/fetch/fetch.py catalog   # choose the paintings on Wikidata and Commons (about 30 min)
 python pipeline/fetch/fetch.py images    # download their images to pipeline/data (hours; rerun to resume)
 pnpm paintings   # read the downloaded paintings' strips into app/public/data (check: /benchmark.html)
+pnpm careers     # rebuild the artists' careers from app/public/data in seconds (pnpm paintings writes them too)
 ```
 
 Development happens on Windows (PowerShell). `.gitattributes` keeps every text file LF.
