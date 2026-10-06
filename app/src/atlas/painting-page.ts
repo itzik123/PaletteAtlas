@@ -5,6 +5,7 @@ import { AxisStrips } from './axis-strips.ts';
 import type { GalleryEntry } from './gallery-data.ts';
 import { dateOf, lifespanOf, nameOf, titleOf } from './painting-text.ts';
 import { PaintingView } from './painting-view.ts';
+import { PictureLightbox } from './picture-lightbox.ts';
 
 /** What the site calls an artist's page. */
 const CAREER_BARCODE = 'Career Barcode';
@@ -65,7 +66,11 @@ export class PaintingPage {
       }
     });
 
-    this.element.querySelector('.painting-frame')?.prepend(new PaintingView(image, aspect, titleOf(painting)).element);
+    const view = new PaintingView(image, aspect, titleOf(painting));
+    this.element.querySelector('.painting-frame')?.prepend(view.element);
+    const enlarged = new PictureLightbox(image, painting, titleOf(painting), painting.id);
+    enlarged.openOnClick(view.element);
+    this.element.append(enlarged.element);
 
     const strips = new AxisStrips({ axis: STORED_AXIS, colors: entry.strip });
     this.element.querySelector('.open-studio')?.before(strips.element);

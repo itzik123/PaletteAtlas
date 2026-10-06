@@ -1165,6 +1165,163 @@ a.chip:hover {
   }
 }
 
+/* A painting enlarged over its page (see PictureLightbox): as large as fits, in its frame, the page
+   darkened behind it. It rises into place, and sinks back away. */
+.painting-view {
+  cursor: zoom-in;
+}
+
+.lightbox {
+  --w: 30px;
+  --sunk: translateY(18px) scale(0.95);
+  max-width: none;
+  max-height: none;
+  padding: var(--w);
+  overflow: visible;
+  border: 4px solid var(--ink);
+  box-shadow: 10px 10px 0 var(--ink);
+  cursor: zoom-out;
+  opacity: 0;
+  transform: var(--sunk);
+  transition:
+    opacity 0.22s ease,
+    transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.15),
+    overlay 0.3s allow-discrete,
+    display 0.3s allow-discrete;
+}
+
+.lightbox[open] {
+  opacity: 1;
+  transform: none;
+}
+
+.lightbox::backdrop {
+  background: rgb(24 20 15 / 0);
+  transition:
+    background 0.3s ease,
+    overlay 0.3s allow-discrete,
+    display 0.3s allow-discrete;
+}
+
+.lightbox[open]::backdrop {
+  background: rgb(24 20 15 / 0.78);
+}
+
+@starting-style {
+  .lightbox[open] {
+    opacity: 0;
+    transform: var(--sunk);
+  }
+
+  .lightbox[open]::backdrop {
+    background: rgb(24 20 15 / 0);
+  }
+}
+
+/* As large as the screen allows, with room round the frame. */
+.lightbox img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: calc(100vw - 2 * var(--w) - 96px);
+  max-height: calc(100vh - 2 * var(--w) - 96px);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+/* The frames: flat versions of a museum's, as the Studio's samples wear them. */
+.lightbox.carved-gilt {
+  --w: 34px;
+  background:
+    radial-gradient(circle, #9c6a17 2.4px, transparent 3px) 0 0 / 12px 12px,
+    linear-gradient(135deg, #f0c75a, #c99429);
+  box-shadow:
+    10px 10px 0 var(--ink),
+    inset 0 0 0 5px #6b4510;
+}
+
+.lightbox.carved-gilt img {
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 9px #7a4f12,
+    0 0 0 11px var(--ink);
+}
+
+.lightbox.beaded-gilt {
+  --w: 28px;
+  background: linear-gradient(135deg, #ecbd52, #c48f2a);
+}
+
+.lightbox.beaded-gilt img {
+  outline: 3px dotted #fff1c4;
+  outline-offset: 5px;
+}
+
+.lightbox.lacquer-mat {
+  --w: 52px;
+  background: #2b2520;
+}
+
+.lightbox.lacquer-mat img {
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 34px #efe5cf,
+    0 0 0 36px var(--ink);
+}
+
+.lightbox.walnut {
+  --w: 30px;
+  background: repeating-linear-gradient(100deg, #5a3a22 0 6px, #6b4528 6px 13px, #4d311c 13px 17px);
+  box-shadow:
+    10px 10px 0 var(--ink),
+    inset 0 0 0 4px #2e1d10;
+}
+
+.lightbox.walnut img {
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 7px #c9a46a,
+    0 0 0 9px var(--ink);
+}
+
+/* Ornamented gilt round a deep red velvet liner, and a thin gilt fillet at the picture. */
+.lightbox.velvet-gilt {
+  --w: 42px;
+  background:
+    radial-gradient(circle, #9c6a17 2px, transparent 2.6px) 0 0 / 10px 10px,
+    linear-gradient(135deg, #f3cf6a, #b8841f);
+  box-shadow:
+    10px 10px 0 var(--ink),
+    inset 0 0 0 5px #6b4510;
+}
+
+.lightbox.velvet-gilt img {
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 6px #e9c25a,
+    0 0 0 22px #7a1c24,
+    0 0 0 24px var(--ink);
+}
+
+/* Hatched silver leaf round a black bevel strung with silver beads. */
+.lightbox.silver-leaf {
+  --w: 38px;
+  background:
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.35) 0 2px, transparent 2px 7px),
+    linear-gradient(135deg, #eef0f2, #9aa1a8 55%, #d9dde1);
+  box-shadow:
+    10px 10px 0 var(--ink),
+    inset 0 0 0 5px #4b5057;
+}
+
+.lightbox.silver-leaf img {
+  outline: 3px dotted #f7f8fa;
+  outline-offset: 7px;
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 15px #2a2d31,
+    0 0 0 17px var(--ink);
+}
+
 /* What isn't there */
 
 .missing-page {

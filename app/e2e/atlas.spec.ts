@@ -149,3 +149,17 @@ test('pans a painting too wide to see at the screen’s width, by dragging it si
   await page.mouse.up();
   expect(await view.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
 });
+
+test('enlarges a painting over its page on a click, and puts it away on another, or on Escape', async ({ page }) => {
+  await page.goto('/painting.html?id=Q1217187');
+  const picture = page.getByRole('img', { name: 'Calumny of Apelles' });
+  const enlarged = page.getByRole('dialog', { name: 'Calumny of Apelles' });
+  await picture.click();
+  await expect(enlarged).toBeVisible();
+  await page.mouse.click(8, 8);
+  await expect(enlarged).toBeHidden();
+  await picture.click();
+  await expect(enlarged).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(enlarged).toBeHidden();
+});
