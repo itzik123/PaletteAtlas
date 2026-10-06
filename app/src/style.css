@@ -212,6 +212,28 @@ input {
   color: var(--paper);
 }
 
+/* In the Atlas, the way to the Career Barcodes, beside the switch, which leaves it the room after
+   it. On the Career Barcodes themselves it is inked and pressed down, as the page shown. */
+.careers-link {
+  color: inherit;
+}
+
+.site-header .careers-link {
+  margin-right: auto;
+}
+
+.part-switch:has(+ .careers-link) {
+  margin-right: 0;
+}
+
+.careers-link[aria-current='page'],
+.careers-link[aria-current='page']:hover {
+  background: var(--ink);
+  color: var(--paper);
+  transform: translate(var(--lift), var(--lift));
+  box-shadow: 0 0 0 var(--ink);
+}
+
 /* Each axis's color, wherever the site shows one: its tile in the Studio, its badge in the Atlas. */
 .axis-color {
   --tile-color: var(--red);
@@ -230,9 +252,9 @@ input {
   --tile-color: var(--green);
 }
 
-/* Icons alone where the header runs short of room (the Studio | Atlas switch keeps its words);
-   the words stay for screen readers. */
-@media (max-width: 860px) {
+/* Icons alone where the header runs short of room (the Studio | Atlas switch and the way to the
+   Career Barcodes keep their words); the words stay for screen readers. */
+@media (max-width: 1160px) {
   .site-actions .pill {
     padding: 10px;
   }
@@ -244,6 +266,13 @@ input {
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+}
+
+/* Narrower still, the Atlas leads to the Career Barcodes from under its headline (see atlas.css). */
+@media (max-width: 940px) {
+  .site-header .careers-link {
+    display: none;
   }
 }
 

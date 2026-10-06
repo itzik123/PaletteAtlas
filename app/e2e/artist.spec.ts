@@ -38,7 +38,7 @@ function columnEnds(canvas: Locator): Promise<{ top: number[]; bottom: number[] 
 
 test('leads from a painting’s page to its artist’s Career Barcode, by the barcode beside their name', async ({ page }) => {
   await page.goto(`/painting.html?id=${BOTTICELLI.painting}`);
-  const link = page.getByRole('link', { name: 'Career Barcode' });
+  const link = page.getByRole('link', { name: 'Career Barcode', exact: true });
   await link.hover();
   await expect(page.locator('.career-link .tooltip')).toHaveCSS('opacity', '1');
   await link.click();
@@ -52,7 +52,7 @@ test('shows no way to a Career Barcode for an artist without a painting dated cl
   await page.route('**/data/careers.json', (route) => route.fulfill({ json: [0, 0, 0, 0] }));
   await page.goto(`/painting.html?id=${BOTTICELLI.painting}`);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Calumny of Apelles');
-  await expect(page.getByRole('link', { name: 'Career Barcode' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Career Barcode', exact: true })).toHaveCount(0);
 });
 
 test('draws every painting of a career as a bar of its color strip, the darker end at the bottom, or of its average color', async ({

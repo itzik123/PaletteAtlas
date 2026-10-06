@@ -8,7 +8,7 @@ import { missingPage } from './missing-page.ts';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Missing #app element');
-app.append(new SiteHeader('atlas').element);
+app.append(new SiteHeader('careers').element);
 
 // The artist is named by their Wikidata item, artist.html?id=Q5582; with none named, the page
 // opens at the most famous.

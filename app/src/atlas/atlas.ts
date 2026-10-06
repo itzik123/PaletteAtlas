@@ -1,4 +1,5 @@
-import { BARCODE_ICON, RETRY_ICON } from '../icons.ts';
+import { RETRY_ICON } from '../icons.ts';
+import { careersLink } from '../site/careers-link.ts';
 import type { GalleryData } from './gallery-data.ts';
 import { Wall } from './wall.ts';
 import { type WallPlace, WallPlaces } from './wall-place.ts';
@@ -37,8 +38,8 @@ export class Atlas {
     headline.append(count, ' paintings, strip by strip.');
     const top = document.createElement('div');
     top.className = 'atlas-top';
-    top.append(headline);
-    top.insertAdjacentHTML('beforeend', `<a class="pill careers-link" href="./artist.html">${BARCODE_ICON}<span>Career Barcodes</span></a>`);
+    // On a phone, the way to the Career Barcodes, which the header shows on a larger screen.
+    top.append(headline, careersLink());
     this.#end.className = 'wall-end';
     this.element.append(top, this.#wall.element, this.#end);
     this.#watcher = new IntersectionObserver(

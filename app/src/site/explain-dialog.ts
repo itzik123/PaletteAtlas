@@ -1,33 +1,31 @@
-import { AXIS_ICONS, CLOSE_ICON, UPLOAD_ICON } from '../icons.ts';
+import { CLOSE_ICON } from '../icons.ts';
+import type { Explanation, ExplainStep } from './explanations.ts';
 
-/** A short, visual explanation of the Studio, in a dialog that closes with its button, Escape or a click outside. */
+/** The id of the dialog's title, which names the dialog. */
+const TITLE_ID = 'explain-title';
+
+/**
+ * A short, visual explanation of the page it is on (see Explanation), in a dialog that closes with
+ * its button, Escape or a click outside.
+ */
 export class ExplainDialog {
   readonly element = document.createElement('dialog');
 
-  constructor() {
+  constructor({ title, steps, credits }: Explanation) {
     this.element.className = 'explain';
-    this.element.setAttribute('aria-labelledby', 'explain-title');
-    this.element.innerHTML = `
-      <form method="dialog">
-        <button class="close" aria-label="Close">${CLOSE_ICON}</button>
-      </form>
-      <h2 id="explain-title">How it works</h2>
-      <ol>
-        <li>
-          <span class="step-icon red">${UPLOAD_ICON}</span>
-          <p><b>Drop in any image.</b> It never leaves your computer.</p>
-        </li>
-        <li>
-          <span class="step-icon blue">${AXIS_ICONS.hilbert}</span>
-          <p><b>Pick a path through it:</b> by color, along a Hilbert curve, in columns, or out from the center.</p>
-        </li>
-        <li>
-          <span class="step-icon yellow"><span class="mini-strip"></span></span>
-          <p><b>The path becomes 128 stripes,</b> each the true average light of the pixels it passes.</p>
-        </li>
-      </ol>
-      <p class="credits">The Atlas's paintings and their details come from Wikidata and Wikimedia Commons, and are all in the public domain. So are the Studio's samples: the Mona Lisa (Louvre) by way of Wikimedia Commons, and the others courtesy of the Art Institute of Chicago.</p>
-    `;
+    this.element.setAttribute('aria-labelledby', TITLE_ID);
+    const form = document.createElement('form');
+    form.method = 'dialog';
+    form.innerHTML = `<button class="close" aria-label="Close">${CLOSE_ICON}</button>`;
+    const heading = document.createElement('h2');
+    heading.id = TITLE_ID;
+    heading.textContent = title;
+    const list = document.createElement('ol');
+    list.append(...steps.map(stepItem));
+    const credit = document.createElement('p');
+    credit.className = 'credits';
+    credit.textContent = credits;
+    this.element.append(form, heading, list, credit);
     // A click on the backdrop lands on the dialog itself, but outside its box.
     this.element.addEventListener('click', (event) => {
       if (event.target === this.element && !within(this.element.getBoundingClientRect(), event)) this.element.close();
@@ -37,6 +35,20 @@ export class ExplainDialog {
   open(): void {
     this.element.showModal();
   }
+}
+
+/** A step: its icon on a colored disc, beside its words. */
+function stepItem({ icon, disc, lead, rest }: ExplainStep): HTMLLIElement {
+  const item = document.createElement('li');
+  const badge = document.createElement('span');
+  badge.className = `step-icon ${disc}`;
+  badge.innerHTML = icon;
+  const text = document.createElement('p');
+  const bold = document.createElement('b');
+  bold.textContent = lead;
+  text.append(bold, ` ${rest}`);
+  item.append(badge, text);
+  return item;
 }
 
 function within(box: DOMRect, { clientX, clientY }: MouseEvent): boolean {

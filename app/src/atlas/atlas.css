@@ -8,7 +8,8 @@
   overflow-x: clip;
 }
 
-/* The headline, and under it the way to the painters' Career Barcodes. */
+/* The headline, and under it, where the header has no room for it (see style.css), the way to the
+   painters' Career Barcodes. */
 .atlas-top {
   display: grid;
   justify-items: start;
@@ -16,8 +17,8 @@
   margin: 24px 0 40px;
 }
 
-.careers-link {
-  color: inherit;
+.atlas-top .careers-link {
+  display: none;
 }
 
 .atlas h1 {
@@ -1158,6 +1159,12 @@ a.chip:hover {
   font-weight: 800;
 }
 
+@media (max-width: 940px) {
+  .atlas-top .careers-link {
+    display: inline-flex;
+  }
+}
+
 /* What isn't there */
 
 .missing-page {
@@ -1181,6 +1188,7 @@ a.chip:hover {
   .atlas {
     padding: 8px 16px 48px;
   }
+
 
   .wall {
     gap: 20px 14px;

@@ -10,7 +10,7 @@ import { titleOf } from './painting-text.ts';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Missing #app element');
-app.append(new SiteHeader('atlas').element);
+app.append(new SiteHeader('painting').element);
 
 // The painting is named by its Wikidata item: painting.html?id=Q12418.
 const id = new URLSearchParams(location.search).get('id');
