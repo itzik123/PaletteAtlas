@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "playwright test",
+    "test": "vitest run --dir src && playwright test",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/workers && tsc --noEmit -p e2e"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "@playwright/test": "^1.63.0",
     "@types/node": "catalog:",
     "typescript": "catalog:",
-    "vite": "^8.3.2"
+    "vite": "^8.3.2",
+    "vitest": "catalog:"
   }
 }

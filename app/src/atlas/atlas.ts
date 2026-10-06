@@ -1,4 +1,4 @@
-import { RETRY_ICON } from '../icons.ts';
+import { BARCODE_ICON, RETRY_ICON } from '../icons.ts';
 import type { GalleryData } from './gallery-data.ts';
 import { Wall } from './wall.ts';
 import { type WallPlace, WallPlaces } from './wall-place.ts';
@@ -12,8 +12,8 @@ const SAVE_DELAY_MS = 250;
 
 /**
  * The Atlas: every painting of the gallery on one wall, the most famous first, with more hung as
- * the visitor scrolls toward the end. It keeps its place (see WallPlaces), so a visitor who comes
- * back from a painting finds the wall as they left it.
+ * the visitor scrolls toward the end, and the way to the painters' Career Barcodes. It keeps its
+ * place (see WallPlaces), so a visitor who comes back from a painting finds the wall as they left it.
  */
 export class Atlas {
   readonly element = document.createElement('main');
@@ -35,8 +35,12 @@ export class Atlas {
     count.className = 'count';
     count.textContent = data.count.toLocaleString('en');
     headline.append(count, ' paintings, strip by strip.');
+    const top = document.createElement('div');
+    top.className = 'atlas-top';
+    top.append(headline);
+    top.insertAdjacentHTML('beforeend', `<a class="pill careers-link" href="./artist.html">${BARCODE_ICON}<span>Career Barcodes</span></a>`);
     this.#end.className = 'wall-end';
-    this.element.append(headline, this.#wall.element, this.#end);
+    this.element.append(top, this.#wall.element, this.#end);
     this.#watcher = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) void this.#hangMore(PAGE_SIZE);

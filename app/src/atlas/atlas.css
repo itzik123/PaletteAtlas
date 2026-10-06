@@ -8,8 +8,20 @@
   overflow-x: clip;
 }
 
-.atlas h1 {
+/* The headline, and under it the way to the painters' Career Barcodes. */
+.atlas-top {
+  display: grid;
+  justify-items: start;
+  gap: 24px;
   margin: 24px 0 40px;
+}
+
+.careers-link {
+  color: inherit;
+}
+
+.atlas h1 {
+  margin: 0;
   font-size: clamp(2.6rem, 6vw, 5rem);
   font-weight: 800;
   line-height: 0.95;
@@ -381,34 +393,48 @@
   box-shadow: 0 0 0 var(--ink);
 }
 
-/* Its name, over it while it is pointed at or focused: reaching left, over the artist's name,
-   so it never runs off the page. */
-.career-link .tooltip {
+/* What a button leads to, in words on ink by it while it is pointed at or focused, its arrow
+   pointing at the button's middle. */
+.tooltip {
   position: absolute;
-  right: -6px;
-  bottom: calc(100% + 12px);
+  z-index: 5;
   padding: 6px 12px;
   border-radius: 10px;
   background: var(--ink);
   color: var(--paper);
   font-size: 0.85rem;
   font-weight: 750;
+  line-height: 1.35;
   white-space: nowrap;
   opacity: 0;
-  transform: translateY(4px);
   transition:
     opacity 0.15s ease,
     transform 0.15s ease;
   pointer-events: none;
 }
 
-.career-link .tooltip::after {
+.tooltip::after {
   content: '';
   position: absolute;
+  border: 6px solid transparent;
+}
+
+.tooltip:empty {
+  display: none;
+}
+
+/* The Career Barcode's, over its button: reaching left, over the artist's name, so it never runs
+   off the page. */
+.career-link .tooltip {
+  right: -6px;
+  bottom: calc(100% + 12px);
+  transform: translateY(4px);
+}
+
+.career-link .tooltip::after {
   top: 100%;
   /* Under the button's middle: its half width, and what the tooltip reaches past it. */
   right: 19px;
-  border: 6px solid transparent;
   border-top-color: var(--ink);
 }
 
@@ -531,53 +557,387 @@ a.chip:hover {
   animation: march 0.6s linear infinite;
 }
 
-/* An artist's page, all on one screen: their name and years beside the switch of what the bars
-   show, over their Career Barcode, which takes whatever height the name leaves it. */
+/* The Career Barcodes, all on one screen: the list of painters on a card down the side, beside the
+   painter shown, their name and years over their Career Barcode, which takes whatever height the
+   name leaves it. */
 
 .artist-page {
   /* The header's height: the page takes the rest of the screen. */
   --above: 85px;
+  /* Under the barcode, room for the label of the painting pointed at. */
+  --label-room: 104px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    'back back'
-    'name name'
-    'facts fills'
-    'barcode barcode';
-  align-items: end;
-  gap: 12px 32px;
+    'bar bar'
+    'painters career';
+  gap: 16px 40px;
   max-width: 1240px;
   min-height: calc(100vh - var(--above));
   margin: 0 auto;
-  /* Room below for the label of the painting pointed at. */
-  padding: 20px 32px 112px;
+  padding: 16px 32px 0;
   /* Labels near the edge are cut off there rather than widening the page. */
   overflow-x: clip;
 }
 
-.artist-page .back {
-  grid-area: back;
-  justify-self: start;
+/* Back to the Atlas on the left; the painters before and after on the right. */
+.artist-bar {
+  grid-area: bar;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.artist-bar > * {
+  flex: none;
+}
+
+.artist-bar .back {
+  margin-right: auto;
   padding: 7px 18px;
   color: inherit;
 }
 
-.artist-page h1 {
-  grid-area: name;
-  margin: 10px 0 0;
-  font-size: clamp(2.4rem, 6vw, 4.6rem);
+/* The list's button, for a phone, where the list opens over the page. */
+.painters-button {
+  display: none;
+}
+
+.step {
+  position: relative;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+/* The painter it leads to, under it: reaching left, so it never runs off the page. */
+.step .tooltip {
+  top: calc(100% + 12px);
+  right: -6px;
+  transform: translateY(-4px);
+}
+
+.step .tooltip::after {
+  bottom: 100%;
+  /* Over the button's middle: its half width, and what the tooltip reaches past it. */
+  right: 19px;
+  border-bottom-color: var(--ink);
+}
+
+.step:focus-visible .tooltip {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: hover) {
+  .step:hover .tooltip {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The list of painters, on a card as tall as the page beside it: its thousands of names scroll
+   within it rather than make it taller. */
+.painter-panel {
+  grid-area: painters;
+  position: static;
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  margin: 0 0 var(--label-room);
+  padding: 0;
+  overflow: hidden;
+  border: var(--outline-thick);
+  border-radius: 22px;
+  background: var(--card);
+  color: inherit;
+  box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
+  contain: size;
+}
+
+.painter-panel:not([open]) {
+  display: none;
+}
+
+/* Its name and the way to close it, for a phone, where it opens over the page. */
+.panel-top {
+  display: none;
+}
+
+/* The search over the names, and the rail of letters beside them. */
+.painter-list {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'search search'
+    'names rail';
+}
+
+.search-field {
+  grid-area: search;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 14px 8px;
+  padding: 0 6px 0 14px;
+  border: var(--outline);
+  border-radius: 999px;
+  background: var(--paper);
+  cursor: text;
+}
+
+.search-field:focus-within {
+  outline: 4px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.search-field .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.search-field input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font-size: 1.05rem;
+  font-weight: 650;
+  appearance: none;
+}
+
+.search-field input::placeholder {
+  color: inherit;
+  opacity: 0.55;
+}
+
+/* The field's own clear button gives way to the site's. */
+.search-field input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-clear {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.search-clear .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.search-clear[hidden] {
+  display: none;
+}
+
+/* Where the browser keeps what is in view in place as content above it changes height (scroll
+   anchoring), a section out of sight holds its place by an estimate (see PainterList) and is laid
+   out only as it is scrolled to: a few hundred names at a time rather than thousands. */
+@supports (overflow-anchor: auto) {
+  .painter-section {
+    content-visibility: auto;
+  }
+}
+
+/* The names, scrolling under their letters. */
+.painter-scroll {
+  grid-area: names;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.painter-scroll ul {
+  margin: 0;
+  padding: 2px 6px 10px 10px;
+  list-style: none;
+}
+
+/* Each section's heading stays over the list's top while its painters pass under it, ruled off
+   from them. */
+.painter-section h2 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 10px;
+  padding: 6px 12px 4px;
+  border-bottom: 2.5px solid var(--ink);
+  background: var(--card);
+  font-size: 0.9rem;
   font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -0.04em;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.painter-section ul {
+  padding-top: 6px;
+}
+
+.painter {
+  display: block;
+  padding: 7px 12px 8px;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.painter-name {
+  display: block;
+  font-size: 1.02rem;
+  font-weight: 550;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
-/* A long name in smaller type, so even the longest takes two lines at most. */
-.artist-page h1[data-long] {
-  font-size: clamp(1.8rem, 4.2vw, 3.2rem);
+.painter-name b {
+  font-weight: 800;
+}
+
+.painter-facts {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  font-weight: 550;
+  line-height: 1.2;
+  opacity: 0.68;
+}
+
+@media (hover: hover) {
+  .painter:hover {
+    background: var(--yellow);
+  }
+}
+
+.painter[aria-current] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.painter[aria-current] .painter-facts {
+  opacity: 0.8;
+}
+
+.painter:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: -3px;
+}
+
+.painter-none {
+  margin: 0;
+  padding: 14px 24px;
+  font-weight: 650;
+  opacity: 0.7;
+}
+
+/* A to Z down the side, the letter in view inked, a letter without names faded. Slid along, it
+   runs through the letters rather than scrolling the page. */
+.alphabet-rail {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8px 12px 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.alphabet-rail[hidden] {
+  display: none;
+}
+
+.alphabet-rail button {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 26px;
+  width: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.alphabet-rail button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .alphabet-rail button:not(:disabled, [data-current]):hover {
+    background: var(--yellow);
+  }
+}
+
+.alphabet-rail button[data-current] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* The painter shown: their name on one line, as large as fits, so that the barcode keeps its place
+   from painter to painter; their years and how many paintings, beside the switch of what the bars
+   show; and their Career Barcode. */
+.career-view {
+  grid-area: career;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    'name name'
+    'facts fills'
+    'barcode barcode';
+  align-items: end;
+  gap: 12px 24px;
+  min-height: 0;
+  padding-bottom: var(--label-room);
+}
+
+.career-view h1 {
+  /* The name's size when it fits: one line of it is the heading's height, whatever size it takes. */
+  --name-size: clamp(2.4rem, 4.8vw, 4.4rem);
+  grid-area: name;
+  display: flex;
+  align-items: flex-end;
+  height: var(--name-size);
+  margin: 0;
+  font-size: var(--name-size);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+/* A name too long for one line even in small type takes two. */
+.career-view h1[data-wrap] {
+  height: auto;
   line-height: 1;
   letter-spacing: -0.03em;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .artist-facts {
@@ -658,20 +1018,23 @@ a.chip:hover {
   position: relative;
   flex: 1;
   min-height: 180px;
-  max-height: 460px;
+  /* As tall as the list beside it on most screens, short of stretching out on a very tall one. */
+  max-height: 640px;
   border: var(--outline-thick);
   border-radius: 18px;
   background: var(--card);
   box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
 }
 
-/* Laid over the card rather than in its flow, so that its own pixels never size the card. */
+/* Laid over the card rather than in its flow, so that its own pixels never size the card. Its
+   rows are stretched to its height, each to a band of the screen's rows, never blended. */
 .barcode-frame canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   border-radius: 14px;
+  image-rendering: pixelated;
   cursor: pointer;
 }
 
@@ -738,9 +1101,61 @@ a.chip:hover {
   font-weight: 800;
 }
 
+.career-barcode[hidden],
 .barcode-cursor[hidden],
 .barcode-label[hidden] {
   display: none;
+}
+
+/* While a career is on its way, stripes march across its card. */
+.career-view[aria-busy='true'] .barcode-frame {
+  pointer-events: none;
+}
+
+.career-view[aria-busy='true'] :is(.barcode-frame canvas, .barcode-ruler) {
+  visibility: hidden;
+}
+
+.career-view[aria-busy='true'] .barcode-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background-image: linear-gradient(
+    45deg,
+    rgb(24 20 15 / 0.14) 25%,
+    transparent 25% 50%,
+    rgb(24 20 15 / 0.14) 50% 75%,
+    transparent 75%
+  );
+  background-size: 40px 40px;
+  animation: march 0.6s linear infinite;
+}
+
+/* A career that failed to arrive: a word on its card, and the way to ask for it again. */
+.career-trouble {
+  grid-area: barcode;
+  align-self: stretch;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
+  min-height: 180px;
+  margin: 14px 0 0;
+  border: var(--outline-thick);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
+}
+
+.career-trouble[hidden] {
+  display: none;
+}
+
+.career-trouble p {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
 }
 
 /* What isn't there */
@@ -803,23 +1218,85 @@ a.chip:hover {
     --strip-height: 48px;
   }
 
-  /* One column on a phone: the name, the years, the switch, and the barcode across the screen. */
+  /* One column on a phone: the bar, then the name, the years, the switch, and the barcode across
+     the screen; the list of painters opens over the page. */
   .artist-page {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
-    min-height: 0;
     grid-template-areas:
-      'back'
+      'bar'
+      'career';
+    gap: 18px;
+    min-height: 0;
+    padding: 12px 16px 0;
+  }
+
+  .artist-bar .back {
+    margin-right: 0;
+  }
+
+  .painters-button {
+    display: inline-flex;
+    margin-right: auto;
+    padding: 7px 18px;
+  }
+
+  .career-view {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
       'name'
       'facts'
       'fills'
       'barcode';
-    gap: 16px;
-    padding: 12px 16px 120px;
+    gap: 14px;
   }
 
-  .artist-page .fill-switch {
+  .career-view h1 {
+    --name-size: clamp(2rem, 9vw, 3rem);
+  }
+
+  .career-view .fill-switch {
     justify-self: start;
+  }
+
+  /* The list over the whole screen, with its name and a button to close it at the top. */
+  .painter-panel:modal {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .panel-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 16px 4px 20px;
+  }
+
+  .panel-top h2 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .panel-top .close {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border: var(--outline);
+    border-radius: 50%;
+    background: var(--yellow);
+    cursor: pointer;
   }
 
   .barcode-frame {
@@ -829,5 +1306,23 @@ a.chip:hover {
 
   .missing-page {
     padding: 32px 16px;
+  }
+}
+
+/* On a phone, where Studio | Atlas floats at the bottom of the screen, the way back to the Atlas is
+   its arrow alone, leaving room for the list and the painters before and after; the word stays
+   for screen readers. */
+@media (max-width: 640px) {
+  .artist-bar .back {
+    padding: 7px 12px;
+  }
+
+  .artist-bar .back span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

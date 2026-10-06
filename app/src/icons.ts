@@ -64,6 +64,16 @@ export const BARCODE_ICON = icon(
   'fill="currentColor"',
 );
 
+/** A magnifying glass, for a search. */
+export const SEARCH_ICON = icon('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/>');
+
+/** Lines of a list, for the list of painters. */
+export const LIST_ICON = icon('<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r=".6" fill="currentColor"/><circle cx="3.5" cy="12" r=".6" fill="currentColor"/><circle cx="3.5" cy="18" r=".6" fill="currentColor"/>');
+
+/** Chevrons, for the painter before and the painter after. */
+export const PREVIOUS_ICON = icon('<path d="M15 5l-7 7 7 7"/>');
+export const NEXT_ICON = icon('<path d="M9 5l7 7-7 7"/>');
+
 /** A bar banded like a strip, for a barcode whose bars show each painting's color strip. */
 export const STRIP_FILL_ICON = icon('<rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 8.5h12M6 13h12M6 17.5h12"/>');
 

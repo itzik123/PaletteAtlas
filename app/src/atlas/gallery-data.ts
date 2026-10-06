@@ -37,6 +37,12 @@ export interface Career {
   readonly paintings: readonly PaintingEntry[];
 }
 
+/** An artist with a career, and how many paintings it has. */
+export interface Painter {
+  readonly artist: Artist;
+  readonly paintings: number;
+}
+
 /**
  * The gallery's data, fetched only as pages need it: the manifest at the start, then chunks of
  * paintings with their strips, in gallery order or in the order of the artists' careers, and the
@@ -86,6 +92,13 @@ export class GalleryData {
   careerLengths(): Promise<readonly number[]> {
     this.#careerLengths ??= fetchJson<readonly number[]>(`${this.#url}${GALLERY_FILES.careerLengths}`);
     return this.#careerLengths;
+  }
+
+  /** Every artist with a career, the most famous first, with how many paintings their career has. */
+  async painters(): Promise<Painter[]> {
+    const lengths = await this.careerLengths();
+    const { artists } = this.#manifest;
+    return lengths.flatMap((paintings, artist) => (paintings > 0 ? [{ artist: recordAt(artists, artist), paintings }] : []));
   }
 
   /** The career of the artist with a Wikidata item, if the gallery has the artist. */

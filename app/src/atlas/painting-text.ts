@@ -30,6 +30,14 @@ export function dateOf({ year, precision }: Painting): string {
   }
 }
 
+/** Writes numbers as the Atlas does, e.g. 1,204. */
+const NUMBERS = new Intl.NumberFormat('en');
+
+/** How many paintings there are, in words, e.g. "1 painting" or "1,204 paintings". */
+export function paintingCount(count: number): string {
+  return `${NUMBERS.format(count)} ${count === 1 ? 'painting' : 'paintings'}`;
+}
+
 /** An artist's years, e.g. "1632–1675", or "d. 1675" when their birth isn't known. */
 export function lifespanOf({ born, died }: Artist): string {
   return born === null ? `d. ${yearOf(died)}` : `${yearOf(born)}–${yearOf(died)}`;

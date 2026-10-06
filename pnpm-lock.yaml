@@ -209,6 +209,9 @@ importers:
       vite:
         specifier: ^8.3.2
         version: 8.3.2(@types/node@24.19.1)
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1))
 
   packages/color:
     devDependencies:

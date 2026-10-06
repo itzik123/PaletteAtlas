@@ -64,6 +64,7 @@ export interface GalleryManifest {
   readonly chunkSize: number;
   /** Segments per strip. */
   readonly segments: number;
+  /** Every artist, in the order of their first painting in the gallery: the most famous first. */
   readonly artists: Columns<Artist>;
 }
 

@@ -3,7 +3,7 @@ import { placedYear } from '@palette-atlas/gallery';
 import { paintImage } from '../image-adapters.ts';
 import type { BarFill } from './bar-fills.ts';
 import type { Career, PaintingEntry } from './gallery-data.ts';
-import { dateOf, titleOf } from './painting-text.ts';
+import { dateOf, paintingCount, titleOf } from './painting-text.ts';
 import { type Tick, yearTicks } from './year-ticks.ts';
 
 /**
@@ -20,12 +20,15 @@ const LABEL_PICTURE = { height: 72, maxWidth: 160 } as const;
  * begin. It is drawn at the screen's resolution by area averaging in linear light, and again
  * whenever its size changes. Pointing at a bar outlines it and shows the painting's museum label,
  * and a click opens the painting's page; on a touch screen, a tap shows the label, and a tap on the
- * label opens the page.
+ * label opens the page. One barcode shows career after career, as the visitor goes from artist to
+ * artist.
  */
 export class CareerBarcode {
   readonly element = document.createElement('figure');
-  readonly #paintings: readonly PaintingEntry[];
-  readonly #years: readonly number[];
+  /** The career shown, its paintings, and the years they are placed at. */
+  #career: Career | undefined;
+  #paintings: readonly PaintingEntry[] = [];
+  #years: readonly number[] = [];
   readonly #frame = document.createElement('div');
   readonly #canvas = document.createElement('canvas');
   readonly #ruler = document.createElement('div');
@@ -34,9 +37,9 @@ export class CareerBarcode {
   readonly #picture = document.createElement('img');
   readonly #title = document.createElement('b');
   readonly #date = document.createElement('span');
-  /** Each fill's barcode at one pixel per painting, made the first time the fill is shown. */
+  /** Each fill's barcode of the career shown, at one pixel per painting, made the first time the fill is shown. */
   readonly #barcodes = new Map<BarFill, RgbaImage>();
-  #fill: BarFill;
+  #fill: BarFill | undefined;
   /** The size it was drawn at, in CSS pixels. */
   #width = 0;
   #height = 0;
@@ -45,14 +48,10 @@ export class CareerBarcode {
   /** Whether the last pointer pressed on it was a mouse, whose click opens a painting at once. */
   #mouse = true;
 
-  constructor({ artist, paintings }: Career, fill: BarFill) {
-    this.#paintings = paintings;
-    this.#years = paintings.map(({ painting }) => placedYear(painting, artist) ?? painting.year);
-    this.#fill = fill;
+  constructor() {
     this.element.className = 'career-barcode';
     this.#frame.className = 'barcode-frame';
     this.#canvas.setAttribute('role', 'img');
-    this.#canvas.setAttribute('aria-label', `Career Barcode: ${describe(this.#years)}`);
     this.#ruler.className = 'barcode-ruler';
     this.#ruler.setAttribute('aria-hidden', 'true');
     this.#cursor.className = 'barcode-cursor';
@@ -89,8 +88,16 @@ export class CareerBarcode {
     });
   }
 
-  /** Shows every painting in another fill. */
-  show(fill: BarFill): void {
+  /** Shows a career, every painting in a fill. */
+  show(career: Career, fill: BarFill): void {
+    if (career !== this.#career) {
+      const { artist, paintings } = career;
+      this.#career = career;
+      this.#paintings = paintings;
+      this.#years = paintings.map(({ painting }) => placedYear(painting, artist) ?? painting.year);
+      this.#barcodes.clear();
+      this.#canvas.setAttribute('aria-label', `Career Barcode: ${describe(this.#years)}`);
+    }
     this.#fill = fill;
     this.#draw();
   }
@@ -98,15 +105,19 @@ export class CareerBarcode {
   #draw(): void {
     this.#width = this.#frame.clientWidth;
     this.#height = this.#frame.clientHeight;
-    if (this.#width <= 0 || this.#height <= 0) return;
+    const fill = this.#fill;
+    if (this.#width <= 0 || this.#height <= 0 || !fill || this.#paintings.length === 0) return;
     this.#point(undefined);
-    let barcode = this.#barcodes.get(this.#fill);
+    let barcode = this.#barcodes.get(fill);
     if (!barcode) {
-      barcode = this.#fill.barcode(this.#paintings.map(({ strip }) => strip));
-      this.#barcodes.set(this.#fill, barcode);
+      barcode = fill.barcode(this.#paintings.map(({ strip }) => strip));
+      this.#barcodes.set(fill, barcode);
     }
-    const scale = devicePixelRatio;
-    paintImage(this.#canvas, resize(barcode, Math.max(1, Math.round(this.#width * scale)), Math.max(1, Math.round(this.#height * scale))));
+    const width = Math.max(1, Math.round(this.#width * devicePixelRatio));
+    const height = Math.max(1, Math.round(this.#height * devicePixelRatio));
+    // Across, the bars are averaged to the screen's pixels in linear light. Down, a fill has fewer
+    // rows than the screen, and they are stretched to its height rather than blended (see atlas.css).
+    paintImage(this.#canvas, resize(barcode, width, Math.min(height, barcode.height)));
     this.#ruler.replaceChildren(...yearTicks(this.#years, this.#width).map(tickLabel));
   }
 
@@ -155,7 +166,7 @@ export class CareerBarcode {
 function describe(years: readonly number[]): string {
   const first = years[0];
   const last = years.at(-1);
-  const count = `${years.length} ${years.length === 1 ? 'painting' : 'paintings'}`;
+  const count = paintingCount(years.length);
   return first === last ? `${count}, ${first}` : `${count}, ${first}–${last}`;
 }
 
