@@ -1,4 +1,4 @@
-import { access, writeFile } from 'node:fs/promises';
+import { access, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { RgbaImage } from '@palette-atlas/color';
 import {
@@ -168,6 +168,7 @@ async function writeGallery(paintings: readonly KeptPainting[], catalog: Catalog
     strips: paintings.map(({ strip }) => strip),
   };
 
+  await mkdir(folder, { recursive: true });
   await writeFile(join(folder, GALLERY_FILES.manifest), JSON.stringify(manifest));
   await writeFile(join(folder, GALLERY_FILES.ids), JSON.stringify(gallery.paintings.map(({ id }) => id)));
   await writeChunks(folder, GALLERY_FILES.gallery, gallery, chunkSize);

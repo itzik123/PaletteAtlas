@@ -1,6 +1,6 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import type { RgbaImage } from '@palette-atlas/color';
 import {
   type ChunkFiles,
@@ -58,7 +58,8 @@ describe('buildPaintings', () => {
   let paintings: Painting[];
 
   beforeAll(async () => {
-    output = await mkdtemp(join(tmpdir(), 'paintings-'));
+    // A folder that doesn't exist yet, as on a fresh machine: the build makes it.
+    output = join(await mkdtemp(join(tmpdir(), 'paintings-')), 'gallery');
     const pool = new StripPool(2);
     try {
       report = await buildPaintings(FIXTURE, output, pool, { chunkSize: CHUNK_SIZE, heldBack: HELD_BACK, log: () => {} });
@@ -69,7 +70,7 @@ describe('buildPaintings', () => {
     ({ paintings } = await readStored(output, GALLERY_FILES.gallery, manifest.count));
   }, TIMEOUT_MS);
 
-  afterAll(() => rm(output, { recursive: true, force: true }));
+  afterAll(() => rm(dirname(output), { recursive: true, force: true }));
 
   it('lists the downloaded paintings in color in the order of the catalog, but for those held back, each with its artist', async () => {
     expect(report).toEqual({ paintings: 4, notDownloaded: 1, colorless: 1, failed: 0, unlinkable: 0 });
