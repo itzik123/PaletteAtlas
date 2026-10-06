@@ -1195,6 +1195,11 @@ a.chip:hover {
   transform: none;
 }
 
+/* Focused as it opens, it shows only its frame, without the focus ring of the site's controls. */
+.lightbox:focus-visible {
+  outline: none;
+}
+
 .lightbox::backdrop {
   background: rgb(24 20 15 / 0);
   transition:

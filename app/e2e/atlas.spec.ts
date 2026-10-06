@@ -156,6 +156,7 @@ test('enlarges a painting over its page on a click, and puts it away on another,
   const enlarged = page.getByRole('dialog', { name: 'Calumny of Apelles' });
   await picture.click();
   await expect(enlarged).toBeVisible();
+  await expect(enlarged).toHaveCSS('outline-style', 'none');
   await page.mouse.click(8, 8);
   await expect(enlarged).toBeHidden();
   await picture.click();
