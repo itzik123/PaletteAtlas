@@ -1,8 +1,8 @@
 import type { AxisName } from '@palette-atlas/strip';
 import { AXIS_ICONS } from '../icons.ts';
 
-/** The axes in the order the picker offers them, by the names the Studio shows. The first is picked at the start. */
-const AXIS_OPTIONS: readonly { readonly axis: AxisName; readonly label: string }[] = [
+/** The axes in the order the site lists them, by the names it shows. The first is picked at the start. */
+export const AXIS_OPTIONS: readonly { readonly axis: AxisName; readonly label: string }[] = [
   { axis: 'color', label: 'Color' },
   { axis: 'hilbert', label: 'Hilbert' },
   { axis: 'columns', label: 'Columns' },

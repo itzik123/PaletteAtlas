@@ -102,6 +102,13 @@ input {
   box-shadow: calc(var(--lift) + 2px) calc(var(--lift) + 2px) 0 var(--red);
 }
 
+/* Stripes that march across whatever the page is busy filling in. */
+@keyframes march {
+  to {
+    background-position: 40px 0;
+  }
+}
+
 /* Header */
 
 .site-header {
@@ -170,6 +177,76 @@ input {
   gap: 14px;
 }
 
+/* Studio | Atlas: two tabs on one capsule, the current one inked, apart enough that a tab
+   pointed at never seems to touch the other. */
+.part-switch {
+  display: flex;
+  gap: 10px;
+  margin-right: auto;
+  margin-left: 12px;
+  padding: 5px;
+  border: var(--outline);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+}
+
+.part-switch a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  color: inherit;
+  font-size: 1.05rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.part-switch a:not([aria-current='page']):hover {
+  background: var(--yellow);
+}
+
+.part-switch a[aria-current='page'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Each axis's color, wherever the site shows one: its tile in the Studio, its badge in the Atlas. */
+.axis-color {
+  --tile-color: var(--red);
+}
+
+.axis-hilbert {
+  --tile-color: var(--blue);
+  --tile-ink: var(--paper);
+}
+
+.axis-columns {
+  --tile-color: var(--yellow);
+}
+
+.axis-radial {
+  --tile-color: var(--green);
+}
+
+/* Icons alone where the header runs short of room (the Studio | Atlas switch keeps its words);
+   the words stay for screen readers. */
+@media (max-width: 860px) {
+  .site-actions .pill {
+    padding: 10px;
+  }
+
+  .site-actions .pill span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 640px) {
   .site-header {
     padding: 16px 16px 8px;
@@ -188,18 +265,28 @@ input {
     gap: 10px;
   }
 
-  /* Icons alone on a phone; the words stay for screen readers. */
-  .site-actions .pill {
-    padding: 10px;
+  /* Studio | Atlas floats at the bottom of a phone's screen, under the thumb, with room kept
+     for it below every page. */
+  body {
+    padding-bottom: 88px;
   }
 
-  .site-actions .pill span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+  .part-switch {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    z-index: 40;
+    margin: 0;
+    transform: translateX(-50%);
+  }
+
+  .part-switch a {
+    padding: 8px 18px;
+  }
+
+  /* Messages pop up above it. */
+  .toast {
+    bottom: 96px;
   }
 }
 

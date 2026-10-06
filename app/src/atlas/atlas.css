@@ -1,0 +1,509 @@
+/* The Atlas: the wall of paintings, and each painting's own page. */
+
+.atlas {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 8px 32px 64px;
+  /* Labels near the wall's edge are cut off there rather than widening the page. */
+  overflow-x: clip;
+}
+
+.atlas h1 {
+  margin: 24px 0 40px;
+  font-size: clamp(2.6rem, 6vw, 5rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+/* The count stands on a yellow card of its own. */
+.atlas h1 .count {
+  display: inline-block;
+  margin: 0 0.08em 0.1em 0;
+  padding: 0.04em 0.12em;
+  border: var(--outline-thick);
+  border-radius: 0.18em;
+  background: var(--yellow);
+  box-shadow: 6px 6px 0 var(--ink);
+  line-height: 1;
+}
+
+/* The wall: rows of paintings at their own shapes (sized by Wall), each over its strip. */
+.wall {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px 22px;
+}
+
+.painting-tile {
+  position: relative;
+  display: block;
+  border: 3px solid var(--ink);
+  border-radius: 6px;
+  background: var(--ink);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.painting-tile img {
+  display: block;
+  width: 100%;
+  height: var(--picture-height, 190px);
+  border-radius: 3px 3px 0 0;
+  object-fit: cover;
+}
+
+.tile-strip {
+  display: block;
+  width: 100%;
+  height: 22px;
+  border-top: 3px solid var(--ink);
+  border-radius: 0 0 3px 3px;
+  image-rendering: pixelated;
+}
+
+.painting-tile:hover,
+.painting-tile:focus-visible {
+  z-index: 2;
+  transform: translate(-3px, -3px);
+  box-shadow: calc(var(--lift) + 3px) calc(var(--lift) + 3px) 0 var(--ink);
+}
+
+.painting-tile:active {
+  transform: translate(var(--lift), var(--lift));
+  box-shadow: 0 0 0 var(--ink);
+}
+
+/* The museum label, shown while a painting is pointed at; at a row's ends it lines up with the
+   tile's outer edge, staying on the wall. */
+.tile-label {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  z-index: 3;
+  display: grid;
+  width: max-content;
+  max-width: 280px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.85rem;
+  font-weight: 550;
+  line-height: 1.3;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  pointer-events: none;
+}
+
+.tile-label b {
+  font-weight: 800;
+}
+
+.painting-tile:is(:hover, :focus-visible) .tile-label {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.painting-tile[data-edge='start'] .tile-label {
+  left: 0;
+  transform: translateY(-4px);
+}
+
+.painting-tile[data-edge='end'] .tile-label {
+  right: 0;
+  left: auto;
+  transform: translateY(-4px);
+}
+
+.painting-tile:is([data-edge='start'], [data-edge='end']):is(:hover, :focus-visible) .tile-label {
+  transform: none;
+}
+
+/* Watched to hang more paintings; offers to try again if they didn't arrive. */
+.wall-end {
+  display: grid;
+  place-items: center;
+  min-height: 1px;
+  margin-top: 40px;
+}
+
+/* A painting's page, all on one screen: the picture on a card, beside the way back to the Atlas,
+   its details, its strips and the way on to the Studio. A wide painting spans the page instead,
+   all the rest below it. */
+
+.painting-page {
+  /* The header's height and the room above the page, and below it. */
+  --above: 106px;
+  --below: 36px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr;
+  grid-template-areas:
+    'picture back'
+    'picture info'
+    'picture strips'
+    'picture studio';
+  gap: 14px 40px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 20px 32px var(--below);
+}
+
+.painting-page[data-layout='wide'] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* The last row takes whatever height the details need beyond the strips', so the way on to the
+     Studio stays right under the strips. */
+  grid-template-rows: auto auto auto auto 1fr;
+  grid-template-areas:
+    'picture picture'
+    'back strips'
+    'info strips'
+    'info studio'
+    'info .';
+  gap: 14px 40px;
+}
+
+.painting-page .back {
+  grid-area: back;
+  justify-self: start;
+  color: inherit;
+}
+
+.painting-page .open-studio {
+  grid-area: studio;
+  justify-self: start;
+  align-self: start;
+  margin-top: 4px;
+}
+
+.painting-page > .pill {
+  padding: 7px 18px;
+}
+
+.painting-frame {
+  grid-area: picture;
+  position: relative;
+  min-width: 0;
+  padding: 22px;
+  border: var(--outline-thick);
+  border-radius: 28px;
+  background: var(--card);
+  box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
+}
+
+.painting-page[data-layout='upright'] .painting-frame {
+  height: clamp(320px, 100vh - var(--above) - var(--below), 760px);
+}
+
+/* The picture as large as the card shows it in its shape. A painting that would be shorter than
+   --min-height that way (a handscroll, say) pans (see PaintingView): shown as tall as the page has
+   room for, up to --sharpest, it scrolls sideways along the card. */
+/* Registered as a length, so that PaintingView reads it computed, in pixels. */
+@property --min-height {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 240px;
+}
+
+.painting-view {
+  /* Less on a short screen, so the page still fits it. */
+  --min-height: clamp(160px, var(--max-height), 240px);
+  /* Below a wide painting: its details and strips, and the page's room above and below. */
+  --max-height: calc(100vh - var(--above) - var(--below) - 356px);
+  container-type: inline-size;
+  display: flex;
+  /* Room for the picture's outline, which the scrolling box would cut off. */
+  padding: 3px;
+  overflow: auto hidden;
+  scrollbar-color: var(--ink) transparent;
+}
+
+.painting-view[data-pan] {
+  cursor: grab;
+}
+
+.painting-view.dragging {
+  cursor: grabbing;
+}
+
+.painting-page[data-layout='upright'] .painting-view {
+  --max-height: 100cqh;
+  container-type: size;
+  height: 100%;
+}
+
+.painting-view img {
+  flex: none;
+  /* Centered while it fits; once it pans, from its start. */
+  margin: auto;
+  width: min(100cqw, var(--max-height) * var(--aspect));
+  aspect-ratio: var(--aspect);
+  border-radius: 6px;
+  background: var(--paper);
+  box-shadow: 0 0 0 3px var(--ink);
+}
+
+.painting-view[data-pan] img {
+  width: calc(max(var(--min-height), min(var(--max-height), var(--sharpest))) * var(--aspect));
+}
+
+/* On the card's bottom edge while the picture pans: it goes on to either side. */
+.pan-hint {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  display: none;
+  place-items: center;
+  width: 64px;
+  height: 40px;
+  border: var(--outline);
+  border-radius: 999px;
+  background: var(--yellow);
+  transform: translateX(-50%);
+}
+
+.painting-frame:has(.painting-view[data-pan]) .pan-hint {
+  display: grid;
+}
+
+.painting-info {
+  grid-area: info;
+  /* The title's size follows the column's width (cqi), which stops growing with the page. */
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.painting-info h1 {
+  margin: 0 0 4px;
+  font-size: clamp(1.8rem, 9.2cqi, 3rem);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+.painting-info h1[data-length='long'] {
+  font-size: clamp(1.4rem, 5.9cqi, 2.2rem);
+}
+
+.painting-info h1[data-length='longer'] {
+  font-size: clamp(1.1rem, 4.2cqi, 1.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+
+/* Under a wide painting, the title shares the page's width with the strips. */
+.painting-page[data-layout='wide'] .painting-info h1 {
+  font-size: clamp(1.8rem, 6.8cqi, 2.7rem);
+}
+
+.painting-page[data-layout='wide'] .painting-info h1[data-length='long'] {
+  font-size: clamp(1.4rem, 5cqi, 2.1rem);
+}
+
+.painting-page[data-layout='wide'] .painting-info h1[data-length='longer'] {
+  font-size: clamp(1.1rem, 3.6cqi, 1.5rem);
+}
+
+.painting-info p {
+  margin: 0;
+}
+
+.painting-artist b {
+  font-weight: 800;
+}
+
+.painting-artist span,
+.painting-collection {
+  font-weight: 550;
+  opacity: 0.75;
+}
+
+/* When and where, on one line while they fit; a long collection's name runs on after the date. */
+.painting-when {
+  line-height: 1.3;
+}
+
+.painting-date {
+  margin-right: 0.4em;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.painting-info .painting-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--card);
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.chip .icon {
+  width: 1em;
+  height: 1em;
+}
+
+a.chip:hover {
+  background: var(--yellow);
+}
+
+.chip.license {
+  background: var(--green);
+}
+
+/* The four strips, each beside its axis's badge, as tall as the screen has room for. */
+.axis-strips {
+  --strip-height: clamp(32px, 5.2vh, 56px);
+  grid-area: strips;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.painting-page[data-layout='wide'] .axis-strips {
+  --strip-height: clamp(30px, 4.2vh, 44px);
+}
+
+.axis-strip {
+  display: grid;
+  grid-template-columns: var(--strip-height) minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.axis-badge {
+  display: grid;
+  place-items: center;
+  width: var(--strip-height);
+  height: var(--strip-height);
+  border: var(--outline);
+  border-radius: 14px;
+  background: var(--tile-color);
+  color: var(--tile-ink, var(--ink));
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+}
+
+.axis-badge .icon {
+  width: 58%;
+  height: 58%;
+}
+
+.strip-slot {
+  position: relative;
+  display: block;
+  height: var(--strip-height);
+  overflow: hidden;
+  border: var(--outline);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+}
+
+.axis-strip-band {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* While the browser reads the strips, stripes march across the ones still to come. */
+.axis-strips[aria-busy='true'] .strip-slot:empty {
+  background-image: linear-gradient(
+    45deg,
+    rgb(24 20 15 / 0.14) 25%,
+    transparent 25% 50%,
+    rgb(24 20 15 / 0.14) 50% 75%,
+    transparent 75%
+  );
+  background-size: 40px 40px;
+  animation: march 0.6s linear infinite;
+}
+
+/* What isn't there */
+
+.missing-page {
+  display: grid;
+  justify-items: start;
+  gap: 28px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 48px 32px;
+}
+
+.missing-page h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+@media (max-width: 860px) {
+  .atlas {
+    padding: 8px 16px 48px;
+  }
+
+  .wall {
+    gap: 20px 14px;
+  }
+
+  /* One column on a phone: the picture, its details, its strips. Only a painting too wide to
+     see at the phone's width scrolls sideways. */
+  .painting-page,
+  .painting-page[data-layout='wide'] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      'back'
+      'picture'
+      'info'
+      'strips'
+      'studio';
+    gap: 24px;
+    padding: 12px 16px 48px;
+  }
+
+  .painting-page[data-layout] .painting-frame {
+    height: auto;
+    padding: 14px;
+  }
+
+  .painting-page[data-layout] .painting-view {
+    --min-height: 110px;
+    --max-height: 62vh;
+    container-type: inline-size;
+    height: auto;
+  }
+
+  .painting-page[data-layout] .axis-strips {
+    --strip-height: 48px;
+  }
+
+  .missing-page {
+    padding: 32px 16px;
+  }
+}

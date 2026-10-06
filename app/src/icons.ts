@@ -39,6 +39,24 @@ export const POSTER_ICON = icon('<rect x="4.5" y="2.5" width="15" height="19" rx
 /** A phone with bands down its screen, for saving the strip as a wallpaper. */
 export const PHONE_ICON = icon('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M9.5 7.5h5M9.5 11h5M9.5 14.5h5"/>');
 
+/** A picture over a strip, for the Studio. */
+export const STUDIO_ICON = icon('<rect x="3" y="3" width="18" height="12" rx="2"/><path d="M3 20h4M10 20h4M17 20h4"/>');
+
+/** Four framed pictures, for the Atlas. */
+export const ATLAS_ICON = icon(
+  '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
+);
+
+export const BACK_ICON = icon('<path d="M19 12H5M11 6l-6 6 6 6"/>');
+
+/** An arrow out of a box, for a link to another site. */
+export const OUT_ICON = icon('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>');
+
+/** A double-headed arrow, for a picture that pans sideways. */
+export const PAN_ICON = icon('<path d="M3 12h18M7 7l-5 5 5 5M17 7l5 5-5 5"/>');
+
+export const RETRY_ICON = icon('<path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/>');
+
 export const UPLOAD_ICON = icon('<path d="M12 16V4M6.5 9.5 12 4l5.5 5.5M4 20h16"/>');
 
 /** GitHub's mark, for the link to the project's repository. */

@@ -65,6 +65,7 @@ Decided Oct 5, 2026, at the start of phase 3:
 - **Big, heavy type**: Bricolage Grotesque, a variable font, self-hosted through Fontsource, so no request goes out to a font server.
 - **Few words**: icons and shapes carry the interface. The explanation waits behind the "How it works" button in the header, beside a link to the GitHub repository.
 - **Images come in every way**: dropped anywhere on the page, chosen in the file picker, pasted, or picked from the sample wall: four famous public-domain paintings (the Mona Lisa from Wikimedia Commons, three CC0 works from the AIC), each in a flat version of its museum's frame, credited in "How it works". A feature that can't fit this look is left out rather than added anyway.
+- **Studio | Atlas** (Oct 6, 2026): a two-tab switch in the header, which floats at the bottom of the screen on a phone. The Atlas is a wall of paintings at their own shapes in justified rows, each over its color strip, with a museum label on hover (chosen over a card grid and a shelf of strips), and coming back to it from a painting returns to the same place on the wall. Each painting has its own page, with nothing over the picture: the picture on a card, and beside it "← Atlas", the details, the four strips and "Open in Studio" under them. Every painting's page fits a desktop window without scrolling (checked for all of them at 1280×720, 1440×800, 1536×730 and 1920×950). A painting wider than 2:1 spans the page with the rest below it, and one too wide to see whole (a handscroll) pans sideways.
 
 ## Architecture
 

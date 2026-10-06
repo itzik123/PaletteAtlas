@@ -52,7 +52,7 @@ export class Studio {
     this.element.className = 'studio';
     this.element.dataset.state = 'empty';
     this.#intake = new FileIntake(this.element, {
-      onFile: (file) => void this.#open(file),
+      onFile: (file) => void this.#openFile(file),
       onSample: (id) => {
         const sample = SAMPLES.find((candidate) => candidate.id === id);
         if (sample) void this.#openSample(sample);
@@ -129,17 +129,17 @@ export class Studio {
     return zone;
   }
 
-  async #open(file: File): Promise<void> {
+  async #openFile(file: File): Promise<void> {
     if (!isImage(file)) {
       this.#toast.show(`“${file.name}” is not an image.`);
       return;
     }
-    await this.#read(file.name, async () => file);
+    await this.open(file.name, async () => file);
   }
 
   /** Opens a painting from the wall as if its file had been dropped, named after its title. */
   async #openSample(sample: Sample): Promise<void> {
-    await this.#read(`${sample.title}.webp`, async () => {
+    await this.open(`${sample.title}.webp`, async () => {
       const response = await fetch(sample.image);
       if (!response.ok) throw new Error(`${sample.image}: ${response.status}`);
       return response.blob();
@@ -149,9 +149,11 @@ export class Studio {
   /**
    * Loads an image, reads it into its strips and shows it, unless another image has been handed in
    * since: the latest one wins, however long each takes to arrive and be read. Any failure along the
-   * way ends in a message rather than a page left waiting.
+   * way ends in a message rather than a page left waiting. The name, a file name, names what the
+   * Studio saves. Images dropped, chosen, pasted or picked from the wall come in this way, and so
+   * does a painting opened from the Atlas.
    */
-  async #read(name: string, load: () => Promise<Blob>): Promise<void> {
+  async open(name: string, load: () => Promise<Blob>): Promise<void> {
     const ticket = ++this.#latest;
     this.element.setAttribute('aria-busy', 'true');
     const read = await load()

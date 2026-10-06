@@ -7,6 +7,8 @@ const inCi = Boolean(process.env.CI);
 /** UI tests run against the production build, the site as it ships. */
 export default defineConfig({
   testDir: 'e2e',
+  // The Atlas's tests run on a gallery the pipeline builds from its fixture (see fixture-gallery.ts).
+  globalSetup: './e2e/fixture-gallery.ts',
   forbidOnly: inCi,
   reporter: inCi ? 'github' : 'list',
   use: { baseURL: `http://localhost:${PREVIEW_PORT}` },

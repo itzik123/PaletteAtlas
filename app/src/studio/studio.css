@@ -46,12 +46,6 @@
   background-color: rgb(24 20 15 / 0.3);
 }
 
-@keyframes march {
-  to {
-    background-position: 40px 0;
-  }
-}
-
 /* Before the first image: a headline and a big target to drop it on */
 
 .intro {
@@ -583,23 +577,6 @@
 .axis-tile:has(input:focus-visible) {
   outline: 4px solid var(--blue);
   outline-offset: 4px;
-}
-
-.axis-color {
-  --tile-color: var(--red);
-}
-
-.axis-hilbert {
-  --tile-color: var(--blue);
-  --tile-ink: var(--paper);
-}
-
-.axis-columns {
-  --tile-color: var(--yellow);
-}
-
-.axis-radial {
-  --tile-color: var(--green);
 }
 
 .saves {
