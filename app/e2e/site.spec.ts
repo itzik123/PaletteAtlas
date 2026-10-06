@@ -54,3 +54,10 @@ test('keeps the way to the Career Barcodes at the top on a laptop, under the hea
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jan van Eyck');
   await expect(atTop).toHaveAttribute('aria-current', 'page');
 });
+
+test('leaves the way to every Career Barcode off a painting’s page, which leads to its artist’s own', async ({ page }) => {
+  await page.setViewportSize(LAPTOP);
+  await page.goto('/painting.html?id=Q1217187');
+  await expect(page.getByRole('link', { name: 'Career Barcode', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Career Barcodes' })).toHaveCount(0);
+});

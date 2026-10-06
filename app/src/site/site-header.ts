@@ -12,12 +12,16 @@ export type SitePart = 'studio' | 'atlas';
 /** The kinds of page on the site. */
 export type SitePage = 'studio' | 'atlas' | 'painting' | 'careers';
 
-/** Each kind of page: the part of the site it belongs to, and what "How it works" says on it. */
-const PAGES: Readonly<Record<SitePage, { part: SitePart; explanation: Explanation }>> = {
-  studio: { part: 'studio', explanation: STUDIO_EXPLANATION },
-  atlas: { part: 'atlas', explanation: ATLAS_EXPLANATION },
-  painting: { part: 'atlas', explanation: PAINTING_EXPLANATION },
-  careers: { part: 'atlas', explanation: CAREERS_EXPLANATION },
+/**
+ * Each kind of page: the part of the site it belongs to, what "How it works" says on it, and
+ * whether its header leads to the Career Barcodes.
+ */
+const PAGES: Readonly<Record<SitePage, { part: SitePart; explanation: Explanation; careers: boolean }>> = {
+  studio: { part: 'studio', explanation: STUDIO_EXPLANATION, careers: false },
+  atlas: { part: 'atlas', explanation: ATLAS_EXPLANATION, careers: true },
+  // A painting's page leads to its own artist's Career Barcode instead, from beside their name.
+  painting: { part: 'atlas', explanation: PAINTING_EXPLANATION, careers: false },
+  careers: { part: 'atlas', explanation: CAREERS_EXPLANATION, careers: true },
 };
 
 /** Each part's opening page, where its tab, and the site's name from anywhere in it, lead. */
@@ -25,14 +29,15 @@ const HOMES: Readonly<Record<SitePart, string>> = { studio: './', atlas: './atla
 
 /**
  * The bar across the top of every page: the site's name, leading to the opening page of the part
- * it is in; a switch between the Studio and the Atlas, and in the Atlas the way to the Career
- * Barcodes; a button that explains the page (see Explanation); and a link to the site's code.
+ * it is in; a switch between the Studio and the Atlas, and on the Atlas's wall and the Career
+ * Barcodes the way to them; a button that explains the page (see Explanation); and a link to the
+ * site's code.
  */
 export class SiteHeader {
   readonly element = document.createElement('header');
 
   constructor(page: SitePage) {
-    const { part, explanation } = PAGES[page];
+    const { part, explanation, careers } = PAGES[page];
     const dialog = new ExplainDialog(explanation);
     const here = (tab: SitePart): string => (tab === part ? 'aria-current="page"' : '');
     this.element.className = 'site-header';
@@ -50,7 +55,7 @@ export class SiteHeader {
         <a class="pill dark" href="${REPOSITORY_URL}" target="_blank" rel="noopener">${GITHUB_ICON}<span>GitHub</span></a>
       </nav>
     `;
-    if (part === 'atlas') this.element.querySelector('.part-switch')?.after(careersLink(page === 'careers'));
+    if (careers) this.element.querySelector('.part-switch')?.after(careersLink(page === 'careers'));
     this.element.querySelector('.explain-button')?.addEventListener('click', () => dialog.open());
     this.element.append(dialog.element);
   }
