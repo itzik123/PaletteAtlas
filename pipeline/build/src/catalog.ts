@@ -1,10 +1,8 @@
 import { readFile } from 'node:fs/promises';
+import type { DatePrecision, License } from '@palette-atlas/gallery';
 
 // The fetch step's catalog (works.json, written by pipeline/fetch/catalog.py): the contract
 // between the two steps. Its fields mirror the Python dataclasses Work and Artist.
-
-/** How precisely a painting's year is known. */
-export type DatePrecision = 'year' | 'decade' | 'century' | 'millennium';
 
 /** A painting in the catalog. */
 export interface Work {
@@ -23,7 +21,7 @@ export interface Work {
   readonly sitelinks: number;
   /** Its image's file name on Wikimedia Commons, and the file's license there: `pd` or `cc0`. */
   readonly file: string;
-  readonly license: string;
+  readonly license: License;
   /** The full size of the image on Commons. */
   readonly width: number;
   readonly height: number;

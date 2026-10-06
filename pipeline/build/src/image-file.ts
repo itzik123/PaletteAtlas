@@ -13,7 +13,11 @@ export async function readImage(path: string): Promise<RgbaImage> {
   return { width: info.width, height: info.height, data };
 }
 
-/** Encodes an image as a PNG file. */
-export async function writePng(path: string, { width, height, data }: RgbaImage): Promise<void> {
-  await sharp(data, { raw: { width, height, channels: BYTES_PER_PIXEL } }).png().toFile(path);
+/**
+ * Encodes an image as a PNG file. An opaque image is stored without its alpha channel, and
+ * compressed harder: the gallery's strips take less than half the room.
+ */
+export async function writePng(path: string, { width, height, data }: RgbaImage, { opaque = false } = {}): Promise<void> {
+  const image = sharp(data, { raw: { width, height, channels: BYTES_PER_PIXEL } });
+  await (opaque ? image.removeAlpha().png({ compressionLevel: 9, adaptiveFiltering: true }) : image.png()).toFile(path);
 }

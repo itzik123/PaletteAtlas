@@ -68,12 +68,13 @@ Decided Oct 5, 2026, at the start of phase 3:
 
 ## Architecture
 
-Four TypeScript libraries with no browser dependency, shared by an offline data pipeline and the site. The same code computes the gallery's strips offline and, in the browser, the strip of the image a user uploads.
+TypeScript libraries with no browser dependency, shared by an offline data pipeline and the site. The same code computes the gallery's strips offline and, in the browser, the strip of the image a user uploads.
 
 - `color`: correct averaging (linear light), k-means, color distances (OKLab) and palette ordering (exact TSP)
 - `strip`: image to strip (Hilbert, TSP)
 - `vectorize`: strip to vector (soft histogram, Hellinger)
 - `hnsw`: index and search (search, trace)
+- `gallery` (added Oct 6, 2026): the gallery's data format, which the pipeline writes and the site reads: paintings stored by column, color strips packed into chunk images, and Commons links rebuilt from file names (`CommonsImage`)
 
 Both sides import the same libraries:
 
@@ -103,7 +104,8 @@ PaletteAtlas/
 │   ├── color/          sRGB / linear / OKLab, k-means, color ordering
 │   ├── strip/          axes, source map, Hilbert fold-back
 │   ├── vectorize/      strip to vector (soft histogram, Hellinger)
-│   └── hnsw/           index, brute force, recall, trace, serialization
+│   ├── hnsw/           index, brute force, recall, trace, serialization
+│   └── gallery/        the gallery's data format: chunks, columns, Commons links
 ├── pipeline/
 │   ├── fetch/          Python: Wikidata catalog, Commons licenses, polite download
 │   ├── build/          TypeScript (Node): strips, vectors, index build
@@ -178,13 +180,14 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 - **Scope** is the main risk. The Lab is the heavy part, so it comes after there is already a product that stands on its own.
 - **Vector representation**: start with a soft histogram over a color vocabulary in OKLab, with Hellinger distance. Take the square root of each proportion and use plain Euclidean distance, so HNSW needs no special metric. A 3×3 grid of average colors can be added so layout counts too; decide by what looks right in the gallery.
 - **Non-square images** (decided Oct 4, 2026): the classic Hilbert curve is defined on a square whose side is a power of 2, so the Hilbert axis uses Jakub Červený's generalized curve ("gilbert"), which fills any rectangle without jumps (at most one diagonal step) and matches the classic curve on those squares. No padding or cropping.
-- **Data size in the browser**: 50,000 vectors and their graph can reach tens of megabytes, and their strips along all four axes about 77 MB. Fix: uint8 quantization, loading in chunks as needed, and fewer axes where one is enough.
+- **Data size in the browser**: 50,000 vectors and their graph can reach tens of megabytes. Fix: uint8 quantization and loading in chunks as needed. The strips were settled on Oct 6, 2026: only the color axis ships (about 7.5 MB for 50,000), and pages load a chunk at a time.
 - **Painting data** (decided Oct 5, 2026, at the start of phase 4; replaces the design doc's AIC data dump): the AIC has only 1,875 public-domain paintings with images, too few to find a painting that truly resembles a user's photo, and too few to give HNSW a real job. Five museum APIs together (the Met, Rijksmuseum, SMK, Cleveland, AIC) hold about 30,000; Wikidata lists 247,000 paintings with a Commons image by artists who died over 70 years ago, from hundreds of museums. So:
   - **Catalog**: Wikidata, queried through QLever (`qlever.dev/api/wikidata`), which returns the whole catalog in about 25 s; the official query service times out at 60 s on it. A painting qualifies with one artist, an image, a collection and a date, its artist dead for 70 years or more.
   - **Selection**: about 50,000 (a setting), the most famous first (by how many Wikipedias have an article on it), then a seeded draw from the rest.
   - **Licenses**: only files Commons marks `pd` or `cc0`, which it checks for both the US and the source country, at least 500 px wide. Photos that claim their own license (e.g. CC BY-SA) are left out, and black-and-white photos are dropped by the build.
   - **Download**: 500 px thumbnails, one at a time and resumable, within Wikimedia's robot policy (at most 2 at once, standard thumbnail sizes only, a User-Agent naming the site).
-  - **Hosting**: the site loads thumbnails straight from `upload.wikimedia.org` at standard sizes (50,000 files exceed Cloudflare Pages' 20,000-file limit and don't belong in git), and hosts only strips, vectors and metadata. Each painting is credited with artist, title, date, collection and Wikimedia Commons.
+  - **Hosting** (decided Oct 6, 2026): the site loads pictures straight from Commons at its standard widths (thumbnails from `thumb.wikimedia.org`, a file no wider than asked from `upload.wikimedia.org`), since 50,000 files exceed Cloudflare Pages' 20,000-file limit and don't belong in git. Git holds what the pipeline computes, in `app/public/data`: metadata stored by column, 1,000 paintings a chunk, and only the color strips, packed 1,000 to an RGB PNG (about 150 KB). The painting page reads the other three axes live from the same 500 px image the pipeline read. Links are rebuilt from each file's name, hash and width by MediaWiki's thumbnail rules; the 9 TIFFs whose thumbnails break them are left out. Each painting is credited with artist, title, date, collection and Wikimedia Commons.
+  - **Order** (decided Oct 6, 2026): the most famous first. A short held-back list (`HELD_BACK` in the pipeline) moves a painting out of the opening screens: Courbet's *L'Origine du monde* comes at position 500.
   - **Quality varies**: in a random sample of 24, 17 were clean photos; the rest were black and white, framed, photographed in place or a drawing. The check page measures it; the museums' own images for the same works stay an option for later.
   - **Color profiles**: the pipeline applies a file's embedded ICC profile as browsers do, so a painting keeps its true colors. For the files with a wide-gamut profile (Adobe RGB and the like, about 15% of the first 2,900 downloads), libvips (LittleCMS) and Chromium (skcms) round the conversion differently by ±1, and k-means can magnify that in the color strip, so the browser's strip of such a file can differ slightly from the gallery's. Files in sRGB or without a profile give the same strips byte for byte (the check page found no exception in 200 random paintings).
 - **Performance**: downscale an image to about 256 px before k-means (area averaging in linear light, see Color spaces), and run it in a Worker.

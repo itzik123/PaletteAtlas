@@ -7,10 +7,11 @@ import { bitmapPixels } from './bitmap-pixels.ts';
 /**
  * Decodes an image file with the browser and returns its pixels, turned upright by its EXIF
  * orientation. createImageBitmap decodes off the main thread, even in a hidden tab (where
- * HTMLImageElement.decode() never settles).
+ * HTMLImageElement.decode() never settles). Options can keep the stored values as they are, for
+ * an image that holds data rather than a picture.
  */
-export async function decodeImage(file: Blob): Promise<RgbaImage> {
-  const bitmap = await createImageBitmap(file);
+export async function decodeImage(file: Blob, options?: ImageBitmapOptions): Promise<RgbaImage> {
+  const bitmap = await createImageBitmap(file, options);
   const pixels = bitmapPixels(bitmap);
   bitmap.close();
   return pixels;

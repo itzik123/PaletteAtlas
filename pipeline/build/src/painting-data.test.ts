@@ -1,11 +1,23 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { BYTES_PER_PIXEL } from '@palette-atlas/color';
+import {
+  type Columns,
+  CommonsImage,
+  chunkOf,
+  GALLERY_FILES,
+  type GalleryManifest,
+  type Painting,
+  recordAt,
+  recordCount,
+  SOURCE_WIDTH,
+  stripInRow,
+} from '@palette-atlas/gallery';
 import { ImageStrips } from '@palette-atlas/strip';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { readCatalog } from './catalog.ts';
 import { readImage } from './image-file.ts';
-import { buildPaintings, PAINTINGS_FILE, type PaintingsFile, STRIPS_FOLDER } from './painting-data.ts';
+import { type BuildReport, buildPaintings } from './painting-data.ts';
 import { StripPool } from './strip-pool.ts';
 
 /**
@@ -15,57 +27,66 @@ import { StripPool } from './strip-pool.ts';
  * Jewett, left undownloaded.
  */
 const FIXTURE = join(import.meta.dirname, '../../fixtures/wikidata');
-/** Small enough that the four paintings fill two atlas chunks. */
+/** Small enough that the four paintings fill two chunks. */
 const CHUNK_SIZE = 2;
+/** Van Eyck's Madonna, the first in the catalog, held back to third place. */
+const HELD_BACK = { ids: ['Q1747569'], position: 2 };
 /** Starting worker threads and reading three images can take seconds on a slow machine. */
 const TIMEOUT_MS = 30_000;
 
 describe('buildPaintings', () => {
   let output: string;
-  let built: PaintingsFile;
+  let report: BuildReport;
+  let manifest: GalleryManifest;
+  let paintings: Painting[];
 
   beforeAll(async () => {
     output = await mkdtemp(join(tmpdir(), 'paintings-'));
     const pool = new StripPool(2);
     try {
-      await buildPaintings(FIXTURE, output, pool, { chunkSize: CHUNK_SIZE, log: () => {} });
+      report = await buildPaintings(FIXTURE, output, pool, { chunkSize: CHUNK_SIZE, heldBack: HELD_BACK, log: () => {} });
     } finally {
       await pool.close();
     }
-    built = JSON.parse(await readFile(join(output, PAINTINGS_FILE), 'utf8')) as PaintingsFile;
+    const read = async <T>(file: string): Promise<T> => JSON.parse(await readFile(join(output, file), 'utf8')) as T;
+    manifest = await read(GALLERY_FILES.manifest);
+    const chunks = await Promise.all([0, 1].map((chunk) => read<Columns<Painting>>(GALLERY_FILES.paintings(chunk))));
+    paintings = chunks.flatMap((columns) => Array.from({ length: recordCount(columns) }, (_, row) => recordAt(columns, row)));
   }, TIMEOUT_MS);
 
   afterAll(() => rm(output, { recursive: true, force: true }));
 
-  it('lists the downloaded paintings in color, in the order of the catalog, each with its artist', () => {
-    expect(built.paintings.map(({ id }) => id)).toEqual(['Q1747569', 'Q1217187', 'Q17812507', 'Q18748372']);
-    expect(built.paintings.map(({ artist }) => built.artists[artist].name)).toEqual([
-      'Jan van Eyck',
+  it('lists the downloaded paintings in color in the order of the catalog, but for those held back, each with its artist', async () => {
+    expect(report).toEqual({ paintings: 4, notDownloaded: 1, colorless: 1, failed: 0, unlinkable: 0 });
+    expect(manifest.count).toBe(4);
+    expect(paintings.map(({ id }) => id)).toEqual(['Q1217187', 'Q17812507', 'Q1747569', 'Q18748372']);
+    expect(paintings.map(({ artist }) => recordAt(manifest.artists, artist).name)).toEqual([
       'Sandro Botticelli',
       'Hendrick Cornelisz Vroom',
+      'Jan van Eyck',
       'Amico Aspertini',
     ]);
+    expect(JSON.parse(await readFile(join(output, GALLERY_FILES.ids), 'utf8'))).toEqual(paintings.map(({ id }) => id));
   });
 
-  it('notes the strips shorter than the rest: a tall painting has fewer columns than segments', () => {
-    expect(built.paintings.map(({ lengths }) => lengths)).toEqual([{ columns: 114 }, undefined, undefined, undefined]);
+  it('links every painting to the very image on Commons that its strip was read from', async () => {
+    const { works } = await readCatalog(join(FIXTURE, 'works.json'));
+    for (const painting of paintings) {
+      const image = new CommonsImage(painting.file, painting.hash, painting.width);
+      expect(image.url(SOURCE_WIDTH)).toBe(works.find(({ id }) => id === painting.id)?.thumbnail);
+    }
   });
 
   it(
-    'stores every painting’s strip along every axis exactly as ImageStrips reads its image, then transparent pixels',
+    'stores every painting’s color strip exactly as ImageStrips reads its image',
     async () => {
-      const rowBytes = built.segments * BYTES_PER_PIXEL;
-      for (const [index, painting] of built.paintings.entries()) {
+      for (const [position, painting] of paintings.entries()) {
         const { strips } = ImageStrips.read(await readImage(join(FIXTURE, 'images', `${painting.id}.jpg`)));
-        expect(strips.map(({ axis }) => axis)).toEqual(built.axes);
-        for (const { axis, strip } of strips) {
-          const chunk = await readImage(join(output, STRIPS_FOLDER, `${axis}-${Math.floor(index / built.chunkSize)}.png`));
-          const row = (index % built.chunkSize) * rowBytes;
-          const stored = Buffer.from(chunk.data.subarray(row, row + rowBytes));
-          const expected = Buffer.from(strip.toImage().data);
-          expect(stored.subarray(0, expected.length).equals(expected), `${painting.id} along ${axis}`).toBe(true);
-          expect(stored.subarray(expected.length).every((byte) => byte === 0), `${painting.id}'s padding along ${axis}`).toBe(true);
-        }
+        const expected = strips.find(({ axis }) => axis === 'color')?.strip.toImage();
+        const { chunk, row } = chunkOf(position, manifest.chunkSize);
+        const stored = stripInRow(await readImage(join(output, GALLERY_FILES.strips(chunk))), row);
+        expect(stored.width).toBe(manifest.segments);
+        expect(Buffer.from(stored.data).equals(Buffer.from(expected?.data ?? [])), painting.id).toBe(true);
       }
     },
     TIMEOUT_MS,

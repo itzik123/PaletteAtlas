@@ -12,6 +12,7 @@
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@palette-atlas/color": "workspace:*",
+    "@palette-atlas/gallery": "workspace:*",
     "@palette-atlas/strip": "workspace:*"
   },
   "devDependencies": {

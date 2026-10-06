@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@palette-atlas/color": "workspace:*",
+    "@palette-atlas/gallery": "workspace:*",
     "@palette-atlas/strip": "workspace:*",
     "sharp": "^0.35.5"
   },

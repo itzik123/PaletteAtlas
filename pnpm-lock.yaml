@@ -190,6 +190,9 @@ importers:
       '@palette-atlas/color':
         specifier: workspace:*
         version: link:../packages/color
+      '@palette-atlas/gallery':
+        specifier: workspace:*
+        version: link:../packages/gallery
       '@palette-atlas/strip':
         specifier: workspace:*
         version: link:../packages/strip
@@ -216,6 +219,19 @@ importers:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1))
 
+  packages/gallery:
+    dependencies:
+      '@palette-atlas/color':
+        specifier: workspace:*
+        version: link:../color
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1))
+
   packages/strip:
     dependencies:
       '@palette-atlas/color':
@@ -234,6 +250,9 @@ importers:
       '@palette-atlas/color':
         specifier: workspace:*
         version: link:../../packages/color
+      '@palette-atlas/gallery':
+        specifier: workspace:*
+        version: link:../../packages/gallery
       '@palette-atlas/strip':
         specifier: workspace:*
         version: link:../../packages/strip
