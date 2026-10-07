@@ -1,4 +1,4 @@
-import type { CommonsImage } from '@palette-atlas/gallery';
+import { type CommonsImage, thumbnailWidthAtLeast } from '@palette-atlas/gallery';
 
 /** The frames a painting is shown enlarged in (see atlas.css): one for each painting, always the same. */
 const FRAMES = ['carved-gilt', 'beaded-gilt', 'lacquer-mat', 'walnut', 'velvet-gilt', 'silver-leaf'] as const;
@@ -8,22 +8,25 @@ const CLICK_SLOP = 5;
 /**
  * A painting enlarged over its page, as large as fits the screen, in a frame picked for it, the
  * page darkened behind it. It rises into place and sinks back away (see atlas.css), and a click
- * anywhere or Escape puts it away. The picture shown on the page stands in until Commons sends one
- * as large as the enlarged picture.
+ * anywhere or Escape puts it away. CSS sizes the picture from the painting's shape before any
+ * image arrives, so Commons is asked for one as wide as it is shown; the picture on the page, if
+ * it has arrived, stands in until then.
  */
 export class PictureLightbox {
   readonly element = document.createElement('dialog');
   readonly #picture = document.createElement('img');
   readonly #image: CommonsImage;
-  #enlarged = false;
+  /** The width of the picture asked for so far. */
+  #pictureWidth = 0;
 
-  constructor(image: CommonsImage, size: { width: number; height: number }, title: string, id: string) {
+  constructor(image: CommonsImage, aspect: number, title: string, id: string) {
     this.#image = image;
     this.element.className = `lightbox ${frameOf(id)}`;
     this.element.setAttribute('aria-label', title);
     this.#picture.alt = title;
-    this.#picture.width = size.width;
-    this.#picture.height = size.height;
+    this.#picture.style.setProperty('--aspect', String(aspect));
+    // Never enlarged past the file itself.
+    this.#picture.style.setProperty('--widest', `${image.width}px`);
     this.element.append(this.#picture);
     this.element.addEventListener('click', () => this.element.close());
   }
@@ -34,19 +37,35 @@ export class PictureLightbox {
     picture.addEventListener('pointerdown', ({ clientX, clientY }) => (pressed = { x: clientX, y: clientY }));
     picture.addEventListener('click', ({ clientX, clientY }) => {
       if (Math.hypot(clientX - pressed.x, clientY - pressed.y) > CLICK_SLOP) return;
-      this.open(picture.querySelector('img')?.currentSrc ?? '');
+      this.open(picture.querySelector('img'));
     });
   }
 
-  /** Shows the painting enlarged, the picture already shown standing in at first. */
-  open(shown: string): void {
-    if (!this.#enlarged) this.#picture.src = shown;
+  /**
+   * Shows the painting enlarged: the picture shown on the page stands in at first, if it has
+   * arrived, and a wider one is asked for whenever the enlarged picture is shown wider than that
+   * (the window grown since, say).
+   */
+  open(shown: HTMLImageElement | null): void {
     this.element.showModal();
-    if (this.#enlarged) return;
-    this.#enlarged = true;
-    const larger = new Image();
-    larger.addEventListener('load', () => (this.#picture.src = larger.src));
-    larger.src = this.#image.urlAtLeast(this.#picture.clientWidth * devicePixelRatio);
+    const width = thumbnailWidthAtLeast(Math.ceil(this.#picture.clientWidth * devicePixelRatio));
+    if (!this.#picture.src && shown?.complete && shown.naturalWidth > 0) {
+      this.#picture.src = shown.currentSrc;
+      this.#pictureWidth = shown.naturalWidth;
+    }
+    if (width <= this.#pictureWidth) return;
+    this.#pictureWidth = width;
+    const url = this.#image.url(width);
+    if (!this.#picture.src) {
+      this.#picture.src = url;
+      return;
+    }
+    const wider = new Image();
+    wider.addEventListener('load', () => {
+      // Unless a wider one has been asked for since.
+      if (width === this.#pictureWidth) this.#picture.src = url;
+    });
+    wider.src = url;
   }
 }
 

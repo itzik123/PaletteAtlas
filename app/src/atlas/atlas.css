@@ -1410,13 +1410,13 @@ a.chip:hover {
   }
 }
 
-/* As large as the screen allows, with room round the frame. */
+/* As large as the screen allows, with room round the frame, but no wider than the file itself.
+   Sized by the painting's shape, not by the picture there, which may not have arrived yet. */
 .lightbox img {
   display: block;
-  width: auto;
-  height: auto;
-  max-width: calc(100vw - 2 * var(--w) - 96px);
-  max-height: calc(100vh - 2 * var(--w) - 96px);
+  width: min(var(--widest), 100vw - 2 * var(--w) - 96px, (100vh - 2 * var(--w) - 96px) * var(--aspect));
+  aspect-ratio: var(--aspect);
+  background: var(--paper);
   box-shadow: 0 0 0 2px var(--ink);
 }
 

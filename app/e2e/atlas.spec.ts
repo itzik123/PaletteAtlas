@@ -1,5 +1,5 @@
 import { GALLERY_FILES, THUMBNAIL_WIDTHS } from '@palette-atlas/gallery';
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 import { byColorScheme } from './color-schemes.ts';
 import { FIXTURE_PAINTINGS, fixtureImage, serveFixtureGallery } from './fixture-gallery.ts';
 import { canvasColors, storedStrip } from './stored-strips.ts';
@@ -246,12 +246,39 @@ test('pans a painting too wide to see at the screen’s width, by dragging it si
   expect(await view.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
 });
 
+/** The most of the screen's height, or of its width, left round a painting enlarged as large as fits, in CSS pixels. */
+const ROOM_ROUND_ENLARGED = 100;
+
+/**
+ * Expects a painting enlarged as large as the screen allows, its frame reaching near the screen's
+ * edges, top and bottom or either side, and Commons asked for its picture at least as wide as it
+ * is shown (the fixture serves the same small file at every width, so the link tells).
+ */
+async function expectAsLargeAsFits(enlarged: Locator): Promise<void> {
+  await expect(enlarged).toBeVisible();
+  const room = await enlarged.evaluate((frame: HTMLElement) =>
+    Math.min(innerWidth - frame.offsetWidth, innerHeight - frame.offsetHeight),
+  );
+  expect(room).toBeLessThan(ROOM_ROUND_ENLARGED);
+  await expect
+    .poll(() =>
+      enlarged.locator('img').evaluate((picture: HTMLImageElement) => {
+        if (!picture.complete || picture.naturalWidth === 0) return 0;
+        // A link to the file itself names no width: it is the widest there is.
+        const asked = /\/(\d+)px-[^/]*$/.exec(picture.currentSrc)?.[1];
+        return (asked ? Number(asked) : Number.POSITIVE_INFINITY) / (picture.clientWidth * devicePixelRatio);
+      }),
+    )
+    .toBeGreaterThanOrEqual(1);
+}
+
 test('enlarges a painting over its page on a click, and puts it away on another, or on Escape', async ({ page }) => {
   await page.goto('/painting.html?id=Q1217187');
   const picture = page.getByRole('img', { name: 'Calumny of Apelles' });
   const enlarged = page.getByRole('dialog', { name: 'Calumny of Apelles' });
+  await expect.poll(() => picture.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   await picture.click();
-  await expect(enlarged).toBeVisible();
+  await expectAsLargeAsFits(enlarged);
   await expect(enlarged).toHaveCSS('outline-style', 'none');
   await page.mouse.click(8, 8);
   await expect(enlarged).toBeHidden();
@@ -259,4 +286,18 @@ test('enlarges a painting over its page on a click, and puts it away on another,
   await expect(enlarged).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(enlarged).toBeHidden();
+});
+
+test('enlarges a painting as large as fits when clicked before its picture has arrived', async ({ page }) => {
+  // Commons's pictures held back until the painting has been clicked, as on a slow connection.
+  let arrive = (): void => {};
+  const arrived = new Promise<void>((resolve) => (arrive = resolve));
+  await page.route(/^https:\/\/(thumb|upload)\.wikimedia\.org\//, async (route) => {
+    await arrived;
+    await route.fallback();
+  });
+  await page.goto('/painting.html?id=Q1217187');
+  await page.getByRole('img', { name: 'Calumny of Apelles' }).click();
+  arrive();
+  await expectAsLargeAsFits(page.getByRole('dialog', { name: 'Calumny of Apelles' }));
 });
