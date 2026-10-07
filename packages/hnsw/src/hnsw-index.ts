@@ -1,5 +1,6 @@
 import { type Distance, squaredEuclidean } from './distance.ts';
 import { buildGraph } from './hnsw-builder.ts';
+import { readIndex, writeIndex } from './index-file.ts';
 import type { HnswGraph, LayeredGraph } from './layered-graph.ts';
 import { LayerSearch } from './layer-search.ts';
 import type { Random } from './random.ts';
@@ -27,6 +28,11 @@ export interface HnswOptions {
   readonly distance?: Distance;
 }
 
+export interface ReadOptions {
+  /** The distance the index was built with: the squared Euclidean distance, unless another is given. */
+  readonly distance?: Distance;
+}
+
 export interface SearchOptions {
   /** ef, how many nodes the search keeps on the bottom layer: more finds more of the true nearest, more slowly. */
   readonly ef?: number;
@@ -43,10 +49,12 @@ export interface SearchOptions {
  * then searches the bottom one best first (K-NN-SEARCH, Algorithm 5).
  */
 export class HnswIndex implements VectorIndex {
+  readonly #vectors: Vectors;
   readonly #graph: LayeredGraph;
   readonly #layerSearch: LayerSearch;
 
   private constructor(vectors: Vectors, graph: LayeredGraph, distance: Distance) {
+    this.#vectors = vectors;
     this.#graph = graph;
     this.#layerSearch = new LayerSearch(graph, vectors, distance);
   }
@@ -61,6 +69,26 @@ export class HnswIndex implements VectorIndex {
       throw new RangeError(`efConstruction must be a positive integer, not ${efConstruction}`);
     }
     return new HnswIndex(vectors, buildGraph(vectors, { random, M, efConstruction, distance }), distance);
+  }
+
+  /**
+   * Reads an index that toBytes wrote. A file holds no distance, so the one the index was built
+   * with must be given again. The vectors come back from a byte per number, each within half a
+   * step of what it was (see QuantizedVectors).
+   */
+  static fromBytes(bytes: Uint8Array, { distance = squaredEuclidean }: ReadOptions = {}): HnswIndex {
+    const { graph, vectors } = readIndex(bytes);
+    return new HnswIndex(vectors, graph, distance);
+  }
+
+  /** The index as bytes, for a file (see writeIndex): its graph, and its vectors at a byte per number. */
+  toBytes(): Uint8Array {
+    return writeIndex(this.#graph, this.#vectors);
+  }
+
+  /** The vectors the index searches. */
+  get vectors(): Vectors {
+    return this.#vectors;
   }
 
   /** The graph, to read. */
