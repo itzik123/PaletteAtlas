@@ -15,15 +15,14 @@ import {
   SOURCE_WIDTH,
   stripInRow,
 } from '@palette-atlas/gallery';
-import { HnswIndex } from '@palette-atlas/hnsw';
 import { ImageStrips } from '@palette-atlas/strip';
-import { colorSchemeDistance, colorSchemeVector } from '@palette-atlas/vectorize';
+import { colorSchemeVector } from '@palette-atlas/vectorize';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildCareers } from './career-data.ts';
 import { readCatalog } from './catalog.ts';
 import { readImage } from './image-file.ts';
 import { type BuildReport, buildPaintings } from './painting-data.ts';
-import { buildSearchIndex } from './search-data.ts';
+import { buildSearchIndex, readSearchIndex } from './search-data.ts';
 import { StripPool } from './strip-pool.ts';
 
 /**
@@ -135,7 +134,7 @@ describe('buildPaintings', () => {
   });
 
   it('writes a search index of every painting, in which each finds itself by its own strip', async () => {
-    const index = HnswIndex.fromBytes(await readFile(join(output, GALLERY_FILES.searchIndex)), { distance: colorSchemeDistance });
+    const index = await readSearchIndex(output);
     expect(index.graph.count).toBe(manifest.count);
     const { strips } = await readStored(output, GALLERY_FILES.gallery, manifest.count);
     expect(strips.map((strip) => index.search(colorSchemeVector(strip), 1)[0].id)).toEqual(strips.map((_, position) => position));

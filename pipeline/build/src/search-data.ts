@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { type RgbaImage, SeededRandom } from '@palette-atlas/color';
 import { GALLERY_FILES, type GalleryManifest } from '@palette-atlas/gallery';
 import { HnswIndex, Vectors } from '@palette-atlas/hnsw';
@@ -14,17 +15,20 @@ const SEED = 1;
  */
 const M = 16;
 const EF_CONSTRUCTION = 200;
+/** gzip's best: the file is written once a release, and every visitor's first search downloads it. */
+const GZIP_LEVEL = 9;
 
 /** What the search index holds. */
 export interface SearchIndexReport {
   readonly paintings: number;
-  /** The file's size. */
+  /** The file's size, gzipped. */
   readonly bytes: number;
 }
 
 /**
  * Writes the gallery's search index (see GALLERY_FILES.searchIndex) from its color strips in
- * gallery order: each painting's color scheme vector, in an HNSW index whose node i is painting i.
+ * gallery order: each painting's color scheme vector, in an HNSW index whose node i is painting i,
+ * gzipped, as the site's hosts serve a binary file as it is.
  */
 export async function writeSearchIndex(folder: string, strips: readonly RgbaImage[]): Promise<SearchIndexReport> {
   const data = new Float32Array(strips.length * COLOR_SCHEME_LENGTH);
@@ -35,7 +39,7 @@ export async function writeSearchIndex(folder: string, strips: readonly RgbaImag
     efConstruction: EF_CONSTRUCTION,
     distance: colorSchemeDistance,
   });
-  const bytes = index.toBytes();
+  const bytes = gzipSync(index.toBytes(), { level: GZIP_LEVEL });
   await writeFile(join(folder, GALLERY_FILES.searchIndex), bytes);
   return { paintings: strips.length, bytes: bytes.length };
 }
@@ -48,4 +52,9 @@ export async function buildSearchIndex(folder: string): Promise<SearchIndexRepor
   const manifest = JSON.parse(await readFile(join(folder, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
   const { strips } = await readChunks(folder, GALLERY_FILES.gallery, manifest.count, manifest.chunkSize);
   return writeSearchIndex(folder, strips);
+}
+
+/** Reads the search index in a gallery's folder, as writeSearchIndex wrote it. */
+export async function readSearchIndex(folder: string): Promise<HnswIndex> {
+  return HnswIndex.fromBytes(gunzipSync(await readFile(join(folder, GALLERY_FILES.searchIndex))), { distance: colorSchemeDistance });
 }

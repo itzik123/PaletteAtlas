@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { SeededRandom } from '@palette-atlas/color';
 import { GALLERY_FILES, type GalleryManifest, stripInRow } from '@palette-atlas/gallery';
@@ -6,6 +6,7 @@ import { BruteForceIndex, HnswIndex, type VectorIndex, Vectors } from '@palette-
 import { COLOR_SCHEME_LENGTH, colorSchemeDistance, colorSchemeVector } from '@palette-atlas/vectorize';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { readImage } from './image-file.ts';
+import { readSearchIndex } from './search-data.ts';
 
 const DATA = join(import.meta.dirname, '../../../app/public/data');
 /** The gallery's first chunks of strips, as the pipeline wrote them: its 5,000 most famous paintings. */
@@ -14,6 +15,11 @@ const SEED = 1;
 const K = 10;
 /** Every this many paintings is a query. */
 const QUERY_EVERY = 10;
+/**
+ * The most the gallery's search index may take to download, in bytes: every visitor's first search
+ * waits for all of it.
+ */
+const DOWNLOAD_BUDGET = 6_000_000;
 /** The share of the true nearest neighbors a search must find (the target in CLAUDE.md's Verification). */
 const RECALL_TARGET = 0.95;
 /**
@@ -64,7 +70,7 @@ describe('searching the gallery by color scheme', { timeout: TIMEOUT_MS }, () =>
 
   it('has the gallery’s own index hold every painting, each finding itself by its strip', async () => {
     const manifest = JSON.parse(await readFile(join(DATA, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
-    const site = HnswIndex.fromBytes(await readFile(join(DATA, GALLERY_FILES.searchIndex)), { distance: colorSchemeDistance });
+    const site = await readSearchIndex(DATA);
     expect(site.graph.count).toBe(manifest.count);
     // A painting can share its strip with a copy of itself, and then its vector too.
     const sameVector = (first: number, second: number): boolean =>
@@ -74,5 +80,9 @@ describe('searching the gallery by color scheme', { timeout: TIMEOUT_MS }, () =>
       return nearest.id !== painting && !sameVector(nearest.id, painting);
     });
     expect(lost).toEqual([]);
+  });
+
+  it('keeps the gallery’s own index small enough to download for a first search', async () => {
+    expect((await stat(join(DATA, GALLERY_FILES.searchIndex))).size).toBeLessThan(DOWNLOAD_BUDGET);
   });
 });
