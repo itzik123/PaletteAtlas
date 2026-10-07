@@ -10,6 +10,11 @@ const MATCH = {
   slip: 0.8,
   perSlip: 0.1,
 } as const;
+/**
+ * What a slip counts for, as a share, from a searched word that some name has just as it is: the word
+ * was likely meant as typed, and a name only a slip from it ("Gotha" for "gogh") is likely another.
+ */
+const SLIP_FROM_A_NAME = 0.5;
 /** Searched words at least this long forgive one slip in spelling, and at least this long, two. */
 const ONE_SLIP = 4;
 const TWO_SLIPS = 7;
@@ -32,8 +37,8 @@ interface Word {
  * with a slip or two in spelling, or run together ("davinci"), and words the names don't have, such
  * as a middle name the gallery leaves out: a name matching some of the words is still found. The
  * best matches come first, a searched word matching few names counting for more than one matching
- * many ("gogh" for more than "van"), and among equal matches the earlier item, as given (the more
- * famous painter).
+ * many ("gogh" for more than "van"), a slip counting for less from a word some name has as typed,
+ * and among equal matches the earlier item, as given (the more famous painter).
  */
 export class NameSearch<T> {
   readonly #items: readonly T[];
@@ -71,8 +76,10 @@ export class NameSearch<T> {
     const best = new Float64Array(this.#items.length);
     for (const term of terms) {
       best.fill(0);
-      for (const word of this.#words.get(term[0]) ?? []) {
-        const match = matchOf(term, word);
+      const words = this.#words.get(term[0]) ?? [];
+      const slipShare = words.some(({ text }) => text === term) ? SLIP_FROM_A_NAME : 1;
+      for (const word of words) {
+        const match = matchOf(term, word, slipShare);
         if (match > 0) for (const item of word.items) best[item] = Math.max(best[item], match);
       }
       const matched = best.reduce((count, match) => count + (match > 0 ? 1 : 0), 0);
@@ -104,8 +111,8 @@ function weight(matched: number, count: number): number {
   return Math.max(MIN_WEIGHT, Math.log(count / matched) / Math.log(count));
 }
 
-/** How well a word of a name matches a searched word (see MATCH), or 0 if it doesn't. */
-function matchOf(term: string, { text, joined }: Word): number {
+/** How well a word of a name matches a searched word (see MATCH), a slip counting for `slipShare` of its worth; or 0 if it doesn't. */
+function matchOf(term: string, { text, joined }: Word, slipShare: number): number {
   if (text === term) return MATCH.exact;
   if (!joined && text.startsWith(term)) return MATCH.start;
   const allowed = term.length >= TWO_SLIPS ? 2 : term.length >= ONE_SLIP ? 1 : 0;
@@ -115,7 +122,7 @@ function matchOf(term: string, { text, joined }: Word): number {
   for (let length = term.length - 1; !joined && length <= term.length + 1 && length < text.length; length++) {
     fewest = Math.min(fewest, slipsBetween(term, text.slice(0, length), allowed));
   }
-  return fewest <= allowed ? MATCH.slip - MATCH.perSlip * (fewest - 1) : 0;
+  return fewest <= allowed ? (MATCH.slip - MATCH.perSlip * (fewest - 1)) * slipShare : 0;
 }
 
 /**

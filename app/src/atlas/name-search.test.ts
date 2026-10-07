@@ -59,6 +59,32 @@ describe('NameSearch', () => {
     ]);
   });
 
+  it('puts a name spelled as searched before one only a slip from it, however much rarer that word', () => {
+    // "Vincent" is common here, and "gogh" rare: but "Gotha" is only a slip from it.
+    const painters = new NameSearch(
+      [
+        'Vincent van Gogh',
+        'Prince Albert of Saxe-Coburg and Gotha',
+        'Claude Monet',
+        'François-André Vincent',
+        'Vincent Courdouan',
+        'Rembrandt',
+        'George Vincent',
+        'Jan Steen',
+        'Johannes Vermeer',
+        'Paul Cézanne',
+        'Diego Velázquez',
+        'Sandro Botticelli',
+        'Gustav Klimt',
+        'Hieronymus Bosch',
+        'Titian',
+        'Raphael',
+      ],
+      (name) => name,
+    );
+    expect(painters.find('vincent gogh')).toEqual(['Vincent van Gogh', 'François-André Vincent', 'Vincent Courdouan', 'George Vincent']);
+  });
+
   it('leaves out every painter with no name like the search, and finds none for nothing', () => {
     expect(search.find('Picasso')).toEqual([]);
     expect(search.find('  ')).toEqual([]);
