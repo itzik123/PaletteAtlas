@@ -3,6 +3,7 @@ import { buildGraph } from './hnsw-builder.ts';
 import type { HnswGraph, LayeredGraph } from './layered-graph.ts';
 import { LayerSearch } from './layer-search.ts';
 import type { Random } from './random.ts';
+import { SILENT_TRACER, type SearchTracer } from './search-tracer.ts';
 import { byDistance, type Neighbor, type VectorIndex } from './vector-index.ts';
 import type { Vectors } from './vectors.ts';
 
@@ -29,6 +30,8 @@ export interface HnswOptions {
 export interface SearchOptions {
   /** ef, how many nodes the search keeps on the bottom layer: more finds more of the true nearest, more slowly. */
   readonly ef?: number;
+  /** Hears each step of the search (see SearchRecorder); none is told, unless one is given. */
+  readonly tracer?: SearchTracer;
 }
 
 /**
@@ -65,12 +68,12 @@ export class HnswIndex implements VectorIndex {
     return this.#graph;
   }
 
-  search(query: Float32Array, k: number, { ef = DEFAULT_EF }: SearchOptions = {}): Neighbor[] {
+  search(query: Float32Array, k: number, { ef = DEFAULT_EF, tracer = SILENT_TRACER }: SearchOptions = {}): Neighbor[] {
     const graph = this.#graph;
     if (graph.entryPoint < 0 || k < 1) return [];
     let entry = graph.entryPoint;
-    for (let level = graph.topLevel; level > 0; level--) entry = this.#layerSearch.descend(query, 0, entry, level);
-    const { ids, distances } = this.#layerSearch.search(query, 0, [entry], Math.max(ef, k), 0);
+    for (let level = graph.topLevel; level > 0; level--) entry = this.#layerSearch.descend(query, 0, entry, level, tracer);
+    const { ids, distances } = this.#layerSearch.search(query, 0, [entry], Math.max(ef, k), 0, tracer);
     return Array.from(ids, (id, index) => ({ id, distance: distances[index] }))
       .sort(byDistance)
       .slice(0, k);

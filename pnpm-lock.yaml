@@ -193,6 +193,9 @@ importers:
       '@palette-atlas/gallery':
         specifier: workspace:*
         version: link:../packages/gallery
+      '@palette-atlas/hnsw':
+        specifier: workspace:*
+        version: link:../packages/hnsw
       '@palette-atlas/strip':
         specifier: workspace:*
         version: link:../packages/strip

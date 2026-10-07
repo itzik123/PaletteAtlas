@@ -3,6 +3,7 @@ import { BenchmarkCard } from './benchmark-card.ts';
 import { GallerySample } from './gallery-sample.ts';
 import { BENCHMARK_IMAGES } from './benchmark-images.ts';
 import { loadImage } from './load-image.ts';
+import { SearchTraceView } from './search-trace-view.ts';
 
 const root = document.querySelector<HTMLElement>('#benchmark');
 if (!root) throw new Error('Missing #benchmark element');
@@ -34,6 +35,8 @@ root.innerHTML = `
     </ul>
   </header>
 `;
+
+root.append(new SearchTraceView().element);
 
 const gallery = new GallerySample();
 root.append(gallery.element);

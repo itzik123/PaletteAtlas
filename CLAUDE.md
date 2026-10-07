@@ -89,7 +89,7 @@ Both read strips through `ImageStrips.read(image)` in `strip`, the one place tha
 Two design decisions from day one:
 
 - **Source map in `strip`**: every segment of the strip remembers which pixels it came from. Hover linking and fold-back are built on it. `SourceMap` holds each pixel's segment (or `NO_SEGMENT`); `Strip.read(image, axis, segments)` averages every segment in linear light, and `foldBack()` paints each segment back over its own pixels. Segments are all equally long, so an axis gives something more room by giving it more segments. `SourceMap.fromSequence` cuts any ordering of the pixels into equal runs: the radial axis orders them by distance from the center (so its rings have equal area), the Hilbert axis along its curve, and the color axis along its palette path, so each color gets segments in proportion to its share.
-- **Trace in `hnsw`**: every search can record its steps (visiting a node, comparing, descending a layer). The Lab only replays the record, so the animation shows the real code, not a simulation of it.
+- **Trace in `hnsw`**: every search can record its steps (visiting a node, comparing, descending a layer). The Lab only replays the record, so the animation shows the real code, not a simulation of it. Built Oct 7, 2026: a search reports to a `SearchTracer` (Observer) the layer it enters, each node it measures, each node whose links it follows, and the nodes that join and leave its nearest so far (the paper's W); `SearchRecorder` keeps the steps, and searches no one watches report to `SILENT_TRACER` (Null Object), which timed within noise of no tracer at all. The benchmark page replays a search over 1,500 points on a plane, layer by layer.
 
 **Color spaces** (decided Oct 4, 2026, after comparing them on the benchmark images):
 
@@ -174,7 +174,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 | color | A round-trip conversion returns the same color within a negligible error; known OKLab reference values | A gradient between two colors in sRGB vs. OKLab, one above the other |
 | strip | Hilbert fold-back at full resolution restores the image pixel for pixel; reference strips for every axis (`benchmark/strips`) | Hovering over the strip highlights the source region in the image |
 | vectorize | An identical image gives distance zero; a small color change gives a small distance; never farther than the Earth Mover's Distance | The nearest results and their strips next to the query strip |
-| hnsw | recall@10 vs. brute force of at least 0.95, on real paintings too; every painting finds itself; deterministic build with a seed | In the Lab: the true neighbors marked next to what HNSW found |
+| hnsw | recall@10 vs. brute force of at least 0.95, on real paintings too; every painting finds itself; deterministic build with a seed | In the Lab: the true neighbors marked next to what HNSW found; until then, a search replayed layer by layer on the benchmark page |
 | pipeline | Only files Commons marks public domain or CC0; record counts and file schema | A check page with 20 random works and their strips |
 | app | Playwright: upload, axis switch, export | A manual pass on a phone before every release |
 

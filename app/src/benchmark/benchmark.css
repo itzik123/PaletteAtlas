@@ -266,3 +266,47 @@ header li {
     grid-column: 1 / -1;
   }
 }
+
+.search-trace {
+  padding: 24px 0;
+  border-top: 1px solid rgb(128 128 128 / 0.35);
+}
+
+.search-trace h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.search-trace .layers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+
+.search-trace figure {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.search-trace canvas {
+  display: block;
+  border-radius: 4px;
+  outline: 2px solid transparent;
+  cursor: crosshair;
+}
+
+.search-trace canvas.active {
+  outline-color: currentColor;
+}
+
+.search-trace .controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.search-trace input[type='range'] {
+  flex: 1;
+}
