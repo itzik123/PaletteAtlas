@@ -16,10 +16,13 @@ const K = 10;
 const QUERY_EVERY = 10;
 /** The share of the true nearest neighbors a search must find (the target in CLAUDE.md's Verification). */
 const RECALL_TARGET = 0.95;
-/** Reading the strips and building the index take a few seconds. */
+/**
+ * Reading the strips and building the index take a few seconds, and so does each test's searching
+ * every painting: more, beyond Vitest's 5 s default, while the rest of `pnpm test` runs alongside.
+ */
 const TIMEOUT_MS = 60_000;
 
-describe('searching the gallery by color scheme', () => {
+describe('searching the gallery by color scheme', { timeout: TIMEOUT_MS }, () => {
   let vectors: Vectors;
   let index: HnswIndex;
   let exact: BruteForceIndex;
