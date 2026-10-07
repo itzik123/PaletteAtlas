@@ -160,6 +160,8 @@ test('matches an image to the paintings nearest its colors: they hang first, the
 
   await page.getByRole('link', { name: 'All paintings' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^4 paintings/);
+  // The headline comes before the paintings, which hang once their chunks arrive.
+  await expect(page.locator('.wall .painting-tile')).toHaveCount(FIXTURE_PAINTINGS.length);
   expect(await wallTitles(page)).toEqual(titlesAt([0, 1, 2, 3]));
 });
 
