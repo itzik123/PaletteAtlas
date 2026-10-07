@@ -200,9 +200,10 @@ a.query-card:focus-visible {
   box-shadow: 0 0 0 var(--ink);
 }
 
-/* The museum label, shown while a painting is pointed at; at a row's ends it lines up with the
-   tile's outer edge, staying on the wall. */
+/* The museum label, shown while a painting is pointed at: over the painting's middle, slid sideways
+   (--label-shift, see PaintingTile) just enough to stay within its row. */
 .tile-label {
+  --rise: -4px;
   position: absolute;
   top: calc(100% + 12px);
   left: 50%;
@@ -218,7 +219,7 @@ a.query-card:focus-visible {
   font-weight: 550;
   line-height: 1.3;
   opacity: 0;
-  transform: translate(-50%, -4px);
+  transform: translate(calc(var(--label-shift, 0px) - 50%), var(--rise));
   transition:
     opacity 0.15s ease,
     transform 0.15s ease;
@@ -230,23 +231,8 @@ a.query-card:focus-visible {
 }
 
 .painting-tile:is(:hover, :focus-visible) .tile-label {
+  --rise: 0px;
   opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-.painting-tile[data-edge='start'] .tile-label {
-  left: 0;
-  transform: translateY(-4px);
-}
-
-.painting-tile[data-edge='end'] .tile-label {
-  right: 0;
-  left: auto;
-  transform: translateY(-4px);
-}
-
-.painting-tile:is([data-edge='start'], [data-edge='end']):is(:hover, :focus-visible) .tile-label {
-  transform: none;
 }
 
 /* Watched to hang more paintings; offers to try again if they didn't arrive. While they're on
@@ -290,6 +276,8 @@ a.query-card:focus-visible {
   max-width: 1240px;
   margin: 0 auto;
   padding: 20px 32px var(--below);
+  /* Labels near the page's edge are cut off there rather than widening the page. */
+  overflow-x: clip;
 }
 
 .painting-page[data-layout='wide'] {
@@ -662,18 +650,11 @@ a.chip:hover {
   height: 14px;
 }
 
+/* Rising into place from below, as it opens above the painting. */
 .same-colors .tile-label {
+  --rise: 4px;
   top: auto;
   bottom: calc(100% + 12px);
-  transform: translate(-50%, 4px);
-}
-
-.same-colors .painting-tile:is([data-edge='start'], [data-edge='end']) .tile-label {
-  transform: translateY(4px);
-}
-
-.same-colors .painting-tile:is([data-edge='start'], [data-edge='end']):is(:hover, :focus-visible) .tile-label {
-  transform: none;
 }
 
 /* The four strips, each beside its axis's badge, as tall as the screen has room for. */

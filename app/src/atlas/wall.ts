@@ -1,6 +1,6 @@
 import type { GalleryEntry } from './gallery-data.ts';
 import { justifiedRows } from './justified-rows.ts';
-import { PaintingTile, type RowEdge } from './painting-tile.ts';
+import { PaintingTile } from './painting-tile.ts';
 
 /** A row's target height as a share of the wall's width: about six paintings a row, three on a phone. */
 const ROW_HEIGHT_SHARE = 0.16;
@@ -71,12 +71,9 @@ export class Wall {
       },
     );
     for (const { start, end, height } of rows) {
-      for (let index = from + start; index < from + end; index++) {
-        const tile = this.#tiles[index];
-        const edge: RowEdge = index === from + start ? 'start' : index === from + end - 1 ? 'end' : 'none';
-        tile.size(tile.aspect * height + 2 * border, height, edge);
-      }
+      for (const tile of this.#tiles.slice(from + start, from + end)) tile.size(tile.aspect * height + 2 * border, height);
     }
+    PaintingTile.keepLabelsWithin(this.#tiles.slice(from), this.element);
     this.#lastRow = from + (rows.at(-1)?.start ?? 0);
   }
 }

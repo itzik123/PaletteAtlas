@@ -1,7 +1,7 @@
 import { AXIS_ICONS, NEXT_ICON } from '../icons.ts';
 import type { GalleryEntry } from './gallery-data.ts';
 import { justifiedRows, type Row } from './justified-rows.ts';
-import { PaintingTile, type RowEdge } from './painting-tile.ts';
+import { PaintingTile } from './painting-tile.ts';
 
 /** How many of the nearest paintings are weighed for the rows: more than ever fit. */
 export const SAME_COLORS_COUNT = 16;
@@ -108,12 +108,12 @@ export class SameColors {
   #hang(rows: readonly (Row & { readonly tiles: readonly PaintingTile[] })[]): void {
     const border = this.#border();
     for (const { tiles, height } of rows) {
-      tiles.forEach((tile, index) => {
-        const edge: RowEdge = index === 0 ? 'start' : index === tiles.length - 1 ? 'end' : 'none';
-        tile.size(tile.aspect * height + 2 * border, height, edge);
+      for (const tile of tiles) {
+        tile.size(tile.aspect * height + 2 * border, height);
         this.#row.append(tile.element);
-      });
+      }
     }
+    PaintingTile.keepLabelsWithin(rows.flatMap(({ tiles }) => tiles), this.#row);
   }
 
   /** A tile's outline width. */
@@ -131,7 +131,7 @@ export class SameColors {
   #tileExtra(): number {
     const tile = this.#tiles[0];
     if (this.#extra === undefined && tile) {
-      tile.size(MAX_HEIGHT, MAX_HEIGHT, 'none');
+      tile.size(MAX_HEIGHT, MAX_HEIGHT);
       this.#row.append(tile.element);
       this.#extra = tile.element.offsetHeight - MAX_HEIGHT;
       tile.element.remove();

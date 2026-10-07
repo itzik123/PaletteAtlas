@@ -7,6 +7,9 @@ import { canvasColors, storedStrip } from './stored-strips.ts';
 /** The axes' strips on a painting's page, by their accessible names. */
 const AXIS_STRIPS = ['Color strip', 'Hilbert strip', 'Columns strip', 'Radial strip'];
 
+/** Phones' screens, from the narrowest still in use (320 CSS pixels wide) to the widest (430), every 10. */
+const PHONE_SIZES = Array.from({ length: 12 }, (_, step) => ({ width: 320 + 10 * step, height: 800 }));
+
 /** What the Atlas says over the paintings nearest an image's colors, or a painting's. */
 const MATCHES_HEADLINE = 'Painted in these colors.';
 
@@ -144,6 +147,30 @@ test('shows all of a painting’s page on a laptop’s screen, without scrolling
   await sameColors.locator('.painting-tile').first().hover();
   await expect(sameColors.locator('.tile-label').first()).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(720);
+});
+
+test('keeps a painting’s page and its labels within a phone’s screen, so it never pans sideways', async ({ page }) => {
+  for (const { id } of FIXTURE_PAINTINGS) {
+    await page.goto(`/painting.html?id=${id}`);
+    // The paintings in the same colors are hung, or a button leads to them.
+    await expect(page.locator('.same-colors')).toHaveAttribute('data-fit', /./);
+    for (const size of PHONE_SIZES) {
+      await page.setViewportSize(size);
+      // Laid out again for the width, the paintings in the same colors hung again, and their labels moved into place.
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await page.locator('.same-colors').evaluate((same) => Promise.all(same.getAnimations({ subtree: true }).map(({ finished }) => finished)));
+      const where = `${id} at ${size.width} px`;
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), where).toBe(size.width);
+      // Each painting's label opens over it, but never past its row's ends.
+      const pastRow = await page.locator('.same-colors-row').evaluate((row) => {
+        const { left, right } = row.getBoundingClientRect();
+        return [...row.querySelectorAll('.tile-label')]
+          .map((label) => label.getBoundingClientRect())
+          .filter((label) => label.left < left - 0.5 || label.right > right + 0.5).length;
+      });
+      expect(pastRow, where).toBe(0);
+    }
+  }
 });
 
 test('matches an image to the paintings nearest its colors: they hang first, the image on a card beside them', async ({ page }) => {
