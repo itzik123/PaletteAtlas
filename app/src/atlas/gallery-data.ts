@@ -45,8 +45,9 @@ export interface Painter {
 
 /**
  * The gallery's data, fetched only as pages need it: the manifest at the start, then chunks of
- * paintings with their strips, in gallery order or in the order of the artists' careers, and the
- * lists of every painting's id and of every career's length only to find what a page shows.
+ * paintings with their strips, in gallery order or in the order of the artists' careers, the
+ * lists of every painting's id and of every career's length only to find what a page shows, and
+ * the search index only to search.
  *
  * Virtual Proxy: each file is fetched and decoded on first use, once, however many ask for it.
  */
@@ -57,6 +58,7 @@ export class GalleryData {
   readonly #careers: PaintingChunks;
   #ids: Promise<readonly string[]> | undefined;
   #careerLengths: Promise<readonly number[]> | undefined;
+  #searchIndex: Promise<Uint8Array> | undefined;
 
   private constructor(url: string, manifest: GalleryManifest) {
     this.#url = url;
@@ -99,6 +101,14 @@ export class GalleryData {
     const lengths = await this.careerLengths();
     const { artists } = this.#manifest;
     return lengths.flatMap((paintings, artist) => (paintings > 0 ? [{ artist: recordAt(artists, artist), paintings }] : []));
+  }
+
+  /** The search index's bytes (see GALLERY_FILES.searchIndex), for HnswIndex.fromBytes. */
+  searchIndex(): Promise<Uint8Array> {
+    this.#searchIndex ??= fetchOk(`${this.#url}${GALLERY_FILES.searchIndex}`).then(async (response) => new Uint8Array(await response.arrayBuffer()));
+    // An index that fails to arrive is asked for again next time.
+    this.#searchIndex.catch(() => (this.#searchIndex = undefined));
+    return this.#searchIndex;
   }
 
   /** The career of the artist with a Wikidata item, if the gallery has the artist. */

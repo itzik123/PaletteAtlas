@@ -14,7 +14,8 @@
     "@palette-atlas/color": "workspace:*",
     "@palette-atlas/gallery": "workspace:*",
     "@palette-atlas/hnsw": "workspace:*",
-    "@palette-atlas/strip": "workspace:*"
+    "@palette-atlas/strip": "workspace:*",
+    "@palette-atlas/vectorize": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

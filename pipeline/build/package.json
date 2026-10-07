@@ -7,18 +7,19 @@
     "strips": "node src/strips.ts",
     "paintings": "node src/paintings.ts",
     "careers": "node src/careers.ts",
+    "search-index": "node src/search-index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@palette-atlas/color": "workspace:*",
     "@palette-atlas/gallery": "workspace:*",
+    "@palette-atlas/hnsw": "workspace:*",
     "@palette-atlas/strip": "workspace:*",
+    "@palette-atlas/vectorize": "workspace:*",
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "@palette-atlas/hnsw": "workspace:*",
-    "@palette-atlas/vectorize": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

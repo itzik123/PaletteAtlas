@@ -4,6 +4,7 @@ import type { BenchmarkImage } from './benchmark-images.ts';
 import { ColorPicker } from './color-picker.ts';
 import { COMPARED_SPACES } from './compared-spaces.ts';
 import { GradientRows } from './gradient-rows.ts';
+import type { NearestPaintings } from './nearest-paintings.ts';
 import { Swatch } from './paint.ts';
 import { paletteView } from './palette-view.ts';
 import { shrinkComparison } from './shrink-comparison.ts';
@@ -25,12 +26,13 @@ const BLACK = new Srgb(0, 0, 0);
 /**
  * One benchmark image with the libraries' output for it: its mean color and a gradient between
  * two picked colors in every compared space, the shrink for k-means and the resulting palette,
- * and a strip along every axis, linked to the image by hovering.
+ * a strip along every axis, linked to the image by hovering, and the gallery's paintings nearest
+ * its color strip.
  */
 export class BenchmarkCard {
   readonly element = document.createElement('section');
 
-  constructor(entry: BenchmarkImage, image: RgbaImage) {
+  constructor(entry: BenchmarkImage, image: RgbaImage, nearest: NearestPaintings) {
     const title = document.createElement('h2');
     const size = document.createElement('small');
     size.textContent = `${image.width} × ${image.height}`;
@@ -67,6 +69,8 @@ export class BenchmarkCard {
       check(`Palette: k-means in OKLab, ${palette.length} colors`, paletteView(palette)),
       check(`Strips, ${STRIP_SEGMENTS} segments: hover to see each one's source`, strips),
     );
+    const colorStrip = namedStrips.find(({ axis }) => axis === 'color')?.strip;
+    if (colorStrip) checks.append(check('Nearest paintings by color scheme, in the site’s search index', nearest.view(colorStrip.toImage())));
 
     this.element.className = 'card';
     this.element.append(title, frame, checks);

@@ -1,8 +1,10 @@
 import './benchmark.css';
 import { BenchmarkCard } from './benchmark-card.ts';
 import { GallerySample } from './gallery-sample.ts';
+import { GalleryData } from '../atlas/gallery-data.ts';
 import { BENCHMARK_IMAGES } from './benchmark-images.ts';
 import { loadImage } from './load-image.ts';
+import { NearestPaintings } from './nearest-paintings.ts';
 import { SearchTraceView } from './search-trace-view.ts';
 
 const root = document.querySelector<HTMLElement>('#benchmark');
@@ -42,6 +44,7 @@ const gallery = new GallerySample();
 root.append(gallery.element);
 void gallery.load();
 
+const nearest = new NearestPaintings(GalleryData.load());
 for (const entry of BENCHMARK_IMAGES) {
-  root.append(new BenchmarkCard(entry, await loadImage(entry.url)).element);
+  root.append(new BenchmarkCard(entry, await loadImage(entry.url), nearest).element);
 }

@@ -15,6 +15,7 @@ import { type AxisName, STRIP_SEGMENTS } from '@palette-atlas/strip';
 import { writeCareers } from './career-data.ts';
 import { type Catalog, CATALOG_FILE, readCatalog, type Work } from './catalog.ts';
 import { writeChunks } from './chunk-files.ts';
+import { writeSearchIndex } from './search-data.ts';
 import type { StripPool } from './strip-pool.ts';
 
 /** Paintings per chunk (see chunkOf): a chunk's strips take about 150 KB. */
@@ -62,8 +63,8 @@ export interface BuildReport {
 
 /**
  * Reads the color strip of every downloaded painting in the fetch step's catalog folder and
- * writes the gallery's files (see GALLERY_FILES) to the output folder, the artists' careers
- * included, replacing any earlier build there. Left out: the colorless paintings, those whose
+ * writes the gallery's files (see GALLERY_FILES) to the output folder, the artists' careers and
+ * the search index included, replacing any earlier build there. Left out: the colorless paintings, those whose
  * image fails to decode, and those whose image the site couldn't link to.
  */
 export async function buildPaintings(
@@ -151,7 +152,7 @@ function holdBack(paintings: readonly KeptPainting[], { ids, position }: HeldBac
   return others;
 }
 
-/** Writes the gallery's files, then the artists' careers drawn up from them. */
+/** Writes the gallery's files, then the artists' careers and the search index drawn up from them. */
 async function writeGallery(paintings: readonly KeptPainting[], catalog: Catalog, folder: string, chunkSize: number): Promise<void> {
   const artistIds = [...new Set(paintings.map(({ work }) => work.artist))];
   const artistIndex = new Map(artistIds.map((id, index) => [id, index]));
@@ -173,6 +174,7 @@ async function writeGallery(paintings: readonly KeptPainting[], catalog: Catalog
   await writeFile(join(folder, GALLERY_FILES.ids), JSON.stringify(gallery.paintings.map(({ id }) => id)));
   await writeChunks(folder, GALLERY_FILES.gallery, gallery, chunkSize);
   await writeCareers(folder, gallery, artists, chunkSize);
+  await writeSearchIndex(folder, gallery.strips);
 }
 
 function painting(work: Work, image: CommonsImage, artist: number): Painting {

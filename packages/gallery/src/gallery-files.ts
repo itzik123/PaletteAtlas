@@ -11,6 +11,8 @@ import type { ThumbnailWidth } from './commons-image.ts';
 //   careers.json            how many paintings each artist's career has, in the manifest's order
 //   careers/<k>.json        chunk k of the careers (see careers), artist after artist in that order
 //   career-strips/<k>.png   their color strips
+//   search-index.bin        the index that finds paintings by color scheme (HnswIndex.toBytes), node i
+//                           being the gallery's painting i
 
 /**
  * Paintings stored in chunks of GalleryManifest.chunkSize (see chunkOf): a file of their records
@@ -47,6 +49,12 @@ export const GALLERY_FILES = {
    * rather than from every chunk of the gallery.
    */
   careers: chunkFiles('careers', 'career-strips'),
+  /**
+   * The index that finds the paintings nearest a color scheme: an HNSW graph of every painting's
+   * color scheme vector, read by HnswIndex.fromBytes with colorSchemeDistance. Its node i is the
+   * painting at position i in gallery order.
+   */
+  searchIndex: 'search-index.bin',
 } as const;
 
 /**

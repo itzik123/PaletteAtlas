@@ -219,6 +219,7 @@ python pipeline/fetch/fetch.py catalog   # choose the paintings on Wikidata and 
 python pipeline/fetch/fetch.py images    # download their images to pipeline/data (hours; rerun to resume)
 pnpm paintings   # read the downloaded paintings' strips into app/public/data (check: /benchmark.html)
 pnpm careers     # rebuild the artists' careers from app/public/data in seconds (pnpm paintings writes them too)
+pnpm search-index   # rebuild the search index from app/public/data in about a minute (pnpm paintings writes it too)
 ```
 
 Development happens on Windows (PowerShell). `.gitattributes` keeps every text file LF.

@@ -1,6 +1,7 @@
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { SeededRandom } from '@palette-atlas/color';
-import { GALLERY_FILES, stripInRow } from '@palette-atlas/gallery';
+import { GALLERY_FILES, type GalleryManifest, stripInRow } from '@palette-atlas/gallery';
 import { BruteForceIndex, HnswIndex, type VectorIndex, Vectors } from '@palette-atlas/hnsw';
 import { COLOR_SCHEME_LENGTH, colorSchemeDistance, colorSchemeVector } from '@palette-atlas/vectorize';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -56,5 +57,19 @@ describe('searching the gallery by color scheme', () => {
   it('still finds 95% of them once the index is saved, a byte per number, and read back', () => {
     const read = HnswIndex.fromBytes(index.toBytes(), { distance: colorSchemeDistance });
     expect(recall(read)).toBeGreaterThanOrEqual(RECALL_TARGET);
+  });
+
+  it('has the gallery’s own index hold every painting, each finding itself by its strip', async () => {
+    const manifest = JSON.parse(await readFile(join(DATA, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
+    const site = HnswIndex.fromBytes(await readFile(join(DATA, GALLERY_FILES.searchIndex)), { distance: colorSchemeDistance });
+    expect(site.graph.count).toBe(manifest.count);
+    // A painting can share its strip with a copy of itself, and then its vector too.
+    const sameVector = (first: number, second: number): boolean =>
+      site.vectors.vector(first).every((value, dimension) => value === site.vectors.vector(second)[dimension]);
+    const lost = Array.from({ length: vectors.count }, (_, painting) => painting).filter((painting) => {
+      const [nearest] = site.search(vectors.vector(painting), 1);
+      return nearest.id !== painting && !sameVector(nearest.id, painting);
+    });
+    expect(lost).toEqual([]);
   });
 });

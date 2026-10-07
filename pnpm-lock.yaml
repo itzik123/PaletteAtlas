@@ -199,6 +199,9 @@ importers:
       '@palette-atlas/strip':
         specifier: workspace:*
         version: link:../packages/strip
+      '@palette-atlas/vectorize':
+        specifier: workspace:*
+        version: link:../packages/vectorize
     devDependencies:
       '@playwright/test':
         specifier: ^1.63.0
@@ -287,19 +290,19 @@ importers:
       '@palette-atlas/gallery':
         specifier: workspace:*
         version: link:../../packages/gallery
+      '@palette-atlas/hnsw':
+        specifier: workspace:*
+        version: link:../../packages/hnsw
       '@palette-atlas/strip':
         specifier: workspace:*
         version: link:../../packages/strip
+      '@palette-atlas/vectorize':
+        specifier: workspace:*
+        version: link:../../packages/vectorize
       sharp:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@24.19.1)
     devDependencies:
-      '@palette-atlas/hnsw':
-        specifier: workspace:*
-        version: link:../../packages/hnsw
-      '@palette-atlas/vectorize':
-        specifier: workspace:*
-        version: link:../../packages/vectorize
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1
