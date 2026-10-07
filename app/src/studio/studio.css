@@ -712,9 +712,19 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  /* Smaller with the screen below about 410px, so that the longest name ("Columns") still fits
+     beside its icon on the narrowest phones. */
   .axis-tile {
     min-width: 0;
-    font-size: 1.2rem;
+    gap: min(14px, 3vw);
+    padding: 10px min(22px, 3vw) 10px min(10px, 2vw);
+    font-size: min(1.2rem, 4.6vw);
+  }
+
+  .axis-tile .icon {
+    width: min(48px, 11.5vw);
+    height: min(48px, 11.5vw);
+    padding: min(8px, 1.9vw);
   }
 
   .saves {

@@ -19,6 +19,10 @@ declare global {
   }
 }
 
+/** Phones' screens, from the narrowest still in use to the widest, in CSS pixels. */
+const NARROWEST_PHONE = 320;
+const WIDEST_PHONE = 430;
+
 /** The axes as the Studio names them, by the names of the reference strips' files. */
 const AXES = [
   { file: 'color', label: 'Color' },
@@ -246,6 +250,26 @@ test('an image’s colors lead to the paintings nearest them, in the Atlas', asy
   expect(await canvasColors(page.locator('.query-card canvas'))).toEqual(await storedStrip(page, GALLERY_FILES.gallery, 1));
   // The Calumny of Apelles, its colors read from this very file.
   await expect(page.locator('.wall .painting-tile').first()).toHaveAccessibleName(/^Calumny of Apelles, /);
+});
+
+test('every axis’s icon and name fit within its button, on phones down to the narrowest', async ({ page }) => {
+  await page.getByRole('button', { name: /Mona Lisa/ }).click();
+  await expect(page.getByRole('img', { name: 'Strip' })).toBeVisible();
+  for (let width = NARROWEST_PHONE; width <= WIDEST_PHONE; width += 10) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const { label } of AXES) {
+      // The name ends before the button's padding does, as the icon starts after it.
+      const room = await page
+        .locator('.axis-tile')
+        .filter({ has: page.getByRole('radio', { name: label }) })
+        .evaluate((tile) => {
+          const name = tile.querySelector('span')?.getBoundingClientRect();
+          const inside = tile.getBoundingClientRect().right - tile.clientLeft - Number.parseFloat(getComputedStyle(tile).paddingRight);
+          return name ? inside - name.right : Number.NEGATIVE_INFINITY;
+        });
+      expect(room, `${label} at ${width} px`).toBeGreaterThanOrEqual(0);
+    }
+  }
 });
 
 test('a painting clicked on the sample wall becomes its strip', async ({ page }) => {
