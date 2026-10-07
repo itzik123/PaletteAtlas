@@ -75,7 +75,7 @@ TypeScript libraries with no browser dependency, shared by an offline data pipel
 
 - `color`: correct averaging (linear light), k-means, color distances (OKLab) and palette ordering (exact TSP)
 - `strip`: image to strip (Hilbert, TSP)
-- `vectorize`: strip to vector (soft histogram, Hellinger)
+- `vectorize` (added Oct 7, 2026): color strip to vector, the sliced Wasserstein embedding, compared by mean absolute difference (see Vector representation)
 - `hnsw`: index and search (search, trace)
 - `gallery` (added Oct 6, 2026): the gallery's data format, which the pipeline writes and the site reads: paintings stored by column, color strips packed into chunk images, Commons links rebuilt from file names (`CommonsImage`), and the artists' careers, their paintings in the order made (`careers`)
 
@@ -106,7 +106,7 @@ PaletteAtlas/
 ├── packages/
 │   ├── color/          sRGB / linear / OKLab, k-means, color ordering
 │   ├── strip/          axes, source map, Hilbert fold-back
-│   ├── vectorize/      strip to vector (soft histogram, Hellinger)
+│   ├── vectorize/      strip to vector (sliced Wasserstein)
 │   ├── hnsw/           index, brute force, recall, trace, serialization
 │   └── gallery/        the gallery's data format: chunks, columns, Commons links
 ├── pipeline/
@@ -115,7 +115,7 @@ PaletteAtlas/
 │   └── data/           downloaded paintings and their metadata (not in git)
 ├── notebooks/          Python: experiments and evaluation (optional)
 ├── benchmark/          Itzik's ray-traced renders: the standard inputs for visual checks
-├── docs/               README media (the Studio GIF)
+├── docs/               README media (the Studio GIF) and research notes
 ├── app/                Studio, Atlas, Lab
 │   ├── e2e/            Playwright UI tests
 │   └── public/data/    pipeline output: metadata, strips, vectors, binary index
@@ -159,7 +159,7 @@ Seven phases, each ending in something you can show. **Current phase: 5 (HNSW an
 2. **Color library and strip engine** (2–3 weekends): OKLab conversions and correct averaging, k-means, a column axis and a radial axis, a color axis with TSP ordering, and a Hilbert axis with fold-back. Deliverable: correct strips generated from a script, covered by tests. Done Oct 4, 2026.
 3. **Studio, first release v0.1** (2 weekends): image upload, axis switching, hover linking between strip and image, and PNG export. A README with a GIF and a link to the site. The first moment to share. Done Oct 5, 2026: live at https://palette-atlas.pages.dev, with a sample wall of famous paintings and poster and wallpaper export.
 4. **Data pipeline and gallery** (2–3 weekends): download about 50,000 public-domain paintings, compute their strips, a gallery page, and a career barcode for each artist. Done Oct 7, 2026: the Atlas shows 48,695 paintings, each with its own page, and 8,373 artists' Career Barcodes.
-5. **HNSW and search, v0.2** (3–4 weekends): implementation from scratch, brute force for checking, recall measurement, saving to a binary file, and building the index in the pipeline. In the browser: upload an image and get the closest paintings.
+5. **HNSW and search, v0.2** (3–4 weekends): implementation from scratch, brute force for checking, recall measurement, saving to a binary file, and building the index in the pipeline. In the browser: upload an image and get the closest paintings. Steps (planned Oct 7, 2026, after the research in `docs/search-research.md`): `vectorize`; the HNSW index with brute force and recall on real paintings; the search trace; the binary file; the index built by the pipeline; the search in the browser, its look mocked in the real page first.
 6. **Lab** (3–5 weekends): the search trace becomes an animation, in plane mode and in color-space mode. Controls for `M` and `ef`, and failure scenarios, such as clustered data without the neighbor-selection heuristic.
 7. **Polish and launch, v1.0** (1–2 weekends): performance, mobile, accessibility, a GIF for each part, and a launch post.
 
@@ -173,7 +173,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 |---|---|---|
 | color | A round-trip conversion returns the same color within a negligible error; known OKLab reference values | A gradient between two colors in sRGB vs. OKLab, one above the other |
 | strip | Hilbert fold-back at full resolution restores the image pixel for pixel; reference strips for every axis (`benchmark/strips`) | Hovering over the strip highlights the source region in the image |
-| vectorize | An identical image gives distance zero; a small color change gives a small distance | The nearest results and their strips next to the query strip |
+| vectorize | An identical image gives distance zero; a small color change gives a small distance; never farther than the Earth Mover's Distance | The nearest results and their strips next to the query strip |
 | hnsw | recall@10 vs. brute force above a set target (e.g. 0.95); deterministic build with a seed | In the Lab: the true neighbors marked next to what HNSW found |
 | pipeline | Only files Commons marks public domain or CC0; record counts and file schema | A check page with 20 random works and their strips |
 | app | Playwright: upload, axis switch, export | A manual pass on a phone before every release |
@@ -181,7 +181,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 ## Open decisions and risks
 
 - **Scope** is the main risk. The Lab is the heavy part, so it comes after there is already a product that stands on its own.
-- **Vector representation**: start with a soft histogram over a color vocabulary in OKLab, with Hellinger distance. Take the square root of each proportion and use plain Euclidean distance, so HNSW needs no special metric. A 3×3 grid of average colors can be added so layout counts too; decide by what looks right in the gallery.
+- **Vector representation** (decided Oct 7, 2026, replacing the design doc's soft histogram with Hellinger distance; measurements and sources in `docs/search-research.md`): a painting's color strip is a distribution of color in 128 equal shares, and the Earth Mover's Distance between two such distributions in OKLrab is the classic measure of how alike two color schemes look (Rubner et al., 2000), but too slow to compare a query with every painting. Its sliced form is fast: the vector projects the strip's colors onto 8 directions, sorts them and averages them over 16 equal shares (128 numbers), and two vectors' mean absolute difference (L1) is the Earth Mover's Distance along each direction, averaged, which never exceeds the true one. On 240 gallery queries its 10 nearest held 78% of the exact Earth Mover's top 10 and lay only 2% farther by it; the soft histogram held 45%, 14% farther. L1 tracks the Earth Mover's Distance; Euclidean tracks its squared-cost cousin (W2) instead. Only color counts, not layout: the gallery stores the color strip alone.
 - **Non-square images** (decided Oct 4, 2026): the classic Hilbert curve is defined on a square whose side is a power of 2, so the Hilbert axis uses Jakub Červený's generalized curve ("gilbert"), which fills any rectangle without jumps (at most one diagonal step) and matches the classic curve on those squares. No padding or cropping.
 - **Data size in the browser**: 50,000 vectors and their graph can reach tens of megabytes. Fix: uint8 quantization and loading in chunks as needed. The strips were settled on Oct 6, 2026: only the color axis ships (about 7.5 MB for 50,000), and pages load a chunk at a time. The careers repeat the dated paintings and their strips in each artist's order (about 14 MB more), so an artist's page loads a chunk or two rather than the whole gallery.
 - **Painting data** (decided Oct 5, 2026, at the start of phase 4; replaces the design doc's AIC data dump): the AIC has only 1,875 public-domain paintings with images, too few to find a painting that truly resembles a user's photo, and too few to give HNSW a real job. Five museum APIs together (the Met, Rijksmuseum, SMK, Cleveland, AIC) hold about 30,000; Wikidata lists 247,000 paintings with a Commons image by artists who died over 70 years ago, from hundreds of museums. So:
@@ -200,7 +200,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 
 - Color science: gamma, linear light, OKLab, and why averaging raw sRGB values gives a dark, muddy strip.
 - Algorithms and geometry: space-filling curves, k-means, and the TSP solved exactly by dynamic programming (Held-Karp).
-- Vector search: HNSW from scratch, the trade-off between recall and speed, binary serialization.
+- Vector search: HNSW from scratch, the trade-off between recall and speed, binary serialization, and optimal transport (the Earth Mover's Distance and its sliced form) as a distance between color schemes.
 - Web engineering: Web Workers, Canvas and Three.js, performance with heavy data in the browser.
 - Infrastructure: monorepo, CI/CD, visual tests, a data pipeline you can rerun.
 

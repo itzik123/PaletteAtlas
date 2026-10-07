@@ -248,6 +248,22 @@ importers:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1))
 
+  packages/vectorize:
+    dependencies:
+      '@palette-atlas/color':
+        specifier: workspace:*
+        version: link:../color
+    devDependencies:
+      '@palette-atlas/strip':
+        specifier: workspace:*
+        version: link:../strip
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1))
+
   pipeline/build:
     dependencies:
       '@palette-atlas/color':

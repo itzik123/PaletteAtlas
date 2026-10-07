@@ -4,6 +4,7 @@ export { downscale, resize } from './downscale.ts';
 export { type Cluster, type Clusterer, KMeans, type WeightedPoints } from './kmeans.ts';
 export { LinearRgb } from './linear-rgb.ts';
 export { OkLab } from './oklab.ts';
+export { bytesToOkLrab } from './oklrab.ts';
 export { extractPalette, PALETTE_COVERAGE, PALETTE_WORKING_SIZE, type PaletteColor, paletteClusterer } from './palette.ts';
 export { PalettePath } from './palette-path.ts';
 export { type Random, SeededRandom } from './random.ts';

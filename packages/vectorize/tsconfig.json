@@ -1,0 +1,5 @@
+{
+  // A browser-free library: the shared base as it is, with neither DOM nor Node types.
+  "extends": "../../tsconfig.base.json",
+  "include": ["src"]
+}

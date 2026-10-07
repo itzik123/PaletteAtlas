@@ -1,0 +1,19 @@
+{
+  "name": "@palette-atlas/vectorize",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@palette-atlas/color": "workspace:*"
+  },
+  "devDependencies": {
+    "@palette-atlas/strip": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
