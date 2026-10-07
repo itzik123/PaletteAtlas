@@ -1,10 +1,11 @@
 import './studio.css';
 import { OkLab } from '@palette-atlas/color';
 import { type AxisName, NO_SEGMENT, type NamedStrip, type Strip } from '@palette-atlas/strip';
-import { UPLOAD_ICON } from '../icons.ts';
+import { ImageQueries, imageQuery, MATCHES_PAGE } from '../atlas/image-query.ts';
+import { SEARCH_ICON, UPLOAD_ICON } from '../icons.ts';
 import { siteSrgb } from '../site-colors.ts';
 import { AxisPicker } from './axis-picker.ts';
-import { FileIntake, isImage } from './file-intake.ts';
+import { dropOverlay, FileIntake, isImage } from './file-intake.ts';
 import { PictureView, type Spot } from './picture-view.ts';
 import { SampleWall } from './sample-wall.ts';
 import { SAMPLES, type Sample } from './samples.ts';
@@ -26,7 +27,8 @@ const PAPER = siteSrgb('paper');
  * The Studio: an image dropped, chosen or pasted in becomes its strip, read along the axis the
  * user picks. Until the first image arrives, the page is one big invitation to drop it. Pointing
  * at a segment of the strip uncovers the pixels it came from, and pointing at the picture pins
- * the segment that pixel went into.
+ * the segment that pixel went into. A tab on the strip opens the paintings in the image's colors,
+ * on the Atlas's wall.
  *
  * Mediator: the picture, the strip and the axis picker know nothing of each other; the Studio
  * links them through the source map of the strip on show.
@@ -100,6 +102,13 @@ export class Studio {
     controls.append(this.#picker.element, saves);
     // A tab on the picture's card: a new image takes this one's place.
     this.#picture.element.append(another);
+    // And one on the strip: the paintings in its colors, on the Atlas's wall.
+    const find = document.createElement('button');
+    find.type = 'button';
+    find.className = 'pill find-paintings';
+    find.innerHTML = `${SEARCH_ICON}<span>Find paintings</span>`;
+    find.addEventListener('click', () => this.#findPaintings());
+    this.#strip.element.append(find);
     const workspace = document.createElement('section');
     workspace.className = 'workspace';
     workspace.append(this.#picture.element, controls, this.#strip.element);
@@ -189,6 +198,14 @@ export class Studio {
     this.#picture.clear();
   }
 
+  /** Opens the Atlas on the paintings nearest the image's colors (see ImageQueries). */
+  #findPaintings(): void {
+    const colors = this.#strips.find(({ axis }) => axis === 'color')?.strip;
+    if (!colors) return;
+    ImageQueries.hand(imageQuery(this.#picture.picture, colors.toImage()));
+    location.assign(MATCHES_PAGE);
+  }
+
   async #save(format: StripFormat): Promise<void> {
     if (!this.#shown) return;
     const { axis } = this.#picker;
@@ -226,13 +243,4 @@ function showsAnything(strips: readonly NamedStrip[]): boolean {
   return strips.some(({ strip }) =>
     Array.from({ length: strip.segmentCount }, (_, segment) => strip.colorAt(segment)).some((color) => color !== undefined),
   );
-}
-
-/** Covers the page while a file is dragged over it (see FileIntake). */
-function dropOverlay(): HTMLElement {
-  const overlay = document.createElement('div');
-  overlay.className = 'drop-overlay';
-  overlay.setAttribute('aria-hidden', 'true');
-  overlay.innerHTML = '<span>Drop it!</span>';
-  return overlay;
 }

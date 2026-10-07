@@ -3,6 +3,8 @@ export interface Row {
   readonly start: number;
   readonly end: number;
   readonly height: number;
+  /** Whether the row fills the width: all but a last row that ran out of pictures do. */
+  readonly full: boolean;
 }
 
 export interface RowsOptions {
@@ -30,11 +32,11 @@ export function justifiedRows(aspects: readonly number[], { width, height, gap, 
     const count = index + 1 - start;
     const fixed = count * extra + (count - 1) * gap;
     if (aspectSum * height + fixed >= width) {
-      rows.push({ start, end: index + 1, height: (width - fixed) / aspectSum });
+      rows.push({ start, end: index + 1, height: (width - fixed) / aspectSum, full: true });
       start = index + 1;
       aspectSum = 0;
     }
   });
-  if (start < aspects.length) rows.push({ start, end: aspects.length, height });
+  if (start < aspects.length) rows.push({ start, end: aspects.length, height, full: false });
   return rows;
 }

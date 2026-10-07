@@ -1,12 +1,37 @@
 import { GALLERY_FILES, THUMBNAIL_WIDTHS } from '@palette-atlas/gallery';
-import { expect, test } from '@playwright/test';
-import { FIXTURE_PAINTINGS, serveFixtureGallery } from './fixture-gallery.ts';
+import { expect, type Page, test } from '@playwright/test';
+import { byColorScheme } from './color-schemes.ts';
+import { FIXTURE_PAINTINGS, fixtureImage, serveFixtureGallery } from './fixture-gallery.ts';
 import { canvasColors, storedStrip } from './stored-strips.ts';
 
 /** The axes' strips on a painting's page, by their accessible names. */
 const AXIS_STRIPS = ['Color strip', 'Hilbert strip', 'Columns strip', 'Radial strip'];
 
+/** What the Atlas says over the paintings nearest an image's colors, or a painting's. */
+const MATCHES_HEADLINE = 'Painted in these colors.';
+
 test.beforeEach(({ page }) => serveFixtureGallery(page));
+
+/** Matches an image, chosen by the Atlas's own button, to the gallery's paintings. */
+async function matchImage(page: Page, path: string): Promise<void> {
+  await page.goto('/atlas.html');
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Match an image' }).click();
+  await (await chooser).setFiles(path);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(MATCHES_HEADLINE);
+}
+
+/** The titles of the paintings on the wall, in the order they hang. */
+async function wallTitles(page: Page): Promise<string[]> {
+  return page
+    .locator('.wall .painting-tile')
+    .evaluateAll((tiles) => tiles.map((tile) => tile.getAttribute('aria-label')?.split(', ')[0] ?? ''));
+}
+
+/** The fixture's titles at some positions in the gallery. */
+function titlesAt(positions: readonly number[]): string[] {
+  return positions.map((position) => FIXTURE_PAINTINGS[position]?.title ?? '');
+}
 
 test('hangs the paintings on the wall in gallery order, each over the color strip the pipeline stored', async ({ page }) => {
   await page.goto('/atlas.html');
@@ -112,6 +137,77 @@ test('shows all of a painting’s page on a laptop’s screen, without scrolling
   for (const name of AXIS_STRIPS) await expect(page.getByRole('img', { name })).toBeInViewport({ ratio: 1 });
   await expect(page.getByRole('link', { name: 'Open in Studio' })).toBeInViewport({ ratio: 1 });
   await expect(page.locator('.painting-collection')).toBeInViewport({ ratio: 1 });
+  const sameColors = page.getByRole('region', { name: 'Same colors' });
+  await expect(sameColors.locator('.painting-tile').first()).toBeVisible();
+  await expect(sameColors).toBeInViewport({ ratio: 1 });
+  // A painting's label opens above it, rather than below the screen's edge.
+  await sameColors.locator('.painting-tile').first().hover();
+  await expect(sameColors.locator('.tile-label').first()).toBeInViewport({ ratio: 1 });
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(720);
+});
+
+test('matches an image to the paintings nearest its colors: they hang first, the image on a card beside them', async ({ page }) => {
+  await matchImage(page, fixtureImage('Q1217187'));
+  await expect(page).toHaveURL(/\/atlas(\.html)?\?match$/);
+  // The browser reads the image's color strip as the pipeline read the painting's from the same file.
+  const colors = await storedStrip(page, GALLERY_FILES.gallery, 1);
+  await expect(page.getByRole('img', { name: 'Your image' })).toBeVisible();
+  expect(await canvasColors(page.locator('.query-card canvas'))).toEqual(colors);
+  const order = await byColorScheme(page, colors);
+  expect(order[0]).toBe(1);
+  await expect(page.locator('.wall .painting-tile')).toHaveCount(order.length);
+  expect(await wallTitles(page)).toEqual(titlesAt(order));
+
+  await page.getByRole('link', { name: 'All paintings' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^4 paintings/);
+  expect(await wallTitles(page)).toEqual(titlesAt([0, 1, 2, 3]));
+});
+
+test('comes back to the same matches from a painting, and keeps them on reloading', async ({ page }) => {
+  await matchImage(page, fixtureImage('Q18748372'));
+  const tiles = page.locator('.wall .painting-tile');
+  await expect(tiles).toHaveCount(FIXTURE_PAINTINGS.length);
+  const matches = await wallTitles(page);
+
+  await tiles.nth(1).click();
+  await page.getByRole('main').getByRole('link', { name: 'Atlas' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(MATCHES_HEADLINE);
+  await expect(tiles).toHaveCount(FIXTURE_PAINTINGS.length);
+  expect(await wallTitles(page)).toEqual(matches);
+
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(MATCHES_HEADLINE);
+  await expect(tiles).toHaveCount(FIXTURE_PAINTINGS.length);
+  expect(await wallTitles(page)).toEqual(matches);
+});
+
+test('shows the paintings nearest a painting’s colors under its strips, and the rest of them on the wall', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 });
+  await page.goto('/painting.html?id=Q1217187');
+  const order = (await byColorScheme(page, await storedStrip(page, GALLERY_FILES.gallery, 1))).filter((position) => position !== 1);
+  const sameColors = page.getByRole('region', { name: 'Same colors' });
+  const tiles = sameColors.locator('.painting-tile');
+  await expect(tiles.first()).toBeVisible();
+  // As many as fit in a row, the nearest first, and never the painting itself.
+  const shown = await tiles.evaluateAll((elements) => elements.map((tile) => tile.getAttribute('href')));
+  expect(shown).toEqual(order.slice(0, shown.length).map((position) => `./painting.html?id=${FIXTURE_PAINTINGS[position]?.id}`));
+
+  await sameColors.getByRole('link', { name: 'Same colors' }).click();
+  await expect(page).toHaveURL(/\/atlas(\.html)?\?like=Q1217187$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(MATCHES_HEADLINE);
+  await expect(page.locator('.query-card')).toHaveAttribute('href', './painting.html?id=Q1217187');
+  await expect(page.locator('.wall .painting-tile')).toHaveCount(order.length);
+  expect(await wallTitles(page)).toEqual(titlesAt(order));
+});
+
+test('leads to the same colors by a button where a painting’s page has no room for a row of them', async ({ page }) => {
+  // Under Vroom's View of the IJ, 2.76 times as wide as it is tall, a laptop's screen has no room left.
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/painting.html?id=Q17812507');
+  const sameColors = page.getByRole('region', { name: 'Same colors' });
+  await expect(sameColors.getByRole('link', { name: 'Same colors' })).toHaveAttribute('href', './atlas.html?like=Q17812507');
+  await expect(sameColors.locator('.painting-tile')).toHaveCount(0);
+  await expect(sameColors).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(720);
 });
 

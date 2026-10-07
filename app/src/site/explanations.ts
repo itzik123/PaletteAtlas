@@ -1,4 +1,4 @@
-import { ATLAS_ICON, AXIS_ICONS, BARCODE_ICON, LIST_ICON, STRIP_FILL_ICON, STUDIO_ICON, UPLOAD_ICON } from '../icons.ts';
+import { AXIS_ICONS, BARCODE_ICON, LIST_ICON, STRIP_FILL_ICON, STUDIO_ICON, UPLOAD_ICON } from '../icons.ts';
 
 /** A small strip of the site's colors, as an icon. */
 const MINI_STRIP = '<span class="mini-strip"></span>';
@@ -41,8 +41,13 @@ export const STUDIO_EXPLANATION: Explanation = {
 export const ATLAS_EXPLANATION: Explanation = {
   title: 'How the Atlas works',
   steps: [
-    { icon: MINI_STRIP, disc: 'red', lead: 'Under every painting, its color strip:', rest: 'its colors side by side, each as wide as its share of the picture.' },
-    { icon: ATLAS_ICON, disc: 'blue', lead: 'The most famous hang first.', rest: 'Point at a painting for its label, or click it for its page and all four strips.' },
+    {
+      icon: MINI_STRIP,
+      disc: 'red',
+      lead: 'The most famous hang first,',
+      rest: 'each over its color strip: its colors side by side, each as wide as its share of the picture.',
+    },
+    { icon: UPLOAD_ICON, disc: 'blue', lead: 'Match an image', rest: 'to hang the paintings nearest its colors first. It never leaves your computer.' },
     { icon: BARCODE_ICON, disc: 'yellow', lead: 'Career Barcodes', rest: 'line up each painter’s work, oldest first, a bar for every painting.' },
   ],
   credits: ATLAS_CREDITS,

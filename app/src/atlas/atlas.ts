@@ -1,6 +1,5 @@
 import { RETRY_ICON } from '../icons.ts';
-import { careersLink } from '../site/careers-link.ts';
-import type { GalleryData } from './gallery-data.ts';
+import type { GalleryEntry } from './gallery-data.ts';
 import { Wall } from './wall.ts';
 import { type WallPlace, WallPlaces } from './wall-place.ts';
 
@@ -12,13 +11,24 @@ const LOAD_AHEAD = '1500px';
 const SAVE_DELAY_MS = 250;
 
 /**
- * The Atlas: every painting of the gallery on one wall, the most famous first, with more hung as
- * the visitor scrolls toward the end, and the way to the painters' Career Barcodes. It keeps its
- * place (see WallPlaces), so a visitor who comes back from a painting finds the wall as they left it.
+ * The paintings a wall hangs, in order, fetched a run at a time: the whole gallery (GalleryData),
+ * or the paintings nearest some colors (ColorMatches). A run shorter than asked for is the last.
+ */
+export interface WallPaintings {
+  entries(from: number, count: number): Promise<GalleryEntry[]>;
+}
+
+/**
+ * The Atlas: paintings on one wall under a headline, the whole gallery, the most famous first, or
+ * the paintings nearest an image's colors, with more hung as the visitor scrolls toward the end.
+ * It keeps its place (see WallPlaces), so a visitor who comes back from a painting finds the wall
+ * as they left it.
+ *
+ * Strategy: what hangs, and the headline over it, are handed in (see atlas-main.ts).
  */
 export class Atlas {
   readonly element = document.createElement('main');
-  readonly #data: GalleryData;
+  readonly #paintings: WallPaintings;
   readonly #wall = new Wall();
   /** Sits after the wall; nearing the screen, it asks for more paintings. */
   readonly #end = document.createElement('div');
@@ -28,20 +38,11 @@ export class Atlas {
   #saveTimer: ReturnType<typeof setTimeout> | undefined;
 
   /** Starts at the top of the wall, or where the visitor was when they left it. */
-  constructor(data: GalleryData, place?: WallPlace) {
-    this.#data = data;
+  constructor(paintings: WallPaintings, headline: HTMLElement, place?: WallPlace) {
+    this.#paintings = paintings;
     this.element.className = 'atlas';
-    const headline = document.createElement('h1');
-    const count = document.createElement('span');
-    count.className = 'count';
-    count.textContent = data.count.toLocaleString('en');
-    headline.append(count, ' paintings, strip by strip.');
-    const top = document.createElement('div');
-    top.className = 'atlas-top';
-    // On a phone, the way to the Career Barcodes, which the header shows on a larger screen.
-    top.append(headline, careersLink());
     this.#end.className = 'wall-end';
-    this.element.append(top, this.#wall.element, this.#end);
+    this.element.append(headline, this.#wall.element, this.#end);
     this.#watcher = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) void this.#hangMore(PAGE_SIZE);
@@ -79,7 +80,7 @@ export class Atlas {
     this.#watcher.unobserve(this.#end);
     this.#end.replaceChildren();
     this.element.setAttribute('aria-busy', 'true');
-    const entries = await this.#data.entries(this.#hung, count).catch(() => undefined);
+    const entries = await this.#paintings.entries(this.#hung, count).catch(() => undefined);
     this.element.removeAttribute('aria-busy');
     if (!entries) {
       this.#end.append(this.#retryButton());
@@ -88,7 +89,7 @@ export class Atlas {
     this.#hung += entries.length;
     this.#wall.append(entries);
     // Watched anew, the end reports at once if it is still near the screen, and more are hung.
-    if (this.#hung < this.#data.count) this.#watcher.observe(this.#end);
+    if (entries.length === count) this.#watcher.observe(this.#end);
     return true;
   }
 

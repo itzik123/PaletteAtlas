@@ -4,8 +4,8 @@ import { SAMPLE_DRAG_TYPE } from './sample-wall.ts';
 export interface IntakeListener {
   /** A file, the first image among several. */
   onFile(file: File): void;
-  /** A painting dragged from the sample wall, by its id. */
-  onSample(id: string): void;
+  /** A painting dragged from the sample wall, by its id, on a page that has one. */
+  onSample?(id: string): void;
 }
 
 /** What a drag may carry for the page to take. */
@@ -59,7 +59,7 @@ export class FileIntake {
       this.#dragDepth = 0;
       this.#setDragging(false);
       const sample = event.dataTransfer?.getData(SAMPLE_DRAG_TYPE);
-      if (sample) this.#listener.onSample(sample);
+      if (sample) this.#listener.onSample?.(sample);
       else this.#take(event.dataTransfer?.files);
     });
     // A drag from the page itself (a painting from the wall) always ends here, even when cancelled.
@@ -84,6 +84,15 @@ export class FileIntake {
   #setDragging(dragging: boolean): void {
     this.#root.classList.toggle('is-dragging', dragging);
   }
+}
+
+/** Covers the page while a file is dragged over it (see FileIntake). */
+export function dropOverlay(): HTMLElement {
+  const overlay = document.createElement('div');
+  overlay.className = 'drop-overlay';
+  overlay.setAttribute('aria-hidden', 'true');
+  overlay.innerHTML = '<span>Drop it!</span>';
+  return overlay;
 }
 
 export function isImage(file: File): boolean {

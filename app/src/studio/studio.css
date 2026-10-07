@@ -592,6 +592,16 @@
   background: var(--yellow);
 }
 
+/* The way to the paintings in the image's colors, a tab on the strip as "New image" is on the
+   picture's card. */
+.find-paintings {
+  position: absolute;
+  top: -22px;
+  right: 28px;
+  z-index: 1;
+  background: var(--yellow);
+}
+
 .strip-stack {
   --strip-border: 4px;
   grid-area: strip;
@@ -643,57 +653,6 @@
   background: var(--color);
   box-shadow: 0 4px 0 var(--ink);
   transform: translateX(-50%) rotate(-45deg);
-}
-
-/* Dragging a file anywhere over the page */
-
-.drop-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: none;
-  place-items: center;
-  border: 12px dashed var(--ink);
-  background: rgb(255 200 31 / 0.9);
-  pointer-events: none;
-}
-
-.is-dragging .drop-overlay {
-  display: grid;
-}
-
-.drop-overlay span {
-  font-size: clamp(4rem, 15vw, 12rem);
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  animation: wobble 0.9s ease-in-out infinite alternate;
-}
-
-@keyframes wobble {
-  from {
-    transform: rotate(-4deg) scale(0.96);
-  }
-
-  to {
-    transform: rotate(4deg) scale(1.04);
-  }
-}
-
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  z-index: 60;
-  max-width: calc(100% - 32px);
-  margin: 0;
-  padding: 14px 24px;
-  border: var(--outline);
-  border-radius: 18px;
-  background: var(--red);
-  color: var(--card);
-  box-shadow: var(--lift) var(--lift) 0 var(--ink);
-  font-weight: 750;
-  transform: translateX(-50%);
 }
 
 @media (max-width: 860px) {
@@ -767,7 +726,8 @@
     justify-content: center;
   }
 
-  .another {
+  .another,
+  .find-paintings {
     right: 18px;
   }
 }

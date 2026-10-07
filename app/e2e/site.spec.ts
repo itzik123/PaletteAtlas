@@ -9,9 +9,12 @@ const EXPLAINED = [
   { path: '/artist.html?id=Q5669', title: 'How Career Barcodes work' },
 ] as const;
 
-/** A laptop's screen, and how far down it the Atlas's wall may begin: well within its upper half. */
+/**
+ * A laptop's screen, and how far down it the Atlas's wall may begin: within its upper half, under
+ * the headline and the way to match an image.
+ */
 const LAPTOP = { width: 1280, height: 720 } as const;
-const WALL_BEGINS_WITHIN = 0.4;
+const WALL_BEGINS_WITHIN = 0.45;
 const PHONE = { width: 390, height: 800 } as const;
 
 test.beforeEach(({ page }) => serveFixtureGallery(page));

@@ -1,5 +1,6 @@
 import type { Srgb } from '@palette-atlas/color';
 import type { SourceMap } from '@palette-atlas/strip';
+import type { Picture } from '../atlas/image-query.ts';
 import { SourceHighlight } from '../source-highlight.ts';
 
 /** How much of the picture the veil hides around the segment it uncovers. */
@@ -22,6 +23,8 @@ export class PictureView {
   readonly #stack = document.createElement('div');
   readonly #picture = document.createElement('canvas');
   readonly #veil = new SourceHighlight(VEIL_OPACITY);
+  /** The picture's size: the canvas keeps its own, and only shows the bitmap. */
+  #size = { width: 0, height: 0 };
 
   constructor(onPoint: (spot: Spot | undefined) => void) {
     this.element.className = 'picture-frame';
@@ -46,12 +49,18 @@ export class PictureView {
 
   /** Shows a decoded picture, taking it over: the canvas draws the bitmap as it is, without copying it. */
   show(picture: ImageBitmap, name: string): void {
+    this.#size = { width: picture.width, height: picture.height };
     this.#stack.style.setProperty('--ratio', String(picture.width / picture.height));
     const context = this.#picture.getContext('bitmaprenderer');
     if (!context) throw new Error('Canvas bitmap rendering is not available');
     context.transferFromImageBitmap(picture);
     this.#picture.setAttribute('aria-label', name);
     this.#veil.clear();
+  }
+
+  /** The picture shown, to copy. */
+  get picture(): Picture {
+    return { source: this.#picture, ...this.#size };
   }
 
   /** Veils the picture in the given color, except where the segment's pixels are. */

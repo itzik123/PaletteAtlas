@@ -6,6 +6,7 @@ import type { GalleryEntry } from './gallery-data.ts';
 import { dateOf, lifespanOf, nameOf, titleOf } from './painting-text.ts';
 import { PaintingView } from './painting-view.ts';
 import { PictureLightbox } from './picture-lightbox.ts';
+import { SameColors } from './same-colors.ts';
 
 /** What the site calls an artist's page. */
 const CAREER_BARCODE = 'Career Barcode';
@@ -20,20 +21,24 @@ const WIDE_ASPECT = 2;
 const TITLE_LENGTHS = { long: 30, longer: 70 } as const;
 
 /**
- * One painting of the Atlas: the picture large, its details and credit, and its strip along every
- * axis, read in the browser from the same image on Commons that the gallery's strip was read from.
- * Beside the artist's name, a button leads to their Career Barcode, if they have one.
+ * One painting of the Atlas: the picture large, the ways back to the Atlas and on to the Studio,
+ * its details and credit, its strip along every axis, read in the browser from the same image on
+ * Commons that the gallery's strip was read from, and the paintings nearest its colors (see
+ * SameColors). Beside the artist's name, a button leads to their Career Barcode, if they have one.
  */
 export class PaintingPage {
   readonly element = document.createElement('main');
 
-  constructor(entry: GalleryEntry, reader: StripReader, hasCareer: boolean) {
+  constructor(entry: GalleryEntry, reader: StripReader, hasCareer: boolean, sameColors: Promise<readonly GalleryEntry[]>) {
     const { painting, artist, image } = entry;
     const aspect = painting.width / painting.height;
     this.element.className = 'painting-page';
     this.element.dataset.layout = aspect >= WIDE_ASPECT ? 'wide' : 'upright';
     this.element.innerHTML = `
-      <a class="pill back" href="./atlas.html">${BACK_ICON}<span>Atlas</span></a>
+      <div class="painting-nav">
+        <a class="pill back" href="./atlas.html">${BACK_ICON}<span>Atlas</span></a>
+        <a class="pill dark open-studio" href="./?painting=${painting.id}">${STUDIO_ICON}<span>Open in Studio</span></a>
+      </div>
       <div class="painting-frame">
         <span class="pan-hint" aria-hidden="true">${PAN_ICON}</span>
       </div>
@@ -47,7 +52,6 @@ export class PaintingPage {
           <a class="chip" href="https://www.wikidata.org/wiki/${painting.id}" target="_blank" rel="noopener">Wikidata${OUT_ICON}</a>
         </p>
       </section>
-      <a class="pill dark open-studio" href="./?painting=${painting.id}">${STUDIO_ICON}<span>Open in Studio</span></a>
     `;
     const title = this.element.querySelector('h1')!;
     title.textContent = titleOf(painting);
@@ -66,14 +70,28 @@ export class PaintingPage {
       }
     });
 
+    const frame = this.element.querySelector<HTMLElement>('.painting-frame')!;
     const view = new PaintingView(image, aspect, titleOf(painting));
-    this.element.querySelector('.painting-frame')?.prepend(view.element);
+    frame.prepend(view.element);
     const enlarged = new PictureLightbox(image, painting, titleOf(painting), painting.id);
     enlarged.openOnClick(view.element);
     this.element.append(enlarged.element);
 
     const strips = new AxisStrips({ axis: STORED_AXIS, colors: entry.strip });
-    this.element.querySelector('.open-studio')?.before(strips.element);
+    // Down to the foot of the picture's card beside it; under a wide one, to the foot of the screen,
+    // less the room below the page and the gap before the grid's last row, under the details.
+    const bottom = (): number => {
+      if (this.element.dataset.layout === 'upright') return frame.getBoundingClientRect().bottom + scrollY;
+      const style = getComputedStyle(this.element);
+      return innerHeight - Number.parseFloat(style.paddingBottom) - Number.parseFloat(style.rowGap);
+    };
+    const same = new SameColors(painting.id, sameColors, bottom);
+    const info = this.element.querySelector('.painting-info')!;
+    info.after(strips.element, same.element);
+    // The room left changes with the picture's card and the details above (the window resized, say).
+    const resized = new ResizeObserver(() => same.fit());
+    resized.observe(frame);
+    resized.observe(info);
     void fetch(image.url(SOURCE_WIDTH))
       .then((response) => (response.ok ? response.blob() : undefined))
       .then((blob) => blob && reader.read(blob))

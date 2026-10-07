@@ -1,6 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
+import { GALLERY_FILES } from '@palette-atlas/gallery';
 import { type Download, expect, type Locator, type Page, test } from '@playwright/test';
+import { fixtureImage, serveFixtureGallery } from './fixture-gallery.ts';
+import { canvasColors, storedStrip } from './stored-strips.ts';
 
 const BENCHMARK = join(import.meta.dirname, '../../benchmark');
 /** Each segment's width in the reference strips that `pnpm strips` draws. */
@@ -231,6 +234,18 @@ test('the strip saves as a poster, its colors running left to right inside a fra
   // The strip's colors in order, with the paper and the frame on either side.
   expect(across.join(' ')).toContain(strip.join(' '));
   expect(across.length).toBeGreaterThan(strip.length);
+});
+
+test('an image’s colors lead to the paintings nearest them, in the Atlas', async ({ page }) => {
+  await serveFixtureGallery(page);
+  await page.locator('input[type=file]').setInputFiles(fixtureImage('Q1217187'));
+  await expect(page.locator('.studio')).toHaveAttribute('data-state', 'loaded');
+  await page.getByRole('button', { name: 'Find paintings' }).click();
+  await expect(page).toHaveURL(/\/atlas(\.html)?\?match$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Painted in these colors.');
+  expect(await canvasColors(page.locator('.query-card canvas'))).toEqual(await storedStrip(page, GALLERY_FILES.gallery, 1));
+  // The Calumny of Apelles, its colors read from this very file.
+  await expect(page.locator('.wall .painting-tile').first()).toHaveAccessibleName(/^Calumny of Apelles, /);
 });
 
 test('a painting clicked on the sample wall becomes its strip', async ({ page }) => {

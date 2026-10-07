@@ -24,6 +24,11 @@ export const FIXTURE_PAINTINGS = [
   { id: 'Q18748372', title: 'Female Saint Holding a Book', artist: 'Amico Aspertini' },
 ] as const;
 
+/** The image file of a fixture painting, by its Wikidata item: the file the pipeline read its strips from. */
+export function fixtureImage(id: string): string {
+  return join(FIXTURE_CATALOG, 'images', `${id}.jpg`);
+}
+
 /** Playwright's global setup: builds the fixture gallery once, before every test. */
 export default function buildFixtureGallery(): void {
   execFileSync(process.execPath, [PIPELINE, FIXTURE_CATALOG, FIXTURE_GALLERY, String(FIXTURE_CHUNK_SIZE)], { stdio: 'ignore' });

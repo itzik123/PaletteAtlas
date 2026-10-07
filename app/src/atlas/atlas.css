@@ -8,13 +8,13 @@
   overflow-x: clip;
 }
 
-/* The headline, and under it, where the header has no room for it (see style.css), the way to the
-   painters' Career Barcodes. */
+/* The headline; under it, the way to match an image, and where the header has no room for it (see
+   style.css), the way to the painters' Career Barcodes. */
 .atlas-top {
   display: grid;
   justify-items: start;
-  gap: 24px;
-  margin: 24px 0 40px;
+  gap: 20px;
+  margin: 20px 0 36px;
 }
 
 .atlas-top .careers-link {
@@ -39,6 +39,117 @@
   background: var(--yellow);
   box-shadow: 6px 6px 0 var(--ink);
   line-height: 1;
+}
+
+/* The way to match an image, and a word on what it does, which on a touch screen picks rather than
+   drops. While an image is read, the button's stripes march. */
+.match-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 22px;
+}
+
+.match-button {
+  background: var(--yellow);
+}
+
+.is-matching {
+  cursor: progress;
+}
+
+.is-matching .match-button {
+  --stripe: rgb(24 20 15 / 0.14);
+  background-image: linear-gradient(45deg, var(--stripe) 25%, transparent 25% 50%, var(--stripe) 50% 75%, transparent 75%);
+  background-size: 40px 40px;
+  animation: march 0.6s linear infinite;
+}
+
+.match-hint {
+  margin: 0;
+  font-size: clamp(1.15rem, 1.9vw, 1.6rem);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.match-hint .touch-only {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .match-hint .touch-only {
+    display: inline;
+  }
+
+  .match-hint .pointer-only {
+    display: none;
+  }
+}
+
+/* Over the paintings nearest some colors: what they were matched to, on a card laid a little
+   askew like a snapshot, beside the headline and the way back to the whole gallery. */
+.matches-top {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 24px 40px;
+  margin-bottom: 48px;
+}
+
+.matches-text {
+  display: grid;
+  justify-items: start;
+  gap: 24px;
+}
+
+.atlas .matches-top h1 {
+  font-size: clamp(2.2rem, 4.6vw, 3.6rem);
+}
+
+.matches-top .pill {
+  color: inherit;
+}
+
+.query-card {
+  --card-height: 170px;
+  --card-max-width: 360px;
+  display: block;
+  margin: 0;
+  border: var(--outline-thick);
+  border-radius: 8px;
+  background: var(--ink);
+  box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
+  transform: rotate(-3deg);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+a.query-card:hover,
+a.query-card:focus-visible {
+  transform: rotate(-3deg) translate(-3px, -3px);
+  box-shadow: calc(var(--lift-big) + 3px) calc(var(--lift-big) + 3px) 0 var(--ink);
+}
+
+.query-card img {
+  display: block;
+  width: min(var(--card-height) * var(--aspect), var(--card-max-width));
+  aspect-ratio: var(--aspect);
+  border-radius: 4px 4px 0 0;
+  background: var(--paper);
+  object-fit: cover;
+}
+
+/* As wide as the picture above it: by its own 128:1 shape, it would widen the card to thousands of
+   pixels. */
+.query-card canvas {
+  display: block;
+  width: 0;
+  min-width: 100%;
+  height: 26px;
+  border-top: 3px solid var(--ink);
+  border-radius: 0 0 4px 4px;
+  image-rendering: pixelated;
 }
 
 /* The wall: rows of paintings at their own shapes (sized by Wall), each over its strip. */
@@ -138,7 +249,8 @@
   transform: none;
 }
 
-/* Watched to hang more paintings; offers to try again if they didn't arrive. */
+/* Watched to hang more paintings; offers to try again if they didn't arrive. While they're on
+   their way (a search's first ones can take a few seconds), a bar of marching stripes. */
 .wall-end {
   display: grid;
   place-items: center;
@@ -146,9 +258,21 @@
   margin-top: 40px;
 }
 
-/* A painting's page, all on one screen: the picture on a card, beside the way back to the Atlas,
-   its details, its strips and the way on to the Studio. A wide painting spans the page instead,
-   all the rest below it. */
+.atlas[aria-busy='true'] .wall-end::before {
+  --stripe: rgb(24 20 15 / 0.14);
+  content: '';
+  width: min(240px, 60%);
+  height: 22px;
+  border: var(--outline);
+  border-radius: 999px;
+  background: var(--card)
+    linear-gradient(45deg, var(--stripe) 25%, transparent 25% 50%, var(--stripe) 50% 75%, transparent 75%) 0 0 / 40px 40px;
+  animation: march 0.6s linear infinite;
+}
+
+/* A painting's page, all on one screen: the picture on a card, beside the ways back to the Atlas
+   and on to the Studio, its details, its strips and the paintings nearest its colors. A wide
+   painting spans the page instead, all the rest below it. */
 
 .painting-page {
   /* The header's height and the room above the page, and below it. */
@@ -161,7 +285,7 @@
     'picture back'
     'picture info'
     'picture strips'
-    'picture studio';
+    'picture same';
   gap: 14px 40px;
   max-width: 1240px;
   margin: 0 auto;
@@ -170,33 +294,28 @@
 
 .painting-page[data-layout='wide'] {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  /* The last row takes whatever height the details need beyond the strips', so the way on to the
-     Studio stays right under the strips. */
+  /* The last row takes whatever height the details need beyond the strips', so the same colors
+     stay right under the strips. */
   grid-template-rows: auto auto auto auto 1fr;
   grid-template-areas:
     'picture picture'
     'back strips'
     'info strips'
-    'info studio'
+    'info same'
     'info .';
   gap: 14px 40px;
 }
 
-.painting-page .back {
+/* The way back to the Atlas and on to the Studio, side by side, as the header's buttons are. */
+.painting-nav {
   grid-area: back;
-  justify-self: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.painting-nav .back {
   color: inherit;
-}
-
-.painting-page .open-studio {
-  grid-area: studio;
-  justify-self: start;
-  align-self: start;
-  margin-top: 4px;
-}
-
-.painting-page > .pill {
-  padding: 7px 18px;
 }
 
 .painting-frame {
@@ -487,6 +606,74 @@ a.chip:hover {
 
 .chip.license {
   background: var(--green);
+}
+
+/* The paintings nearest this one's colors (see SameColors): a heading that leads on to all of them,
+   over one row as tall as the room left, or a button where there is too little room. Their labels
+   open above them, toward the page rather than past its foot. */
+.same-colors {
+  grid-area: same;
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 4px;
+}
+
+.same-colors-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.same-colors-heading:hover span {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.same-colors-heading .icon:last-child {
+  width: 1em;
+  height: 1em;
+}
+
+.same-colors-button {
+  color: inherit;
+}
+
+.same-colors:is([hidden], [data-fit='none']),
+.same-colors[data-fit='button'] :is(.same-colors-heading, .same-colors-row),
+.same-colors:not([data-fit='button']) .same-colors-button {
+  display: none;
+}
+
+.same-colors-row {
+  display: flex;
+  gap: 20px 14px;
+  width: 100%;
+}
+
+.same-colors .tile-strip {
+  height: 14px;
+}
+
+.same-colors .tile-label {
+  top: auto;
+  bottom: calc(100% + 12px);
+  transform: translate(-50%, 4px);
+}
+
+.same-colors .painting-tile:is([data-edge='start'], [data-edge='end']) .tile-label {
+  transform: translateY(4px);
+}
+
+.same-colors .painting-tile:is([data-edge='start'], [data-edge='end']):is(:hover, :focus-visible) .tile-label {
+  transform: none;
 }
 
 /* The four strips, each beside its axis's badge, as tall as the screen has room for. */
@@ -1351,6 +1538,25 @@ a.chip:hover {
     padding: 8px 16px 48px;
   }
 
+  .query-card {
+    --card-height: 92px;
+    --card-max-width: 150px;
+  }
+
+  .matches-top {
+    gap: 20px 24px;
+    margin-bottom: 36px;
+  }
+
+  /* The headline beside the card, the way back under both. */
+  .matches-text {
+    display: contents;
+  }
+
+  .matches-top .pill {
+    grid-column: 1 / -1;
+  }
+
 
   .wall {
     gap: 20px 14px;
@@ -1367,7 +1573,7 @@ a.chip:hover {
       'picture'
       'info'
       'strips'
-      'studio';
+      'same';
     gap: 24px;
     padding: 12px 16px 48px;
   }
@@ -1386,6 +1592,10 @@ a.chip:hover {
 
   .painting-page[data-layout] .axis-strips {
     --strip-height: 48px;
+  }
+
+  .same-colors-row {
+    flex-wrap: wrap;
   }
 
   /* One column on a phone: the bar, then the name, the years, the switch, and the barcode across
