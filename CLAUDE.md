@@ -153,12 +153,12 @@ The core and the site are TypeScript. Python is used only for parts that don't r
 
 ## Work phases
 
-Seven phases, each ending in something you can show. **Current phase: 4 (Data pipeline and gallery).**
+Seven phases, each ending in something you can show. **Current phase: 5 (HNSW and search).**
 
 1. **Infrastructure** (1 weekend): monorepo, CI, and deployment of an empty page to GitHub Pages. From here on, every push goes live. *Deployment was deferred; phase 1 covered the monorepo, CI and the empty page, and the site went live in phase 3 (see Hosting while private).* Done Oct 4, 2026.
 2. **Color library and strip engine** (2–3 weekends): OKLab conversions and correct averaging, k-means, a column axis and a radial axis, a color axis with TSP ordering, and a Hilbert axis with fold-back. Deliverable: correct strips generated from a script, covered by tests. Done Oct 4, 2026.
 3. **Studio, first release v0.1** (2 weekends): image upload, axis switching, hover linking between strip and image, and PNG export. A README with a GIF and a link to the site. The first moment to share. Done Oct 5, 2026: live at https://palette-atlas.pages.dev, with a sample wall of famous paintings and poster and wallpaper export.
-4. **Data pipeline and gallery** (2–3 weekends): download about 50,000 public-domain paintings, compute their strips, a gallery page, and a career barcode for each artist.
+4. **Data pipeline and gallery** (2–3 weekends): download about 50,000 public-domain paintings, compute their strips, a gallery page, and a career barcode for each artist. Done Oct 7, 2026: the Atlas shows 48,695 paintings, each with its own page, and 8,373 artists' Career Barcodes.
 5. **HNSW and search, v0.2** (3–4 weekends): implementation from scratch, brute force for checking, recall measurement, saving to a binary file, and building the index in the pipeline. In the browser: upload an image and get the closest paintings.
 6. **Lab** (3–5 weekends): the search trace becomes an animation, in plane mode and in color-space mode. Controls for `M` and `ef`, and failure scenarios, such as clustered data without the neighbor-selection heuristic.
 7. **Polish and launch, v1.0** (1–2 weekends): performance, mobile, accessibility, a GIF for each part, and a launch post.
