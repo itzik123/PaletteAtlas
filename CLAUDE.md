@@ -76,7 +76,7 @@ TypeScript libraries with no browser dependency, shared by an offline data pipel
 - `color`: correct averaging (linear light), k-means, color distances (OKLab) and palette ordering (exact TSP)
 - `strip`: image to strip (Hilbert, TSP)
 - `vectorize` (added Oct 7, 2026): color strip to vector, the sliced Wasserstein embedding, compared by mean absolute difference (see Vector representation)
-- `hnsw`: index and search (search, trace)
+- `hnsw` (added Oct 7, 2026): index and search (search, trace), self-contained: it depends on no other library, takes vectors of any length (2 in the Lab's plane, 128 for the paintings), and is handed its distance (Strategy) and the random numbers its build draws
 - `gallery` (added Oct 6, 2026): the gallery's data format, which the pipeline writes and the site reads: paintings stored by column, color strips packed into chunk images, Commons links rebuilt from file names (`CommonsImage`), and the artists' careers, their paintings in the order made (`careers`)
 
 Both sides import the same libraries:
@@ -174,7 +174,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 | color | A round-trip conversion returns the same color within a negligible error; known OKLab reference values | A gradient between two colors in sRGB vs. OKLab, one above the other |
 | strip | Hilbert fold-back at full resolution restores the image pixel for pixel; reference strips for every axis (`benchmark/strips`) | Hovering over the strip highlights the source region in the image |
 | vectorize | An identical image gives distance zero; a small color change gives a small distance; never farther than the Earth Mover's Distance | The nearest results and their strips next to the query strip |
-| hnsw | recall@10 vs. brute force above a set target (e.g. 0.95); deterministic build with a seed | In the Lab: the true neighbors marked next to what HNSW found |
+| hnsw | recall@10 vs. brute force of at least 0.95, on real paintings too; every painting finds itself; deterministic build with a seed | In the Lab: the true neighbors marked next to what HNSW found |
 | pipeline | Only files Commons marks public domain or CC0; record counts and file schema | A check page with 20 random works and their strips |
 | app | Playwright: upload, axis switch, export | A manual pass on a phone before every release |
 
@@ -182,6 +182,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
 
 - **Scope** is the main risk. The Lab is the heavy part, so it comes after there is already a product that stands on its own.
 - **Vector representation** (decided Oct 7, 2026, replacing the design doc's soft histogram with Hellinger distance; measurements and sources in `docs/search-research.md`): a painting's color strip is a distribution of color in 128 equal shares, and the Earth Mover's Distance between two such distributions in OKLrab is the classic measure of how alike two color schemes look (Rubner et al., 2000), but too slow to compare a query with every painting. Its sliced form is fast: the vector projects the strip's colors onto 8 directions, sorts them and averages them over 16 equal shares (128 numbers), and two vectors' mean absolute difference (L1) is the Earth Mover's Distance along each direction, averaged, which never exceeds the true one. On 240 gallery queries its 10 nearest held 78% of the exact Earth Mover's top 10 and lay only 2% farther by it; the soft histogram held 45%, 14% farther. L1 tracks the Earth Mover's Distance; Euclidean tracks its squared-cost cousin (W2) instead. Only color counts, not layout: the gallery stores the color strip alone.
+- **Search index** (measured Oct 7, 2026): HNSW over the 48,695 vectors (M = 16, efConstruction = 200) builds in 39 s in Node and finds the true 10 nearest at ef = 32 in 0.25 ms; brute force takes 14 ms. The vectors' intrinsic dimension is about 11, low enough that the layers speed the search up (they stop helping above about 32). The vectors follow from the color strips the site already ships, so the browser may compute them (about a second in a Worker) instead of downloading them; decided at the browser step.
 - **Non-square images** (decided Oct 4, 2026): the classic Hilbert curve is defined on a square whose side is a power of 2, so the Hilbert axis uses Jakub Červený's generalized curve ("gilbert"), which fills any rectangle without jumps (at most one diagonal step) and matches the classic curve on those squares. No padding or cropping.
 - **Data size in the browser**: 50,000 vectors and their graph can reach tens of megabytes. Fix: uint8 quantization and loading in chunks as needed. The strips were settled on Oct 6, 2026: only the color axis ships (about 7.5 MB for 50,000), and pages load a chunk at a time. The careers repeat the dated paintings and their strips in each artist's order (about 14 MB more), so an artist's page loads a chunk or two rather than the whole gallery.
 - **Painting data** (decided Oct 5, 2026, at the start of phase 4; replaces the design doc's AIC data dump): the AIC has only 1,875 public-domain paintings with images, too few to find a painting that truly resembles a user's photo, and too few to give HNSW a real job. Five museum APIs together (the Met, Rijksmuseum, SMK, Cleveland, AIC) hold about 30,000; Wikidata lists 247,000 paintings with a Commons image by artists who died over 70 years ago, from hundreds of museums. So:
@@ -228,3 +229,4 @@ Development happens on Windows (PowerShell). `.gitattributes` keeps every text f
 - [MediaWiki API: imageinfo](https://www.mediawiki.org/wiki/API:Imageinfo) (Commons file sizes, licenses and thumbnail URLs)
 - [Wikimedia robot policy](https://wikitech.wikimedia.org/wiki/Robot_policy) and [standard thumbnail sizes](https://www.mediawiki.org/wiki/Common_thumbnail_sizes)
 - [Art Institute of Chicago: Open Access Images](https://www.artic.edu/open-access/open-access-images) (three of the Studio's samples)
+- [Malkov and Yashunin: HNSW](https://arxiv.org/abs/1603.09320) and [hnswlib](https://github.com/nmslib/hnswlib); the rest of phase 5's reading is listed in `docs/search-research.md`

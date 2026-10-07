@@ -1,0 +1,16 @@
+{
+  "name": "@palette-atlas/hnsw",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@palette-atlas/color": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
