@@ -55,7 +55,7 @@ Claude never declares a phase complete on its own: present the passing tests and
 
 - **Studio**: upload an image, pick an axis (color, Hilbert, columns or radial) and get a strip. Hovering over the strip highlights the region of the image it came from (and hovering over the image pins the segment each pixel went into), and the strip exports as a poster or a phone wallpaper.
 - **Atlas**: a gallery of public-domain paintings with their strips, a "career barcode" for each artist, and a search for paintings whose color scheme resembles an uploaded image.
-- **Lab**: an interactive explanation of HNSW. Watch the graph being built and the search descending through the layers, next to the exact answer. Two modes: points on a plane, and color space itself, where each point is painted the color it represents.
+- **Lab**: an interactive explanation of HNSW. Watch the very search that found an image's paintings descend through the index's layers, every painting a dot of its own color, next to the exact answer.
 
 ## Site design
 
@@ -79,7 +79,7 @@ TypeScript libraries with no browser dependency, shared by an offline data pipel
 - `color`: correct averaging (linear light), k-means, color distances (OKLab) and palette ordering (exact TSP)
 - `strip`: image to strip (Hilbert, TSP)
 - `vectorize` (added Oct 7, 2026): color strip to vector, the sliced Wasserstein embedding, compared by mean absolute difference (see Vector representation)
-- `hnsw` (added Oct 7, 2026): index and search (search, trace), self-contained: it depends on no other library, takes vectors of any length (2 in the Lab's plane, 128 for the paintings), and is handed its distance (Strategy) and the random numbers its build draws
+- `hnsw` (added Oct 7, 2026): index and search (search, trace), self-contained: it depends on no other library, takes vectors of any length (2 on the benchmark page's plane, 128 for the paintings), and is handed its distance (Strategy) and the random numbers its build draws
 - `gallery` (added Oct 6, 2026): the gallery's data format, which the pipeline writes and the site reads: paintings stored by column, color strips packed into chunk images, Commons links rebuilt from file names (`CommonsImage`), and the artists' careers, their paintings in the order made (`careers`)
 
 Both sides import the same libraries:
@@ -129,7 +129,7 @@ PaletteAtlas/
 
 - **UI**: plain TypeScript, no framework (decided in phase 1).
 - **Build**: pnpm workspaces and Vite for the TypeScript part. The Python part uses only the standard library (Python 3.14), so it needs no packages and no venv yet.
-- **Drawing**: Canvas 2D for strips, Three.js for the 3D view in the Lab.
+- **Drawing**: Canvas 2D, for the strips and for the Lab's layers (Three.js was planned for a 3D color-space view in the Lab, dropped Oct 8, 2026).
 - **Compute**: Web Workers for every heavy computation, so the interface never freezes.
 - **Tests**: Vitest for the libraries, the pipeline's build and the app's pure modules (the painters' name filing and search), each test file next to its code as `*.test.ts`; `unittest` for the Python fetch step, likewise as `*_test.py`; Playwright for UI flows and for screenshots of the app compared against reference images.
 - **Images in Node**: `sharp` (libvips) decodes and encodes image files in the pipeline, WebP and PNG included. Its strips of the benchmark images match the browser's exactly.
@@ -163,7 +163,7 @@ Seven phases, each ending in something you can show. **Current phase: 6 (Lab).**
 3. **Studio, first release v0.1** (2 weekends): image upload, axis switching, hover linking between strip and image, and PNG export. A README with a GIF and a link to the site. The first moment to share. Done Oct 5, 2026: live at https://palette-atlas.pages.dev, with a sample wall of famous paintings and poster and wallpaper export.
 4. **Data pipeline and gallery** (2–3 weekends): download about 50,000 public-domain paintings, compute their strips, a gallery page, and a career barcode for each artist. Done Oct 7, 2026: the Atlas shows 48,695 paintings, each with its own page, and 8,373 artists' Career Barcodes.
 5. **HNSW and search, v0.2** (3–4 weekends): implementation from scratch, brute force for checking, recall measurement, saving to a binary file, and building the index in the pipeline. In the browser: upload an image and get the closest paintings. Steps (planned Oct 7, 2026, after the research in `docs/search-research.md`): `vectorize`; the HNSW index with brute force and recall on real paintings; the search trace; the binary file; the index built by the pipeline; the search in the browser, its look mocked in the real page first. Done Oct 8, 2026, released as v0.2: any image matched on the Atlas, or sent from the Studio, hangs the 600 paintings nearest its colors, and every painting's page shows its own; the index (48,695 paintings) downloads once as 5.4 MB and answers each search in about a millisecond.
-6. **Lab** (3–5 weekends): the search trace becomes an animation, in plane mode and in color-space mode. Controls for `M` and `ef`, and failure scenarios, such as clustered data without the neighbor-selection heuristic.
+6. **Lab** (3–5 weekends): the search trace becomes an animation. Decided Oct 8–9, 2026, after mockups in the real pages (made-up points on a plane with controls for `M` and `ef`, a color-space mode, and a separate site for programmers were mocked and dropped; nothing to tinker with): the Lab is the site's third part (Studio | Atlas | Lab) and replays the Atlas's own search, `search(vector, 601)` over the gallery's index, for an image matched on the Atlas (a "How they were found" button on its wall), an image handed to the Lab, or a painting (`lab.html?like=<id>`). The layers are a stack of card boards, each painting a dot of its average color on a map of the two principal components of the search vectors (92.5% of their variance); the image rides a pin down through the boards, a magnifier shows the bottom layer around it from above, and the 10 nearest stand beside the stack as the Atlas's tiles, checked against brute force. Steps: landmarks on the index's top layer (see Search index); the paintings' map and colors written by the pipeline; the traced search in the search worker; the Lab page; the way in from the Atlas; phones and How it works.
 7. **Polish and launch, v1.0** (1–2 weekends): performance, mobile, accessibility, a GIF for each part, and a launch post.
 
 After v1: video (decoded in the browser with WebCodecs) and personal photo albums.
