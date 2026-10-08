@@ -1,7 +1,6 @@
 import type { RgbaImage } from '@palette-atlas/color';
 import { CLOSE_ICON, UPLOAD_ICON } from '../icons.ts';
 import { imageCanvas } from '../image-adapters.ts';
-import { careersLink } from '../site/careers-link.ts';
 
 // The headlines over the Atlas's wall (see Atlas): one over the whole gallery, and one over the
 // paintings nearest an image's colors, or a painting's.
@@ -21,8 +20,7 @@ export interface QueryCard {
 
 /**
  * The headline over the whole gallery: its count on a yellow card, then the way to match an image
- * and a word on what that does, and, where the header has no room for it (see style.css), the way
- * to the Career Barcodes.
+ * and a word on what that does.
  */
 export function galleryHeadline(count: number, onMatch: () => void): HTMLElement {
   const top = document.createElement('div');
@@ -42,13 +40,14 @@ export function galleryHeadline(count: number, onMatch: () => void): HTMLElement
     </p>
   `;
   match.querySelector('button')?.addEventListener('click', onMatch);
-  top.append(headline, match, careersLink());
+  top.append(headline, match);
   return top;
 }
 
 /**
- * The headline over the paintings nearest some colors: what they were matched to on a card, the
- * card a little askew, like a snapshot laid on the page, and the way back to the whole gallery.
+ * The headline over the paintings nearest some colors: what they were matched to on a card, and
+ * its color strip under the words "these colors.", which stand on it; then the way back to the
+ * whole gallery.
  */
 export function matchesHeadline(card: QueryCard): HTMLElement {
   const top = document.createElement('div');
@@ -65,13 +64,18 @@ export function matchesHeadline(card: QueryCard): HTMLElement {
   } else {
     picture.alt = card.name;
   }
-  shown.append(picture, imageCanvas(card.colors));
+  shown.append(picture);
   const text = document.createElement('div');
   text.className = 'matches-text';
   text.innerHTML = `
-    <h1>Painted in these colors.</h1>
+    <h1>Painted in <span class="named-colors">these colors.</span></h1>
     <a class="pill" href="./atlas.html">${CLOSE_ICON}<span>All paintings</span></a>
   `;
+  const strip = imageCanvas(card.colors);
+  strip.className = 'query-strip';
+  // It repeats the colors of the picture the card names, so screen readers pass it by.
+  strip.setAttribute('aria-hidden', 'true');
+  text.querySelector('.named-colors')?.append(strip);
   top.append(shown, text);
   return top;
 }

@@ -10,12 +10,13 @@ import { ImageMatcher } from './image-matcher.ts';
 import { ImageQueries } from './image-query.ts';
 import { missingPage } from './missing-page.ts';
 import { titleOf } from './painting-text.ts';
+import { GALLERY_ROWS, MATCH_ROWS } from './wall.ts';
 import { WallPlaces } from './wall-place.ts';
 
 /** How many of the paintings nearest some colors the wall hangs at most, the nearest first: well past where they stop resembling them. */
 const MATCHES = 600;
 /** The picture on the query's card at its largest, in CSS pixels (see .query-card in atlas.css). */
-const CARD_PICTURE = { height: 170, maxWidth: 360 } as const;
+const CARD_PICTURE = { height: 210, maxWidth: 440 } as const;
 /** What the card of an image of the visitor's own shows, for those who can't see it. */
 const YOUR_IMAGE = 'Your image';
 
@@ -46,14 +47,16 @@ async function atlasOf(data: GalleryData): Promise<Atlas> {
   const image = params.has('match') ? ImageQueries.take() : undefined;
   const matches = new ColorMatches(data);
   if (painting) {
-    return new Atlas(matches.of(painting.strip, MATCHES, painting.position), matchesHeadline(paintingCard(painting)), WallPlaces.saved());
+    const headline = matchesHeadline(paintingCard(painting));
+    return new Atlas(matches.of(painting.strip, MATCHES, painting.position), headline, MATCH_ROWS, WallPlaces.saved());
   }
   if (image) {
-    return new Atlas(matches.of(image.colors, MATCHES), matchesHeadline({ ...image, name: YOUR_IMAGE }), WallPlaces.saved());
+    const headline = matchesHeadline({ ...image, name: YOUR_IMAGE });
+    return new Atlas(matches.of(image.colors, MATCHES), headline, MATCH_ROWS, WallPlaces.saved());
   }
   // An address whose painting or image is gone opens the whole gallery.
   if (location.search) history.replaceState(history.state, '', './atlas.html');
-  return new Atlas(data, galleryHeadline(data.count, () => matcher.choose()), WallPlaces.saved());
+  return new Atlas(data, galleryHeadline(data.count, () => matcher.choose()), GALLERY_ROWS, WallPlaces.saved());
 }
 
 /** A painting's card over its matches: its picture from Commons, sharp at the card's size, leading to its page. */

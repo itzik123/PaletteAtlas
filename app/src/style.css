@@ -264,7 +264,8 @@ input {
 }
 
 /* In the Atlas, the way to the Career Barcodes, beside the switch, which leaves it the room after
-   it. On the Career Barcodes themselves it is inked and pressed down, as the page shown. */
+   it (narrower, its icon beside How it works, see below). On the Career Barcodes themselves it is
+   inked and pressed down, as the page shown. */
 .careers-link {
   color: inherit;
 }
@@ -320,29 +321,54 @@ input {
   }
 }
 
-/* Narrower still, the Atlas leads to the Career Barcodes from under its headline (see atlas.css). */
+/* Narrower still, the way to the Career Barcodes is its icon alone too, beside How it works, spaced
+   as the buttons beside it are. */
 @media (max-width: 940px) {
+  .site-header {
+    column-gap: 14px;
+  }
+
   .site-header .careers-link {
-    display: none;
+    margin-right: 0;
+    margin-left: auto;
+    padding: 10px;
+  }
+
+  .site-header .careers-link span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
-@media (max-width: 640px) {
+/* A phone, or any screen too narrow for the header's switch beside its three buttons. */
+@media (max-width: 760px) {
+  /* The name and the buttons shrink with the narrowest phones, so they still fit side by side. */
   .site-header {
+    column-gap: min(10px, 2vw);
     padding: 16px 16px 8px;
   }
 
   .brand {
-    font-size: 1.3rem;
+    gap: min(12px, 2.5vw);
+    font-size: min(1.3rem, 5vw);
   }
 
   .brand-mark {
-    width: 36px;
-    height: 36px;
+    width: min(36px, 9vw);
+    height: min(36px, 9vw);
   }
 
   .site-actions {
-    gap: 10px;
+    gap: min(10px, 2vw);
+  }
+
+  .site-actions .pill,
+  .site-header .careers-link {
+    padding: min(10px, 2.5vw);
   }
 
   /* Studio | Atlas floats at the bottom of a phone's screen, under the thumb, with room kept

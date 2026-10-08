@@ -1,7 +1,16 @@
+/* On a desktop, the Studio fills the window under the header, and its parts share that height, so
+   the page never scrolls. */
 .studio {
+  /* The header's height, and the Studio's room above and below its parts. */
+  --above: 85px;
+  --top: 16px;
+  --bottom: 32px;
+  display: flex;
+  flex-direction: column;
   max-width: 1240px;
+  min-height: calc(100vh - var(--above));
   margin: 0 auto;
-  padding: 16px 32px 48px;
+  padding: var(--top) 32px var(--bottom);
   /* Shapes and labels that reach past the edge are cut off there rather than widening the page,
      which a phone would zoom out to show. */
   overflow-x: clip;
@@ -49,17 +58,19 @@
 /* Before the first image: a headline and a big target to drop it on */
 
 .intro {
+  /* How far the shapes around the drop zone reach past it, above and below. */
+  --reach: 52px;
+  flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   align-items: center;
   gap: 56px;
-  min-height: calc(100vh - 170px);
-  padding: 24px 0;
 }
 
 .intro h1 {
   margin: 0;
-  font-size: clamp(3.2rem, 7.4vw, 6.9rem);
+  /* Smaller in a short window, so the wall of paintings still fits under it. */
+  font-size: clamp(3.2rem, min(7.4vw, 14vh), 6.9rem);
   font-weight: 800;
   line-height: 0.92;
   letter-spacing: -0.04em;
@@ -279,9 +290,12 @@
   }
 }
 
+/* Square, as large as its column allows, and the height the window leaves it and its shapes. */
 .drop-stage {
   position: relative;
   isolation: isolate;
+  justify-self: end;
+  width: min(100%, 100vh - var(--above) - var(--top) - var(--bottom) - 2 * var(--reach));
 }
 
 .shape {
@@ -449,13 +463,16 @@
 
 /* With an image: the picture, the axis to read it by, and its strip */
 
+/* The picture's card takes the height the controls and the strip leave. */
 .workspace {
+  flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 1fr auto;
   grid-template-areas:
     'picture controls'
     'strip strip';
-  gap: 32px 40px;
+  gap: 28px 40px;
   padding-top: 16px;
 }
 
@@ -468,7 +485,6 @@
   display: grid;
   place-items: center;
   min-width: 0;
-  height: clamp(280px, 100vh - 380px, 640px);
   padding: 22px;
   border: var(--outline-thick);
   border-radius: 28px;
@@ -611,7 +627,7 @@
 .studio-strip {
   display: block;
   width: 100%;
-  height: clamp(110px, 19vh, 200px);
+  height: clamp(110px, 18vh, 200px);
   border: var(--strip-border) solid var(--ink);
   border-radius: 22px;
   box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
@@ -655,20 +671,51 @@
   transform: translateX(-50%) rotate(-45deg);
 }
 
+/* A short desktop window, such as a 768 px laptop screen under the browser's bars: a smaller
+   headline, leaving the paintings' labels room under them, and slimmer axis buttons. */
+@media (min-width: 861px) and (max-height: 700px) {
+  .intro h1 {
+    font-size: clamp(3.2rem, min(7.4vw, 11vh), 6.9rem);
+  }
+
+  .controls {
+    gap: 16px;
+  }
+
+  .axis-picker {
+    gap: 10px;
+  }
+
+  .axis-tile {
+    padding-block: 6px;
+  }
+
+  .axis-tile .icon {
+    width: 40px;
+    height: 40px;
+    padding: 6px;
+  }
+}
+
 @media (max-width: 860px) {
+  /* A phone's Studio scrolls, its parts one under another. */
   .studio {
+    min-height: 0;
     padding: 8px 16px 48px;
   }
 
   .intro {
     grid-template-columns: minmax(0, 1fr);
     gap: 40px;
-    min-height: 0;
     padding: 16px 0 56px;
   }
 
   .intro h1 {
     font-size: clamp(2.8rem, 12vw, 4.6rem);
+  }
+
+  .drop-stage {
+    width: 100%;
   }
 
   .drop-zone {

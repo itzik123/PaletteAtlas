@@ -8,17 +8,12 @@
   overflow-x: clip;
 }
 
-/* The headline; under it, the way to match an image, and where the header has no room for it (see
-   style.css), the way to the painters' Career Barcodes. */
+/* The headline, and under it the way to match an image. */
 .atlas-top {
   display: grid;
   justify-items: start;
   gap: 20px;
   margin: 20px 0 36px;
-}
-
-.atlas-top .careers-link {
-  display: none;
 }
 
 .atlas h1 {
@@ -87,9 +82,13 @@
   }
 }
 
-/* Over the paintings nearest some colors: what they were matched to, on a card laid a little
-   askew like a snapshot, beside the headline and the way back to the whole gallery. */
+/* Over the paintings nearest some colors: what they were matched to, on a card, beside the
+   headline and the way back to the whole gallery. */
 .matches-top {
+  --headline-size: clamp(2.2rem, 4.6vw, 3.6rem);
+  /* The card's picture at its largest. */
+  --card-height: 210px;
+  --card-max-width: 440px;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 24px 40px;
@@ -103,7 +102,27 @@
 }
 
 .atlas .matches-top h1 {
-  font-size: clamp(2.2rem, 4.6vw, 3.6rem);
+  font-size: var(--headline-size);
+}
+
+/* "these colors." stand on a strip of the colors they name, kept together on one line. */
+.named-colors {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* As wide as the words above it: by its own 128:1 shape, it would widen them to thousands of pixels.
+   Pulled up by the room under the words' line, its top edge is where they stand. */
+.query-strip {
+  display: block;
+  width: 0;
+  min-width: 100%;
+  height: max(18px, 0.4em);
+  margin-top: -0.15em;
+  border: var(--outline);
+  border-radius: 6px;
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+  image-rendering: pixelated;
 }
 
 .matches-top .pill {
@@ -111,15 +130,12 @@
 }
 
 .query-card {
-  --card-height: 170px;
-  --card-max-width: 360px;
   display: block;
   margin: 0;
   border: var(--outline-thick);
   border-radius: 8px;
   background: var(--ink);
   box-shadow: var(--lift-big) var(--lift-big) 0 var(--ink);
-  transform: rotate(-3deg);
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease;
@@ -127,29 +143,22 @@
 
 a.query-card:hover,
 a.query-card:focus-visible {
-  transform: rotate(-3deg) translate(-3px, -3px);
+  transform: translate(-3px, -3px);
   box-shadow: calc(var(--lift-big) + 3px) calc(var(--lift-big) + 3px) 0 var(--ink);
+}
+
+a.query-card:active {
+  transform: translate(var(--lift-big), var(--lift-big));
+  box-shadow: 0 0 0 var(--ink);
 }
 
 .query-card img {
   display: block;
   width: min(var(--card-height) * var(--aspect), var(--card-max-width));
   aspect-ratio: var(--aspect);
-  border-radius: 4px 4px 0 0;
+  border-radius: 4px;
   background: var(--paper);
   object-fit: cover;
-}
-
-/* As wide as the picture above it: by its own 128:1 shape, it would widen the card to thousands of
-   pixels. */
-.query-card canvas {
-  display: block;
-  width: 0;
-  min-width: 100%;
-  height: 26px;
-  border-top: 3px solid var(--ink);
-  border-radius: 0 0 4px 4px;
-  image-rendering: pixelated;
 }
 
 /* The wall: rows of paintings at their own shapes (sized by Wall), each over its strip. */
@@ -1327,12 +1336,6 @@ a.chip:hover {
   font-weight: 800;
 }
 
-@media (max-width: 940px) {
-  .atlas-top .careers-link {
-    display: inline-flex;
-  }
-}
-
 /* A painting enlarged over its page (see PictureLightbox): as large as fits, in its frame, the page
    darkened behind it. It rises into place, and sinks back away. */
 .painting-view {
@@ -1519,17 +1522,18 @@ a.chip:hover {
     padding: 8px 16px 48px;
   }
 
-  .query-card {
-    --card-height: 92px;
-    --card-max-width: 150px;
-  }
-
+  /* The headline beside the card, the way back under both. "these colors." keep their one line
+     beside the card, which is narrower to leave them room (5.8 times the headline's size: the
+     font's letters widen at small sizes), and the headline smaller on the narrowest phones. */
   .matches-top {
+    --headline-size: clamp(1.7rem, 9vw, 2.2rem);
+    --card-height: 120px;
+    --card-max-width: calc(100cqw - 24px - 8px - 5.8 * var(--headline-size));
+    container-type: inline-size;
     gap: 20px 24px;
     margin-bottom: 36px;
   }
 
-  /* The headline beside the card, the way back under both. */
   .matches-text {
     display: contents;
   }
@@ -1673,7 +1677,7 @@ a.chip:hover {
 /* On a phone, where Studio | Atlas floats at the bottom of the screen, the way back to the Atlas is
    its arrow alone, leaving room for the list and the painters before and after; the word stays
    for screen readers. */
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .artist-bar .back {
     padding: 7px 12px;
   }

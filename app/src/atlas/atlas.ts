@@ -1,6 +1,6 @@
 import { RETRY_ICON } from '../icons.ts';
 import type { GalleryEntry } from './gallery-data.ts';
-import { Wall } from './wall.ts';
+import { type RowHeights, Wall } from './wall.ts';
 import { type WallPlace, WallPlaces } from './wall-place.ts';
 
 /** Paintings hung at a time. */
@@ -24,12 +24,13 @@ export interface WallPaintings {
  * It keeps its place (see WallPlaces), so a visitor who comes back from a painting finds the wall
  * as they left it.
  *
- * Strategy: what hangs, and the headline over it, are handed in (see atlas-main.ts).
+ * Strategy: what hangs, the headline over it and how tall its rows are, are handed in (see
+ * atlas-main.ts).
  */
 export class Atlas {
   readonly element = document.createElement('main');
   readonly #paintings: WallPaintings;
-  readonly #wall = new Wall();
+  readonly #wall: Wall;
   /** Sits after the wall; nearing the screen, it asks for more paintings. */
   readonly #end = document.createElement('div');
   readonly #watcher: IntersectionObserver;
@@ -38,8 +39,9 @@ export class Atlas {
   #saveTimer: ReturnType<typeof setTimeout> | undefined;
 
   /** Starts at the top of the wall, or where the visitor was when they left it. */
-  constructor(paintings: WallPaintings, headline: HTMLElement, place?: WallPlace) {
+  constructor(paintings: WallPaintings, headline: HTMLElement, rows: RowHeights, place?: WallPlace) {
     this.#paintings = paintings;
+    this.#wall = new Wall(rows);
     this.element.className = 'atlas';
     this.#end.className = 'wall-end';
     this.element.append(headline, this.#wall.element, this.#end);

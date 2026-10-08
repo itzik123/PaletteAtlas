@@ -2,10 +2,18 @@ import type { GalleryEntry } from './gallery-data.ts';
 import { justifiedRows } from './justified-rows.ts';
 import { PaintingTile } from './painting-tile.ts';
 
-/** A row's target height as a share of the wall's width: about six paintings a row, three on a phone. */
-const ROW_HEIGHT_SHARE = 0.16;
-const MIN_ROW_HEIGHT = 110;
-const MAX_ROW_HEIGHT = 200;
+/** How tall a wall's rows aim to be: a share of the wall's width, kept within bounds in CSS pixels. */
+export interface RowHeights {
+  readonly share: number;
+  readonly min: number;
+  readonly max: number;
+}
+
+/** The whole gallery's rows: about six paintings a row, three on a phone. */
+export const GALLERY_ROWS: RowHeights = { share: 0.16, min: 110, max: 200 };
+/** The rows of the paintings nearest some colors, a quarter taller, so that their colors show more. */
+export const MATCH_ROWS: RowHeights = { share: 0.2, min: 138, max: 250 };
+
 /** Room left at the end of each row, so that rounding never pushes its last tile onto the next. */
 const ROUNDING_ROOM = 1;
 
@@ -15,11 +23,13 @@ const ROUNDING_ROOM = 1;
  */
 export class Wall {
   readonly element = document.createElement('div');
+  readonly #rows: RowHeights;
   readonly #tiles: PaintingTile[] = [];
   /** Where the last row starts: rows before it are full, and stay as they are when paintings are added. */
   #lastRow = 0;
 
-  constructor() {
+  constructor(rows: RowHeights) {
+    this.#rows = rows;
     this.element.className = 'wall';
     new ResizeObserver(() => this.#layout(0)).observe(this.element);
   }
@@ -60,12 +70,13 @@ export class Wall {
     const first = this.#tiles[0]?.element;
     if (!first || width <= 0) return;
     const style = getComputedStyle(this.element);
+    const { share, min, max } = this.#rows;
     const border = Number.parseFloat(getComputedStyle(first).borderLeftWidth);
     const rows = justifiedRows(
       this.#tiles.slice(from).map(({ aspect }) => aspect),
       {
         width,
-        height: Math.min(Math.max(width * ROW_HEIGHT_SHARE, MIN_ROW_HEIGHT), MAX_ROW_HEIGHT),
+        height: Math.min(Math.max(width * share, min), max),
         gap: Number.parseFloat(style.columnGap),
         extra: 2 * border,
       },

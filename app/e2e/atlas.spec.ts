@@ -31,6 +31,23 @@ async function wallTitles(page: Page): Promise<string[]> {
     .evaluateAll((tiles) => tiles.map((tile) => tile.getAttribute('aria-label')?.split(', ')[0] ?? ''));
 }
 
+/** Where some words of the page's headline lie, from their first letter's line box to their last's. */
+async function wordsBox(page: Page, words: string): Promise<{ left: number; right: number; top: number; bottom: number }> {
+  return page.getByRole('heading', { level: 1 }).evaluate((heading, words) => {
+    const text = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+    while (text.nextNode()) {
+      const start = text.currentNode.textContent?.indexOf(words) ?? -1;
+      if (start < 0) continue;
+      const range = document.createRange();
+      range.setStart(text.currentNode, start);
+      range.setEnd(text.currentNode, start + words.length);
+      const { left, right, top, bottom } = range.getBoundingClientRect();
+      return { left, right, top, bottom };
+    }
+    throw new Error(`“${words}” is not in the headline`);
+  }, words);
+}
+
 /** The fixture's titles at some positions in the gallery. */
 function titlesAt(positions: readonly number[]): string[] {
   return positions.map((position) => FIXTURE_PAINTINGS[position]?.title ?? '');
@@ -179,7 +196,18 @@ test('matches an image to the paintings nearest its colors: they hang first, the
   // The browser reads the image's color strip as the pipeline read the painting's from the same file.
   const colors = await storedStrip(page, GALLERY_FILES.gallery, 1);
   await expect(page.getByRole('img', { name: 'Your image' })).toBeVisible();
-  expect(await canvasColors(page.locator('.query-card canvas'))).toEqual(colors);
+  expect(await canvasColors(page.locator('.query-strip'))).toEqual(colors);
+  // Its strip stands under the words that name it, on phones and laptops alike.
+  for (const size of [...PHONE_SIZES, { width: 1280, height: 720 }]) {
+    await page.setViewportSize(size);
+    const [strip, words] = await Promise.all([page.locator('.query-strip').boundingBox(), wordsBox(page, 'these colors.')]);
+    if (!strip) throw new Error('The strip is not laid out');
+    const where = `${size.width}×${size.height}`;
+    expect(Math.abs(strip.x - words.left), where).toBeLessThan(2);
+    expect(Math.abs(strip.x + strip.width - words.right), where).toBeLessThan(2);
+    expect(strip.y, where).toBeGreaterThan(words.top);
+    expect(strip.y, where).toBeLessThan(words.bottom);
+  }
   const order = await byColorScheme(page, colors);
   expect(order[0]).toBe(1);
   await expect(page.locator('.wall .painting-tile')).toHaveCount(order.length);
@@ -227,6 +255,17 @@ test('shows the paintings nearest a painting’s colors under its strips, and th
   await expect(page.locator('.query-card')).toHaveAttribute('href', './painting.html?id=Q1217187');
   await expect(page.locator('.wall .painting-tile')).toHaveCount(order.length);
   expect(await wallTitles(page)).toEqual(titlesAt(order));
+});
+
+test('keeps the headline beside a wide painting’s card within a phone’s screen', async ({ page }) => {
+  // Vroom's View of the IJ is 2.76 times as wide as it is tall.
+  await page.goto('/atlas.html?like=Q17812507');
+  await expect(page.locator('.query-strip')).toBeVisible();
+  for (const size of PHONE_SIZES) {
+    await page.setViewportSize(size);
+    const [words, top] = await Promise.all([wordsBox(page, 'these colors.'), page.locator('.matches-top').boundingBox()]);
+    expect(words.right, `${size.width} px`).toBeLessThanOrEqual((top?.x ?? 0) + (top?.width ?? 0));
+  }
 });
 
 test('leads to the same colors by a button where a painting’s page has no room for a row of them', async ({ page }) => {

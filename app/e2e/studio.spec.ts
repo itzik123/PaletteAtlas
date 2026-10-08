@@ -23,6 +23,14 @@ declare global {
 const NARROWEST_PHONE = 320;
 const WIDEST_PHONE = 430;
 
+/** Desktop windows, inside the browser, from a small laptop's to a large screen's. */
+const DESKTOP_WINDOWS = [
+  { width: 1280, height: 720 },
+  { width: 1440, height: 800 },
+  { width: 1536, height: 730 },
+  { width: 1920, height: 950 },
+] as const;
+
 /** The axes as the Studio names them, by the names of the reference strips' files. */
 const AXES = [
   { file: 'color', label: 'Color' },
@@ -247,7 +255,7 @@ test('an image’s colors lead to the paintings nearest them, in the Atlas', asy
   await page.getByRole('button', { name: 'Find paintings' }).click();
   await expect(page).toHaveURL(/\/atlas(\.html)?\?match$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Painted in these colors.');
-  expect(await canvasColors(page.locator('.query-card canvas'))).toEqual(await storedStrip(page, GALLERY_FILES.gallery, 1));
+  expect(await canvasColors(page.locator('.query-strip'))).toEqual(await storedStrip(page, GALLERY_FILES.gallery, 1));
   // The Calumny of Apelles, its colors read from this very file.
   await expect(page.locator('.wall .painting-tile').first()).toHaveAccessibleName(/^Calumny of Apelles, /);
 });
@@ -269,6 +277,20 @@ test('every axis’s icon and name fit within its button, on phones down to the 
         });
       expect(room, `${label} at ${width} px`).toBeGreaterThanOrEqual(0);
     }
+  }
+});
+
+test('fits a desktop window without scrolling, before an image and with one', async ({ page }) => {
+  const scrolls = () => page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+  for (const size of DESKTOP_WINDOWS) {
+    const where = `${size.width}×${size.height}`;
+    await page.setViewportSize(size);
+    await page.goto('/');
+    await page.evaluate(() => document.fonts.ready);
+    expect(await scrolls(), `${where}, before an image`).toBe(0);
+    await page.getByRole('button', { name: /Mona Lisa/ }).click();
+    await expect(page.getByRole('img', { name: 'Strip' })).toBeVisible();
+    expect(await scrolls(), `${where}, with an image`).toBe(0);
   }
 });
 
