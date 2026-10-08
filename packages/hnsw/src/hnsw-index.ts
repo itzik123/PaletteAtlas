@@ -26,6 +26,13 @@ export interface HnswOptions {
   readonly efConstruction?: number;
   /** How far apart two vectors are: the squared Euclidean distance, unless another is given. */
   readonly distance?: Distance;
+  /**
+   * Nodes that alone make the top layer, where every search starts: chosen to spread over the data
+   * (the pipeline takes one painting from each color family), where the random draw leaves the one
+   * or two nodes that happen to draw the highest level. Every other node keeps its drawn level,
+   * below theirs. None, unless given.
+   */
+  readonly landmarks?: ArrayLike<number>;
 }
 
 export interface ReadOptions {
@@ -62,13 +69,18 @@ export class HnswIndex implements VectorIndex {
   /** Indexes the vectors; the same vectors and the same random numbers build the same graph. */
   static build(
     vectors: Vectors,
-    { random, M = DEFAULT_M, efConstruction = DEFAULT_EF_CONSTRUCTION, distance = squaredEuclidean }: HnswOptions,
+    { random, M = DEFAULT_M, efConstruction = DEFAULT_EF_CONSTRUCTION, distance = squaredEuclidean, landmarks = [] }: HnswOptions,
   ): HnswIndex {
     if (!Number.isInteger(M) || M < 2 || M > MAX_M) throw new RangeError(`M must be an integer from 2 to ${MAX_M}, not ${M}`);
     if (!Number.isInteger(efConstruction) || efConstruction < 1) {
       throw new RangeError(`efConstruction must be a positive integer, not ${efConstruction}`);
     }
-    return new HnswIndex(vectors, buildGraph(vectors, { random, M, efConstruction, distance }), distance);
+    for (const landmark of Array.from(landmarks)) {
+      if (!Number.isInteger(landmark) || landmark < 0 || landmark >= vectors.count) {
+        throw new RangeError(`Landmark ${landmark} is not one of the ${vectors.count} vectors`);
+      }
+    }
+    return new HnswIndex(vectors, buildGraph(vectors, { random, M, efConstruction, distance, landmarks }), distance);
   }
 
   /**

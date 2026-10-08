@@ -2,11 +2,13 @@ import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { SeededRandom } from '@palette-atlas/color';
 import { GALLERY_FILES, type GalleryManifest, stripInRow } from '@palette-atlas/gallery';
-import { BruteForceIndex, HnswIndex, type VectorIndex, Vectors } from '@palette-atlas/hnsw';
-import { COLOR_SCHEME_LENGTH, colorSchemeDistance, colorSchemeVector } from '@palette-atlas/vectorize';
+import { BruteForceIndex, HnswIndex, type VectorIndex, type Vectors } from '@palette-atlas/hnsw';
+import { colorSchemeDistance } from '@palette-atlas/vectorize';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { readChunks } from './chunk-files.ts';
 import { readImage } from './image-file.ts';
-import { readSearchIndex } from './search-data.ts';
+import { LANDMARK_COUNT, landmarks } from './landmarks.ts';
+import { colorSchemeVectors, readSearchIndex } from './search-data.ts';
 
 const DATA = join(import.meta.dirname, '../../../app/public/data');
 /** The gallery's first chunks of strips, as the pipeline wrote them: its 5,000 most famous paintings. */
@@ -36,10 +38,9 @@ describe('searching the gallery by color scheme', { timeout: TIMEOUT_MS }, () =>
   beforeAll(async () => {
     const chunks = await Promise.all(Array.from({ length: CHUNKS }, (_, chunk) => readImage(join(DATA, GALLERY_FILES.gallery.strips(chunk)))));
     const strips = chunks.flatMap((chunk) => Array.from({ length: chunk.height }, (_, row) => stripInRow(chunk, row)));
-    const data = new Float32Array(strips.length * COLOR_SCHEME_LENGTH);
-    strips.forEach((strip, painting) => data.set(colorSchemeVector(strip), painting * COLOR_SCHEME_LENGTH));
-    vectors = new Vectors(COLOR_SCHEME_LENGTH, data);
-    index = HnswIndex.build(vectors, { random: new SeededRandom(SEED), distance: colorSchemeDistance });
+    vectors = colorSchemeVectors(strips);
+    // Built as the pipeline builds the gallery's own: its color families' landmarks on top.
+    index = HnswIndex.build(vectors, { random: new SeededRandom(SEED), distance: colorSchemeDistance, landmarks: landmarks(strips, vectors) });
     exact = new BruteForceIndex(vectors, colorSchemeDistance);
   }, TIMEOUT_MS);
 
@@ -80,6 +81,16 @@ describe('searching the gallery by color scheme', { timeout: TIMEOUT_MS }, () =>
       return nearest.id !== painting && !sameVector(nearest.id, painting);
     });
     expect(lost).toEqual([]);
+  });
+
+  it('has the gallery’s own index start every search among its landmarks, alone on its top layer', async () => {
+    const manifest = JSON.parse(await readFile(join(DATA, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
+    const { strips } = await readChunks(DATA, GALLERY_FILES.gallery, manifest.count, manifest.chunkSize);
+    const { graph } = await readSearchIndex(DATA);
+    const onTop = Array.from({ length: graph.count }, (_, painting) => painting).filter((painting) => graph.levelOf(painting) === graph.topLevel);
+    expect(onTop).toHaveLength(LANDMARK_COUNT);
+    expect(onTop).toEqual(landmarks(strips, colorSchemeVectors(strips)).sort((first, second) => first - second));
+    expect(onTop).toContain(graph.entryPoint);
   });
 
   it('keeps the gallery’s own index small enough to download for a first search', async () => {

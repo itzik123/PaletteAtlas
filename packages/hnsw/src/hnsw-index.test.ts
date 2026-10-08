@@ -95,6 +95,30 @@ describe('HnswIndex', () => {
     expect(broken).toEqual([]);
   });
 
+  it('puts the landmarks it is given alone on the top layer, the rest on their drawn layers below, and still finds 95 in 100', () => {
+    const random = new SeededRandom(SEED);
+    const vectors = clustered(3000, 16, random);
+    const queries = clustered(QUERIES, 16, random);
+    const landmarks = [7, 70, 700, 2900];
+    const index = HnswIndex.build(vectors, { random: new SeededRandom(SEED), landmarks });
+    const drawn = HnswIndex.build(vectors, { random: new SeededRandom(SEED) }).graph;
+    const { graph } = index;
+    const nodes = Array.from({ length: vectors.count }, (_, node) => node);
+    expect(graph.topLevel).toBe(drawn.topLevel);
+    expect(nodes.filter((node) => graph.levelOf(node) === graph.topLevel)).toEqual(landmarks);
+    expect(landmarks).toContain(graph.entryPoint);
+    const moved = nodes.filter((node) => !landmarks.includes(node) && graph.levelOf(node) !== Math.min(drawn.levelOf(node), graph.topLevel - 1));
+    expect(moved).toEqual([]);
+    expect(recall((query) => index.search(query, K, { ef: EF }), new BruteForceIndex(vectors), queries, K)).toBeGreaterThanOrEqual(RECALL_TARGET);
+  });
+
+  it('refuses landmarks it doesn’t hold', () => {
+    const vectors = clustered(100, 2, new SeededRandom(SEED));
+    for (const landmark of [-1, 100, 2.5]) {
+      expect(() => HnswIndex.build(vectors, { random: new SeededRandom(SEED), landmarks: [3, landmark] })).toThrow(RangeError);
+    }
+  });
+
   it('answers with every vector it holds when asked for more, nearest first', () => {
     const vectors = clustered(50, 3, new SeededRandom(SEED));
     const query = vectors.vector(0);

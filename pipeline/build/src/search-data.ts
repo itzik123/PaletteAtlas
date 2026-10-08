@@ -6,6 +6,7 @@ import { GALLERY_FILES, type GalleryManifest } from '@palette-atlas/gallery';
 import { HnswIndex, Vectors } from '@palette-atlas/hnsw';
 import { COLOR_SCHEME_LENGTH, colorSchemeDistance, colorSchemeVector } from '@palette-atlas/vectorize';
 import { readChunks } from './chunk-files.ts';
+import { landmarks } from './landmarks.ts';
 
 /** The seed the index's levels are drawn with, so that the same gallery always gives the same file. */
 const SEED = 1;
@@ -25,19 +26,27 @@ export interface SearchIndexReport {
   readonly bytes: number;
 }
 
+/** Each painting's color scheme vector, from its color strip, in the strips' order. */
+export function colorSchemeVectors(strips: readonly RgbaImage[]): Vectors {
+  const data = new Float32Array(strips.length * COLOR_SCHEME_LENGTH);
+  strips.forEach((strip, painting) => data.set(colorSchemeVector(strip), painting * COLOR_SCHEME_LENGTH));
+  return new Vectors(COLOR_SCHEME_LENGTH, data);
+}
+
 /**
  * Writes the gallery's search index (see GALLERY_FILES.searchIndex) from its color strips in
- * gallery order: each painting's color scheme vector, in an HNSW index whose node i is painting i,
+ * gallery order: each painting's color scheme vector, in an HNSW index whose node i is painting i
+ * and whose top layer holds the most typical painting of each color family (see landmarks),
  * gzipped, as the site's hosts serve a binary file as it is.
  */
 export async function writeSearchIndex(folder: string, strips: readonly RgbaImage[]): Promise<SearchIndexReport> {
-  const data = new Float32Array(strips.length * COLOR_SCHEME_LENGTH);
-  strips.forEach((strip, painting) => data.set(colorSchemeVector(strip), painting * COLOR_SCHEME_LENGTH));
-  const index = HnswIndex.build(new Vectors(COLOR_SCHEME_LENGTH, data), {
+  const vectors = colorSchemeVectors(strips);
+  const index = HnswIndex.build(vectors, {
     random: new SeededRandom(SEED),
     M,
     efConstruction: EF_CONSTRUCTION,
     distance: colorSchemeDistance,
+    landmarks: landmarks(strips, vectors),
   });
   const bytes = gzipSync(index.toBytes(), { level: GZIP_LEVEL });
   await writeFile(join(folder, GALLERY_FILES.searchIndex), bytes);
