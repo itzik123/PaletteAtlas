@@ -7,12 +7,12 @@ Turn any image into a strip of color, and find paintings with a similar color sc
 A static site with no server, in three parts:
 
 - **Studio**: drop in an image, pick a path through it and get its strip. Point at the strip to see where each stripe came from, and save it as a poster or a phone wallpaper.
-- **Atlas** (coming): a gallery of public-domain paintings with their strips, a "career barcode" for each artist, and search by color scheme.
+- **Atlas**: 48,695 public-domain paintings, each over its strip, a career barcode for each of 8,373 painters, and search by color scheme: drop in any image to find the paintings in its colors.
 - **Lab** (coming): an interactive explanation of the HNSW index behind the search.
 
 Your images never leave your computer.
 
-> Status: v0.1, the Studio. **Try it: [palette-atlas.pages.dev](https://palette-atlas.pages.dev)**
+> Status: v0.2, the Studio and the Atlas. **Try it: [palette-atlas.pages.dev](https://palette-atlas.pages.dev)**
 
 ## How a strip is read
 
@@ -48,6 +48,8 @@ Each ray-traced render below becomes a strip of 128 colors, read four ways (top 
 ## Credits
 
 The sample paintings are in the public domain: the Mona Lisa (Louvre) by way of Wikimedia Commons, and A Sunday on La Grande Jatte, The Bedroom and The Great Wave courtesy of the Art Institute of Chicago (CC0).
+
+The Atlas's paintings are catalogued by Wikidata, and their images come from Wikimedia Commons, every one marked public domain or CC0 there; each painting's page credits its artist, title, date and collection.
 
 ## Development
 
