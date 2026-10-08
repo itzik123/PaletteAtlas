@@ -8,9 +8,11 @@ import {
   GALLERY_FILES,
   type GalleryManifest,
   type Painting,
+  PaintingMap,
   recordAt,
   stripInRow,
 } from '@palette-atlas/gallery';
+import { fetchGunzipped } from '../gunzip.ts';
 import { decodeImage } from '../image-adapters.ts';
 
 /** Where the pipeline writes the gallery's data (app/public/data), as the site's pages see it. */
@@ -57,6 +59,7 @@ export class GalleryData {
   readonly #careers: PaintingChunks;
   #ids: Promise<readonly string[]> | undefined;
   #careerLengths: Promise<readonly number[]> | undefined;
+  #map: Promise<PaintingMap> | undefined;
 
   private constructor(url: string, manifest: GalleryManifest) {
     this.#url = url;
@@ -104,6 +107,12 @@ export class GalleryData {
   /** Where the search index is (see GALLERY_FILES.searchIndex): ColorSearch reads it in a worker. */
   get searchIndexUrl(): string {
     return `${this.#url}${GALLERY_FILES.searchIndex}`;
+  }
+
+  /** The paintings on a map of their color schemes, each with its color (see PaintingMap), for the Lab. */
+  paintingMap(): Promise<PaintingMap> {
+    this.#map ??= fetchGunzipped(`${this.#url}${GALLERY_FILES.paintingMap}`).then(PaintingMap.fromBytes);
+    return this.#map;
   }
 
   /** The career of the artist with a Wikidata item, if the gallery has the artist. */

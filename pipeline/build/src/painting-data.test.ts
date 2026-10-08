@@ -22,7 +22,7 @@ import { buildCareers } from './career-data.ts';
 import { readCatalog } from './catalog.ts';
 import { readImage } from './image-file.ts';
 import { type BuildReport, buildPaintings } from './painting-data.ts';
-import { buildSearchIndex, readSearchIndex } from './search-data.ts';
+import { buildSearchData, readSearchIndex } from './search-data.ts';
 import { StripPool } from './strip-pool.ts';
 
 /**
@@ -140,10 +140,12 @@ describe('buildPaintings', () => {
     expect(strips.map((strip) => index.search(colorSchemeVector(strip), 1)[0].id)).toEqual(strips.map((_, position) => position));
   });
 
-  it('rebuilds the very same search index from the gallery’s own files, reading no image again', async () => {
-    const written = await readFile(join(output, GALLERY_FILES.searchIndex));
-    await rm(join(output, GALLERY_FILES.searchIndex));
-    expect(await buildSearchIndex(output)).toEqual({ paintings: 4, bytes: written.length });
-    expect((await readFile(join(output, GALLERY_FILES.searchIndex))).equals(written)).toBe(true);
+  it('rebuilds the very same search index and map from the gallery’s own files, reading no image again', async () => {
+    const files = [GALLERY_FILES.searchIndex, GALLERY_FILES.paintingMap];
+    const written = await Promise.all(files.map((file) => readFile(join(output, file))));
+    await Promise.all(files.map((file) => rm(join(output, file))));
+    const report = await buildSearchData(output);
+    expect([report.paintings, report.indexBytes, report.map.bytes]).toEqual([4, written[0].length, written[1].length]);
+    for (const [index, file] of files.entries()) expect((await readFile(join(output, file))).equals(written[index]), file).toBe(true);
   });
 });

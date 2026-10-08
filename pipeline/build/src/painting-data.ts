@@ -15,7 +15,7 @@ import { type AxisName, STRIP_SEGMENTS } from '@palette-atlas/strip';
 import { writeCareers } from './career-data.ts';
 import { type Catalog, CATALOG_FILE, readCatalog, type Work } from './catalog.ts';
 import { writeChunks } from './chunk-files.ts';
-import { writeSearchIndex } from './search-data.ts';
+import { writeSearchData } from './search-data.ts';
 import type { StripPool } from './strip-pool.ts';
 
 /** Paintings per chunk (see chunkOf): a chunk's strips take about 150 KB. */
@@ -174,7 +174,7 @@ async function writeGallery(paintings: readonly KeptPainting[], catalog: Catalog
   await writeFile(join(folder, GALLERY_FILES.ids), JSON.stringify(gallery.paintings.map(({ id }) => id)));
   await writeChunks(folder, GALLERY_FILES.gallery, gallery, chunkSize);
   await writeCareers(folder, gallery, artists, chunkSize);
-  await writeSearchIndex(folder, gallery.strips);
+  await writeSearchData(folder, gallery.strips);
 }
 
 function painting(work: Work, image: CommonsImage, artist: number): Painting {

@@ -7,6 +7,7 @@ import { HnswIndex, Vectors } from '@palette-atlas/hnsw';
 import { COLOR_SCHEME_LENGTH, colorSchemeDistance, colorSchemeVector } from '@palette-atlas/vectorize';
 import { readChunks } from './chunk-files.ts';
 import { landmarks } from './landmarks.ts';
+import { type PaintingMapReport, writePaintingMap } from './map-data.ts';
 
 /** The seed the index's levels are drawn with, so that the same gallery always gives the same file. */
 const SEED = 1;
@@ -19,11 +20,12 @@ const EF_CONSTRUCTION = 200;
 /** gzip's best: the file is written once a release, and every visitor's first search downloads it. */
 const GZIP_LEVEL = 9;
 
-/** What the search index holds. */
-export interface SearchIndexReport {
+/** What the search data hold: the index, and the map the Lab draws its layers on. */
+export interface SearchDataReport {
   readonly paintings: number;
-  /** The file's size, gzipped. */
-  readonly bytes: number;
+  /** The index file's size, gzipped. */
+  readonly indexBytes: number;
+  readonly map: PaintingMapReport;
 }
 
 /** Each painting's color scheme vector, from its color strip, in the strips' order. */
@@ -34,13 +36,22 @@ export function colorSchemeVectors(strips: readonly RgbaImage[]): Vectors {
 }
 
 /**
- * Writes the gallery's search index (see GALLERY_FILES.searchIndex) from its color strips in
- * gallery order: each painting's color scheme vector, in an HNSW index whose node i is painting i
- * and whose top layer holds the most typical painting of each color family (see landmarks),
- * gzipped, as the site's hosts serve a binary file as it is.
+ * Writes the gallery's search index and its map (see writePaintingMap) from its color strips in
+ * gallery order, reading the strips' vectors once for both.
  */
-export async function writeSearchIndex(folder: string, strips: readonly RgbaImage[]): Promise<SearchIndexReport> {
+export async function writeSearchData(folder: string, strips: readonly RgbaImage[]): Promise<SearchDataReport> {
   const vectors = colorSchemeVectors(strips);
+  const indexBytes = await writeSearchIndex(folder, strips, vectors);
+  return { paintings: strips.length, indexBytes, map: await writePaintingMap(folder, strips, vectors) };
+}
+
+/**
+ * Writes the gallery's search index (see GALLERY_FILES.searchIndex): each painting's color scheme
+ * vector, in an HNSW index whose node i is painting i and whose top layer holds the most typical
+ * painting of each color family (see landmarks), gzipped, as the site's hosts serve a binary file
+ * as it is. Answers with the file's size.
+ */
+async function writeSearchIndex(folder: string, strips: readonly RgbaImage[], vectors: Vectors): Promise<number> {
   const index = HnswIndex.build(vectors, {
     random: new SeededRandom(SEED),
     M,
@@ -50,17 +61,17 @@ export async function writeSearchIndex(folder: string, strips: readonly RgbaImag
   });
   const bytes = gzipSync(index.toBytes(), { level: GZIP_LEVEL });
   await writeFile(join(folder, GALLERY_FILES.searchIndex), bytes);
-  return { paintings: strips.length, bytes: bytes.length };
+  return bytes.length;
 }
 
 /**
- * Rebuilds the search index from the gallery's own files in a folder, reading no image again:
- * about a minute, where pnpm paintings reads every painting's image to write the gallery first.
+ * Rebuilds the search index and its map from the gallery's own files in a folder, reading no image
+ * again: about a minute, where pnpm paintings reads every painting's image to write the gallery first.
  */
-export async function buildSearchIndex(folder: string): Promise<SearchIndexReport> {
+export async function buildSearchData(folder: string): Promise<SearchDataReport> {
   const manifest = JSON.parse(await readFile(join(folder, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
   const { strips } = await readChunks(folder, GALLERY_FILES.gallery, manifest.count, manifest.chunkSize);
-  return writeSearchIndex(folder, strips);
+  return writeSearchData(folder, strips);
 }
 
 /** Reads the search index in a gallery's folder, as writeSearchIndex wrote it. */

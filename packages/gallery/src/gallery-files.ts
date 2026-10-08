@@ -13,6 +13,8 @@ import type { ThumbnailWidth } from './commons-image.ts';
 //   career-strips/<k>.png   their color strips
 //   search-index.bin.gz     the index that finds paintings by color scheme (HnswIndex.toBytes),
 //                           gzipped, node i being the gallery's painting i
+//   painting-map.bin.gz     every painting's place on a map of the color schemes, and its color
+//                           (PaintingMap.toBytes), gzipped, for the Lab
 
 /**
  * Paintings stored in chunks of GalleryManifest.chunkSize (see chunkOf): a file of their records
@@ -56,6 +58,12 @@ export const GALLERY_FILES = {
    * (Cloudflare Pages does): 5.4 MB to download rather than 7.9.
    */
   searchIndex: 'search-index.bin.gz',
+  /**
+   * The paintings on a map, for the Lab to draw the search index's layers by: the plane of the two
+   * directions in which their color scheme vectors differ most, every painting's place on it and
+   * its color (see PaintingMap). Gzipped, as the search index is.
+   */
+  paintingMap: 'painting-map.bin.gz',
 } as const;
 
 /**
