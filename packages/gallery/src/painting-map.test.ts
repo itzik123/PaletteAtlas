@@ -47,12 +47,12 @@ describe('MapProjection', () => {
     expect(dot(reversed.axes[0], WIDE)).toBeLessThan(-0.999);
   });
 
-  it('places the vectors so that all but the few at either end lie from 0 to 1, keeping one scale across and down', () => {
+  it('places the vectors so that all but the farthest one in 2,000 at either end lie from 0 to 1, keeping one scale across and down', () => {
     const projection = MapProjection.fit(data, DIMENSIONS, along);
     const places = Array.from({ length: COUNT }, (_, vector) => projection.place(data.subarray(vector * DIMENSIONS, (vector + 1) * DIMENSIONS)));
     for (const axis of [0, 1]) {
-      const inside = places.filter((place) => place[axis] >= 0 && place[axis] <= 1).length;
-      expect(inside / COUNT).toBeGreaterThan(0.99);
+      expect(places.filter((place) => place[axis] < 0).length).toBeLessThanOrEqual(1);
+      expect(places.filter((place) => place[axis] > 1).length).toBeLessThanOrEqual(1);
     }
     // Three times wider than deep, as the vectors spread.
     expect(projection.aspect).toBeCloseTo(WIDE_SPREAD / DEEP_SPREAD, 0);

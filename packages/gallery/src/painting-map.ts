@@ -1,7 +1,11 @@
 /** Iterations of the power method per axis: the paintings' first axes settle in a few dozen. */
 const POWER_ITERATIONS = 200;
-/** The share of the vectors at each end of an axis left beyond its 0 to 1, so a few outliers don't shrink the rest. */
-const TRIM = 0.003;
+/**
+ * The share of the vectors at each end of an axis left beyond its 0 to 1, so a few outliers don't
+ * shrink the rest: few enough that the rest's edges, where they thin out, lie within it, and the
+ * Lab never cuts them off (one in 2,000, 24 of the gallery's paintings).
+ */
+const TRIM = 0.0005;
 /** A place on an axis is stored in this many steps across the axis's range of places. */
 const PLACE_STEPS = 65_535;
 /** The file's first bytes, "PMAP", which tell it from anything else. */
