@@ -45,6 +45,11 @@ export class BoardStack {
     return this.#boards;
   }
 
+  /** Where the boards begin on the left: their front edges' left ends. */
+  get left(): number {
+    return this.#left;
+  }
+
   /** Lays the boards out over a stage `width` by `height`, leaving `left` free for the labels. */
   layout(width: number, height: number, left: number): void {
     const depth = (height - PIN_ROOM - (this.#levels - 1) * GAP - THICKNESS - EDGE) / this.#levels;

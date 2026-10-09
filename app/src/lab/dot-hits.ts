@@ -7,10 +7,10 @@ export interface Dot {
   readonly radius: number;
 }
 
-/** The side of the grid's cells, in CSS pixels: at least twice the farthest a dot can be picked from. */
-const CELL = 24;
-/** How near the pointer must come to a dot's edge to pick it, in CSS pixels. */
-const REACH = 8;
+/** How near the pointer must come to a dot's edge to pick it, in CSS pixels: a mouse's, and a finger's. */
+const REACH = { fine: 8, coarse: 18 } as const;
+/** The side of the grid's cells, in CSS pixels: at least the farthest a dot can be picked from. */
+const CELL = 34;
 /** How much nearer a dot the caller prefers counts as being: it wins over its neighbors. */
 const PREFERENCE = 6;
 
@@ -32,8 +32,12 @@ export class DotHits {
     cell.push(dot);
   }
 
-  /** The dot nearest a point, if one is near enough, preferring the paintings in `preferred` (drawn larger). */
-  pick(x: number, y: number, preferred: ReadonlySet<number>): Dot | undefined {
+  /**
+   * The dot nearest a point, if one is near enough, preferring the paintings in `preferred` (drawn
+   * larger); a coarse pointer, a finger, picks from farther than a mouse.
+   */
+  pick(x: number, y: number, preferred: ReadonlySet<number>, coarse = false): Dot | undefined {
+    const reach = coarse ? REACH.coarse : REACH.fine;
     let best: Dot | undefined;
     let bestScore = Number.POSITIVE_INFINITY;
     const column = Math.floor(x / CELL);
@@ -44,7 +48,7 @@ export class DotHits {
           const distance = Math.hypot(dot.x - x, dot.y - y);
           const favored = preferred.has(dot.node);
           const score = distance - (favored ? PREFERENCE : 0);
-          if (distance <= REACH + dot.radius + (favored ? PREFERENCE : 0) && score < bestScore) {
+          if (distance <= reach + dot.radius + (favored ? PREFERENCE : 0) && score < bestScore) {
             best = dot;
             bestScore = score;
           }

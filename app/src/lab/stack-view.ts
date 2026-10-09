@@ -2,7 +2,7 @@ import { SITE_COLORS } from '../site-colors.ts';
 import { type Board, BoardStack, PIN_HEAD, type Point, THICKNESS } from './board-stack.ts';
 import { type Dot, DotHits } from './dot-hits.ts';
 import type { IndexLayers } from './index-layers.ts';
-import { Magnifier } from './magnifier.ts';
+import { type Glass, Magnifier } from './magnifier.ts';
 import type { SearchReplay } from './search-replay.ts';
 import type { StackMap, StackPlace } from './stack-map.ts';
 
@@ -29,7 +29,8 @@ function radiusOn(level: number): number {
  * The search index's layers as a stack of card boards (BoardStack), every painting a dot of its
  * own color on each layer it lives on, its links drawn faintly; and over them a search replayed
  * up to some step: the walk it took on each layer, the way down to the next, what it measured
- * and kept on the bottom one, and its nearest so far, with a magnifier over them (Magnifier). The
+ * and kept on the bottom one, and its nearest so far, with a magnifier over them that can be
+ * moved (Magnifier). The
  * query's image rides a pin that runs down through every board to where the query lands.
  *
  * What stays put while a search plays (the boards, their links and dots, and the pin) is drawn
@@ -58,6 +59,16 @@ export class StackView {
     return this.#stack.boards;
   }
 
+  /** The magnifying glass over the bottom layer: where it stands, and its size. */
+  get glass(): Glass {
+    return this.#magnifier.glass(this.#size.width, this.#size.height);
+  }
+
+  /** Moves the magnifying glass's middle to a point, or as near it as the glass may go (over the boards). */
+  moveGlass(center: Point): void {
+    this.#magnifier.moveTo(center, this.#size.width, this.#size.height);
+  }
+
   /** Where the pin stands across the stage: over where the query lands on the top board. */
   get pinX(): number {
     return this.#place(this.#stack.boards[0], this.#query.pressed)[0];
@@ -81,10 +92,10 @@ export class StackView {
     this.#still = undefined;
   }
 
-  /** The painting whose dot is under a point, if any, preferring those in `preferred`. */
-  pick(x: number, y: number, preferred: ReadonlySet<number>): Dot | undefined {
+  /** The painting whose dot is under a point, if any, preferring those in `preferred`; a finger picks from farther. */
+  pick(x: number, y: number, preferred: ReadonlySet<number>, coarse = false): Dot | undefined {
     this.#still ??= this.#drawStill();
-    return this.#hits.pick(x, y, preferred);
+    return this.#hits.pick(x, y, preferred, coarse);
   }
 
   /** Draws the stack with a search over it, as far as it is replayed, its nearest so far, and a painting pointed at. */
@@ -107,7 +118,7 @@ export class StackView {
     const bottom = this.#stack.boardOf(0);
     for (const node of nearest) disc(context, this.#dot(bottom, node), NEAREST_RADIUS, this.#map.colors[node], 2.2);
     for (const board of this.#stack.boards) disc(context, this.#place(board, this.#query.pressed), NEAREST_RADIUS, YELLOW, 2.5);
-    this.#magnifier.draw(context, this.#magnifier.center(this.#size.width, this.#size.height), replay.layers.get(0), nearest);
+    this.#magnifier.draw(context, this.glass, replay.layers.get(0), nearest);
     if (pointed) ring(context, [pointed.x, pointed.y], Math.max(7, pointed.radius + 4), 2.5);
   }
 

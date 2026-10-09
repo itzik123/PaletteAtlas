@@ -15,6 +15,10 @@ const DESKTOP_WINDOWS = [
   { width: 1920, height: 950 },
 ] as const;
 
+/** A phone's screen height, and the room the Lab leaves at its sides there, in CSS pixels. */
+const PHONE_HEIGHT = 844;
+const PHONE_GUTTER = 16;
+
 test.beforeEach(({ page }) => serveFixtureGallery(page));
 
 /** Takes the replay to its end at once, as dragging its scrubber to the end does. */
@@ -173,6 +177,127 @@ test('draws every painting in its own color, names it while pointed at, and open
     break;
   }
   expect(named).toBe(true);
+});
+
+test('moves the magnifier where it is dragged, within the boards, and names nothing behind it', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 });
+  await page.goto('/lab.html?like=Q1217187');
+  await skipToEnd(page);
+  const glass = page.locator('.magnifier');
+  const middle = async (): Promise<{ x: number; y: number }> => {
+    const box = await glass.boundingBox();
+    if (!box) throw new Error('The magnifier is not laid out');
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  };
+  // The query sits in the middle of the glass, drawn where the glass is.
+  const yellowAt = ({ x, y }: { x: number; y: number }): Promise<boolean> =>
+    page.locator('.stack-stage canvas').evaluate(
+      (canvas: HTMLCanvasElement, { x, y }) => {
+        const box = canvas.getBoundingClientRect();
+        const context = canvas.getContext('2d') as CanvasRenderingContext2D;
+        const [red, green, blue] = context.getImageData((x - box.left) * devicePixelRatio, (y - box.top) * devicePixelRatio, 1, 1).data;
+        return red === 0xff && green === 0xc8 && blue === 0x1f;
+      },
+      { x, y },
+    );
+  const start = await middle();
+  expect(await yellowAt(start)).toBe(true);
+  await page.mouse.move(start.x, start.y);
+  await expect(page.locator('.dot-label')).toBeHidden();
+
+  await page.mouse.down();
+  await page.mouse.move(start.x - 300, start.y + 60, { steps: 6 });
+  await page.mouse.up();
+  const moved = await middle();
+  expect(moved.x).toBeCloseTo(start.x - 300, 0);
+  expect(moved.y).toBeCloseTo(start.y + 60, 0);
+  expect(await yellowAt(moved)).toBe(true);
+
+  // Dragged far past them, it stops at the boards' edges: clear of the layers' labels and the pin's head.
+  await page.mouse.move(moved.x, moved.y);
+  await page.mouse.down();
+  await page.mouse.move(0, 0, { steps: 6 });
+  await page.mouse.up();
+  const [stopped, labels, head, stage] = await Promise.all([
+    glass.boundingBox(),
+    page.locator('.sheet-label').evaluateAll((all) => Math.max(...all.map((label) => label.getBoundingClientRect().right))),
+    page.locator('.pin-head').boundingBox(),
+    page.locator('.stack-stage').boundingBox(),
+  ]);
+  if (!stopped || !head || !stage) throw new Error('The stage is not laid out');
+  expect(stopped.x).toBeGreaterThan(labels);
+  expect(stopped.y).toBeGreaterThan(head.y + head.height);
+  await page.mouse.move(stopped.x + stopped.width / 2, stopped.y + stopped.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(stage.x + stage.width + 400, stage.y + stage.height + 400, { steps: 6 });
+  await page.mouse.up();
+  const corner = await glass.boundingBox();
+  if (!corner) throw new Error('The magnifier is not laid out');
+  expect(corner.x + corner.width).toBeLessThanOrEqual(stage.x + stage.width);
+  expect(corner.y + corner.height).toBeLessThanOrEqual(stage.y + stage.height);
+  // Wherever it went, it kept to one side of the pin, which stays in sight.
+  const pin = head.x + head.width / 2;
+  for (const box of [start, moved].map(({ x }) => ({ x: x - 1, width: 2 })).concat([stopped, corner])) {
+    expect(box.x > pin || box.x + box.width < pin).toBe(true);
+  }
+});
+
+test('shows a phone the headline, the replay and its controls on its first screen, the rest of the panel under them', async ({ page }) => {
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: PHONE_HEIGHT });
+    await page.goto('/lab.html?like=Q1217187');
+    await skipToEnd(page);
+    const boxes = await Promise.all(
+      [
+        page.getByRole('heading', { level: 1 }),
+        page.locator('.stack-stage'),
+        page.locator('.lab-transport'),
+        page.locator('.measured'),
+        page.locator('.lab-query'),
+        page.locator('.nearest'),
+        page.getByRole('navigation', { name: 'Parts of the site' }),
+      ].map((part) => part.boundingBox()),
+    );
+    if (boxes.some((box) => !box)) throw new Error('The Lab is not laid out');
+    const [heading, stack, controls, ...rest] = boxes as { x: number; y: number; width: number; height: number }[];
+    const tabs = rest.pop() as { y: number };
+    const where = `${width} px`;
+    expect(heading.y + heading.height, where).toBeLessThanOrEqual(stack.y);
+    expect(stack.y + stack.height, where).toBeLessThanOrEqual(controls.y);
+    // Above the switch between the site's parts, which floats at the bottom of the screen.
+    expect(controls.y + controls.height, where).toBeLessThanOrEqual(tabs.y);
+    // Then how much it measured, what it searched for, and the nearest it found, one under another.
+    const panel = [controls, ...rest];
+    for (let index = 1; index < panel.length; index++) expect(panel[index - 1].y + panel[index - 1].height, where).toBeLessThanOrEqual(panel[index].y);
+    expect(stack.width, where).toBe(width - 2 * PHONE_GUTTER);
+  }
+});
+
+test.describe('on a touch screen', () => {
+  test.use({ hasTouch: true });
+
+  test('names a painting tapped on its layers, and opens its page on a tap on its name', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: PHONE_HEIGHT });
+    await page.goto('/lab.html?like=Q1217187');
+    await skipToEnd(page);
+    const { id, title } = FIXTURE_PAINTINGS[2];
+    const stack = await page.locator('.stack-stage canvas').boundingBox();
+    if (!stack) throw new Error('The stack is not laid out');
+    const label = page.locator('.dot-label');
+    let named = false;
+    for (const { x, y } of await patchesOf(page, mapColor(2))) {
+      await page.touchscreen.tap(stack.x + x, stack.y + y);
+      if (!(await label.isVisible())) continue;
+      await expect(label).toContainText(title);
+      // A tap names it, and stays on the page.
+      await expect(page).toHaveURL(/\/lab(\.html)?\?like=Q1217187$/);
+      named = true;
+      await label.tap();
+      await expect(page).toHaveURL(new RegExp(`/painting(\\.html)?\\?id=${id}$`));
+      break;
+    }
+    expect(named).toBe(true);
+  });
 });
 
 test('fits a desktop window without scrolling, its replay’s controls on the screen', async ({ page }) => {

@@ -79,6 +79,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A handle over the magnifying glass the stack draws, to drag it out of the way. */
+.magnifier {
+  position: absolute;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.magnifier.dragged {
+  cursor: grabbing;
+}
+
 /* The picture searched for, on the head of the pin that runs down through the layers. */
 .pin-head {
   position: absolute;
@@ -101,7 +113,8 @@
   object-fit: cover;
 }
 
-/* The painting pointed at, named over its dot. */
+/* The painting pointed at, named over its dot: out of a mouse's way, but a tap on it, where a
+   tap showed it, opens the painting's page. */
 .dot-label {
   position: absolute;
   z-index: 5;
@@ -110,7 +123,7 @@
   align-items: center;
   gap: 12px;
   width: max-content;
-  max-width: 340px;
+  max-width: min(340px, 100%);
   padding: 8px 14px 8px 8px;
   border-radius: 12px;
   background: var(--ink);
@@ -118,7 +131,12 @@
   font-size: 0.85rem;
   font-weight: 550;
   line-height: 1.3;
+  text-decoration: none;
   pointer-events: none;
+}
+
+.dot-label.tapped {
+  pointer-events: auto;
 }
 
 .dot-label[hidden] {
@@ -437,17 +455,50 @@
   }
 }
 
-/* A phone or a small tablet, too narrow for the stack beside the panel: the panel under the stack,
-   and the page scrolls. */
+/* A phone or a small tablet, too narrow for the stack beside the panel: one column, which
+   scrolls. The headline, the stack and the replay's controls come first, on the first screen,
+   then how much the search measured, what it searched for, and the nearest it found. The
+   layers' labels are left out (see LabStage). */
 @media (max-width: 860px) {
   .lab {
     grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
     height: auto;
-    padding: 12px 16px 24px;
+    padding: 12px 16px 32px;
+  }
+
+  .lab-panel {
+    display: contents;
+  }
+
+  /* On one line, down to the narrowest phones. */
+  .lab-panel h1 {
+    order: 1;
+    font-size: clamp(1.4rem, 7.6vw, 2.55rem);
   }
 
   .stack-stage {
-    height: min(560px, 80vh);
+    order: 2;
+    /* Room on the screen, while a phone's browser shows its address bar too, for the header and
+       the headline above it, and the controls and the switch between the parts under it. */
+    height: clamp(320px, 100svh - 290px, 560px);
+  }
+
+  .lab-transport {
+    order: 3;
+    margin-top: -8px;
+  }
+
+  .measured {
+    order: 4;
+  }
+
+  .lab-query {
+    order: 5;
+  }
+
+  .nearest {
+    order: 6;
   }
 
   .lab-loading {
