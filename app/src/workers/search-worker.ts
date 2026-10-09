@@ -1,36 +1,52 @@
-import { HnswIndex, type Neighbor } from '@palette-atlas/hnsw';
-import { colorSchemeDistance, colorSchemeVector } from '@palette-atlas/vectorize';
+import { HnswIndex } from '@palette-atlas/hnsw';
+import { colorSchemeDistance } from '@palette-atlas/vectorize';
 import { fetchGunzipped } from '../gunzip.ts';
+import { GallerySearch } from './gallery-search.ts';
 import type { SearchRequest, SearchResponse } from './search-messages.ts';
 
-// A Web Worker that holds the gallery's search index and finds the paintings nearest a color strip
-// in it. Unzipping and reading the index take a moment, once, away from the page's main thread;
-// every search after that takes about a millisecond.
+// A Web Worker that holds the gallery's search index and answers what the page asks of it (see
+// GallerySearch). Unzipping and reading the index take a moment, once, away from the page's main
+// thread; every search after that takes about a millisecond.
 
-/** The index, read on the first request. */
-let index: Promise<HnswIndex> | undefined;
+/** The gallery's searches, their index read on the first request. */
+let searches: Promise<GallerySearch> | undefined;
 
 self.addEventListener('message', async ({ data }: MessageEvent<SearchRequest>) => {
-  const found = await search(data).catch((error: unknown) => {
+  try {
+    const [response, transfer] = answer(await searchesAt(data.index), data);
+    postMessage(response, transfer);
+  } catch (error) {
     console.error(error);
-    return undefined;
-  });
-  postMessage({ id: data.id, found } satisfies SearchResponse);
+    postMessage({ id: data.id } satisfies SearchResponse);
+  }
 });
 
-async function search({ index: url, colors, count }: SearchRequest): Promise<Neighbor[]> {
-  return (await indexAt(url)).search(colorSchemeVector(colors), count);
-}
-
-function indexAt(url: string): Promise<HnswIndex> {
-  if (!index) {
-    index = read(url);
-    // An index that fails to arrive is asked for again next time.
-    index.catch(() => (index = undefined));
+/** The answer to a request, and the arrays it hands the page rather than copying them. */
+function answer(search: GallerySearch, request: SearchRequest): [SearchResponse, Transferable[]] {
+  const { id } = request;
+  switch (request.kind) {
+    case 'nearest':
+      return [{ id, found: search.nearest(request.colors, request.count) }, []];
+    case 'traced': {
+      const traced = search.traced(request.colors, request.count);
+      return [{ id, traced }, [traced.vector.buffer]];
+    }
+    case 'layers': {
+      const layers = search.upperLayers();
+      return [{ id, layers }, [layers.levels.buffer, ...layers.layers.flatMap(({ starts, links }) => [starts.buffer, links.buffer])]];
+    }
   }
-  return index;
 }
 
-async function read(url: string): Promise<HnswIndex> {
-  return HnswIndex.fromBytes(await fetchGunzipped(url), { distance: colorSchemeDistance });
+function searchesAt(url: string): Promise<GallerySearch> {
+  if (!searches) {
+    searches = read(url);
+    // An index that fails to arrive is asked for again next time.
+    searches.catch(() => (searches = undefined));
+  }
+  return searches;
+}
+
+async function read(url: string): Promise<GallerySearch> {
+  return new GallerySearch(HnswIndex.fromBytes(await fetchGunzipped(url), { distance: colorSchemeDistance }));
 }
