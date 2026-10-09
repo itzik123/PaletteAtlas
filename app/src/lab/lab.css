@@ -1,0 +1,456 @@
+/* The Lab: the stack of the index's layers beside a panel. On a desktop it fills the window under
+   the header, and never scrolls. */
+
+.lab {
+  /* The header's height. */
+  --above: 85px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 352px;
+  gap: 34px;
+  max-width: 1240px;
+  height: calc(100vh - var(--above));
+  margin: 0 auto;
+  /* As much room above the stage, under the header's buttons and their shadows, as below it. */
+  padding: 18px 32px 26px;
+  /* Labels near the edge are cut off there rather than widening the page. */
+  overflow-x: clip;
+}
+
+.lab-loading {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 120px 32px 0 200px;
+  font-size: 1.4rem;
+  font-weight: 750;
+}
+
+.stack-stage {
+  position: relative;
+  min-height: 0;
+}
+
+.stack-stage canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* Each layer's name, size and work, beside its board, the layer searched now inked. */
+.sheet-label {
+  position: absolute;
+  left: 0;
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.sheet-label b {
+  padding: 2px 10px;
+  border: 2.5px solid transparent;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.sheet-label.now b {
+  border-color: var(--ink);
+  background: var(--yellow);
+}
+
+.sheet-label span {
+  padding-left: 12.5px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+.sheet-label em {
+  min-height: 1.2em;
+  padding-left: 12.5px;
+  font-size: 0.85rem;
+  font-style: normal;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The picture searched for, on the head of the pin that runs down through the layers. */
+.pin-head {
+  position: absolute;
+  top: 0;
+  width: 54px;
+  height: 54px;
+  margin: 0;
+  overflow: hidden;
+  border: var(--outline);
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 3px 3px 0 var(--ink);
+  transform: translateX(-50%);
+}
+
+.pin-head img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The painting pointed at, named over its dot. */
+.dot-label {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: 340px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.85rem;
+  font-weight: 550;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+.dot-label[hidden] {
+  display: none;
+}
+
+.dot-label img {
+  width: auto;
+  max-width: 120px;
+  height: 72px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.dot-label b {
+  display: block;
+  font-weight: 800;
+}
+
+/* The panel */
+
+.lab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+}
+
+.lab-panel h1 {
+  margin: 0;
+  font-size: 2.55rem;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.lab-query {
+  --card-height: 108px;
+  --card-max-width: 150px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.card-place {
+  flex: none;
+}
+
+.lab-query .query-card {
+  overflow: hidden;
+}
+
+.lab-query .query-card img {
+  border-radius: 4px 4px 0 0;
+}
+
+.card-strip {
+  display: block;
+  /* As wide as the picture: by its own 128:1 shape it would widen the card to thousands of pixels. */
+  width: 0;
+  min-width: 100%;
+  height: 16px;
+  border-top: 3px solid var(--ink);
+  image-rendering: pixelated;
+}
+
+.query-side {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.query-name {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.query-side .pill {
+  padding: 7px 14px;
+  color: inherit;
+  font-size: 0.95rem;
+}
+
+.query-side .pill .icon {
+  width: 1.15em;
+  height: 1.15em;
+}
+
+/* How many paintings the search has measured: a number, and a bar of the whole gallery. */
+.measured p {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.measured b {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.share-bar {
+  height: 14px;
+  overflow: hidden;
+  border: var(--outline);
+  border-radius: 999px;
+  background: var(--card);
+}
+
+.share-bar i {
+  display: block;
+  height: 100%;
+  border-right: 2px solid var(--ink);
+  background: var(--yellow);
+}
+
+.nearest h2 {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The nearest paintings as the Atlas's tiles (sized by NearestTiles), and a slot for each to come. */
+.nearest-tiles {
+  display: grid;
+  grid-template-columns: repeat(var(--per-row), var(--tile-width));
+  justify-content: space-between;
+  gap: 14px 0;
+}
+
+.nearest-tiles .painting-tile {
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.nearest-tiles .tile-strip {
+  height: 12px;
+}
+
+.nearest-tiles .slot {
+  height: calc(var(--tile-picture) + 21px);
+  border: 3px dashed rgb(24 20 15 / 0.22);
+  border-radius: 6px;
+}
+
+/* Once the replay ends: whether the search found what measuring every painting finds. */
+.exact-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.exact-note.shown {
+  opacity: 1;
+}
+
+.check {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--green);
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* Play, and the replay's scrubber with a notch where each layer's part begins. */
+.lab-transport {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: auto;
+}
+
+.round-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: var(--outline);
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.round-button:active {
+  transform: translate(var(--lift), var(--lift));
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.round-button .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.scrub {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding-top: 15px;
+}
+
+.scrubber {
+  display: block;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.scrubber::-webkit-slider-runnable-track {
+  height: 12px;
+  border: var(--outline);
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ink) var(--done, 0%), var(--card) var(--done, 0%));
+}
+
+.scrubber::-webkit-slider-thumb {
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border: var(--outline);
+  border-radius: 50%;
+  background: var(--yellow);
+  appearance: none;
+}
+
+.scrubber::-moz-range-track {
+  height: 6px;
+  border: var(--outline);
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ink) var(--done, 0%), var(--card) var(--done, 0%));
+}
+
+.scrubber::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: var(--outline);
+  border-radius: 50%;
+  background: var(--yellow);
+}
+
+.notches {
+  position: absolute;
+  inset: 44px 12px auto;
+  height: 8px;
+  pointer-events: none;
+}
+
+.notches i {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--ink);
+  transform: translateX(-50%);
+}
+
+/* Short windows: the panel's parts closer together, so play stays on the screen. */
+@media (max-height: 760px) {
+  .lab-panel {
+    gap: 14px;
+  }
+
+  .lab-panel h1 {
+    font-size: 2.2rem;
+  }
+}
+
+/* Shorter still (a small laptop's): a smaller card and figure. */
+@media (max-height: 680px) {
+  .lab-panel {
+    gap: 10px;
+  }
+
+  .lab-panel h1 {
+    font-size: 2rem;
+  }
+
+  .lab-query {
+    --card-height: 84px;
+  }
+
+  .measured b {
+    font-size: 2rem;
+  }
+}
+
+/* A phone or a small tablet, too narrow for the stack beside the panel: the panel under the stack,
+   and the page scrolls. */
+@media (max-width: 860px) {
+  .lab {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    padding: 12px 16px 24px;
+  }
+
+  .stack-stage {
+    height: min(560px, 80vh);
+  }
+
+  .lab-loading {
+    padding: 80px 16px 0;
+  }
+}

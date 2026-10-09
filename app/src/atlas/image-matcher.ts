@@ -4,19 +4,22 @@ import { Toast } from '../studio/toast.ts';
 import { ImageQueries, imageQuery, MATCHES_PAGE } from './image-query.ts';
 
 /**
- * Takes the images handed to the Atlas, dropped anywhere on it, pasted, or chosen in the file
- * picker, reads each one's colors in a worker as the Studio does, and opens the page of its
- * matches. While it reads, the page is marked "is-matching"; an image it can't read is turned away
- * with a word why.
+ * Takes the images handed to a page, dropped anywhere on it, pasted, or chosen in the file
+ * picker, reads each one's colors in a worker as the Studio does, and opens the page that shows
+ * its matches: the Atlas's wall of them, or the Lab's replay of the search for them. While it
+ * reads, the page is marked "is-matching"; an image it can't read is turned away with a word why.
  */
 export class ImageMatcher {
   readonly #root: HTMLElement;
+  readonly #opens: string;
   readonly #reader: StripReader;
   readonly #intake: FileIntake;
   readonly #toast = new Toast();
 
-  constructor(root: HTMLElement, reader = new StripReader()) {
+  /** Takes the images handed to `root`, opening `opens` for each, a page that takes it from ImageQueries. */
+  constructor(root: HTMLElement, opens = MATCHES_PAGE, reader = new StripReader()) {
     this.#root = root;
+    this.#opens = opens;
     this.#reader = reader;
     this.#intake = new FileIntake(root, { onFile: (file) => void this.#match(file) });
     root.append(dropOverlay(), this.#toast.element);
@@ -44,7 +47,7 @@ export class ImageMatcher {
     } else {
       const { picture } = read;
       ImageQueries.hand(imageQuery({ source: picture, width: picture.width, height: picture.height }, colors.toImage()));
-      location.assign(MATCHES_PAGE);
+      location.assign(this.#opens);
     }
     read?.picture.close();
   }

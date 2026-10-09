@@ -58,17 +58,17 @@ export const MATCHES_PAGE = './atlas.html?match';
 
 /** The key of the query in its history entry's state. */
 const STATE_KEY = 'imageQuery';
-/** The key of a query handed to the next Atlas page, in the tab's session storage. */
+/** The key of a query handed to the next page that shows its matches, in the tab's session storage. */
 const HANDOFF_KEY = 'palette-atlas:image-query';
 
 /**
- * Memento: a query travels to the Atlas page that shows its matches through the tab's session
- * storage, from the Studio or from the Atlas itself, and that page keeps it in its own history
- * entry, so coming back to it (or reloading it) finds the same matches, while the next query
- * handed over gets a page of its own.
+ * Memento: a query travels to the page that shows its matches (the Atlas's, or the Lab's replay
+ * of the search for them) through the tab's session storage, from the Studio, the Atlas or the
+ * Lab, and that page keeps it in its own history entry, so coming back to it (or reloading it)
+ * finds the same matches, while the next query handed over gets a page of its own.
  */
 export const ImageQueries = {
-  /** Hands a query to the next Atlas page this tab opens at MATCHES_PAGE. */
+  /** Hands a query to the next page this tab opens to show its matches: MATCHES_PAGE, say. */
   hand(query: ImageQuery): void {
     try {
       sessionStorage.setItem(HANDOFF_KEY, JSON.stringify(kept(query)));

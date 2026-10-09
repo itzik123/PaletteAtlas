@@ -1,4 +1,4 @@
-import { AXIS_ICONS, BARCODE_ICON, LIST_ICON, STRIP_FILL_ICON, STUDIO_ICON, UPLOAD_ICON } from '../icons.ts';
+import { AXIS_ICONS, BARCODE_ICON, LAB_ICON, LIST_ICON, SEARCH_ICON, STRIP_FILL_ICON, STUDIO_ICON, UPLOAD_ICON } from '../icons.ts';
 
 /** A small strip of the site's colors, as an icon. */
 const MINI_STRIP = '<span class="mini-strip"></span>';
@@ -79,6 +79,31 @@ export const CAREERS_EXPLANATION: Explanation = {
       rest: 'a bar shows its painting’s colors stacked, the darker below, or all of them averaged into one.',
     },
     { icon: LIST_ICON, disc: 'yellow', lead: 'Pick a painter', rest: 'from the list, by letter or by name, then step on to the next with the arrows.' },
+  ],
+  credits: ATLAS_CREDITS,
+};
+
+export const LAB_EXPLANATION: Explanation = {
+  title: 'How the Lab works',
+  steps: [
+    {
+      icon: LAB_ICON,
+      disc: 'red',
+      lead: 'Every painting is a dot',
+      rest: 'of its average color, on a map of their colors: the lighter to the right, the warmer to the front.',
+    },
+    {
+      icon: SEARCH_ICON,
+      disc: 'blue',
+      lead: 'The search starts at the top,',
+      rest: 'among a few paintings far apart, and steps down a layer once it is as close as that layer takes it.',
+    },
+    {
+      icon: UPLOAD_ICON,
+      disc: 'yellow',
+      lead: 'Drop in any image',
+      rest: 'to watch the search find its paintings, measuring only a few thousand of them. It never leaves your computer.',
+    },
   ],
   credits: ATLAS_CREDITS,
 };

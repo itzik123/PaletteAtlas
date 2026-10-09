@@ -2,10 +2,11 @@ import { Srgb } from '@palette-atlas/color';
 
 /**
  * The site's colors, the same as the tokens on :root in style.css, for what the page draws
- * itself: the veil over the picture and the images it saves.
+ * itself: the veil over the picture, the images it saves and the Lab's layers.
  */
 export const SITE_COLORS = {
   paper: '#f7f1e6',
+  card: '#fffdf8',
   ink: '#18140f',
   red: '#f2452f',
   yellow: '#ffc81f',

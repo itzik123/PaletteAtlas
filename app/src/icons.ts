@@ -47,7 +47,13 @@ export const ATLAS_ICON = icon(
   '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
 );
 
+/** Sheets stacked one over another, for the Lab and its layers. */
+export const LAB_ICON = icon('<path d="M12 3 3 7.5 12 12l9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5 12 21l9-4.5"/>');
+
 export const BACK_ICON = icon('<path d="M19 12H5M11 6l-6 6 6 6"/>');
+
+export const PLAY_ICON = icon('<path d="M7 4.5v15l12.5-7.5z"/>', 'fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"');
+export const PAUSE_ICON = icon('<rect x="5.5" y="4.5" width="4.5" height="15" rx="1.2"/><rect x="14" y="4.5" width="4.5" height="15" rx="1.2"/>', 'fill="currentColor"');
 
 /** Bars of a barcode, for an artist's Career Barcode. */
 export const BARCODE_ICON = icon(

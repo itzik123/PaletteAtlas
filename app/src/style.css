@@ -228,7 +228,7 @@ input {
   gap: 14px;
 }
 
-/* Studio | Atlas: two tabs on one capsule, the current one inked, apart enough that a tab
+/* Studio | Atlas | Lab: three tabs on one capsule, the current one inked, apart enough that a tab
    pointed at never seems to touch the other. */
 .part-switch {
   display: flex;
@@ -304,9 +304,9 @@ input {
   --tile-color: var(--green);
 }
 
-/* Icons alone where the header runs short of room (the Studio | Atlas switch and the way to the
-   Career Barcodes keep their words); the words stay for screen readers. */
-@media (max-width: 1160px) {
+/* Icons alone where the header runs short of room (the switch between the parts and the way to
+   the Career Barcodes keep their words); the words stay for screen readers. */
+@media (max-width: 1240px) {
   .site-actions .pill {
     padding: 10px;
   }
@@ -323,7 +323,7 @@ input {
 
 /* Narrower still, the way to the Career Barcodes is its icon alone too, beside How it works, spaced
    as the buttons beside it are. */
-@media (max-width: 940px) {
+@media (max-width: 1040px) {
   .site-header {
     column-gap: 14px;
   }
@@ -344,7 +344,34 @@ input {
   }
 }
 
-/* A phone, or any screen too narrow for the header's switch beside its three buttons. */
+/* A phone or a small tablet, too narrow for the header's switch beside its three buttons: Studio |
+   Atlas | Lab floats at the bottom of the screen, under the thumb, with room kept for it below
+   every page. */
+@media (max-width: 860px) {
+  body {
+    padding-bottom: 88px;
+  }
+
+  .part-switch {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    z-index: 40;
+    margin: 0;
+    transform: translateX(-50%);
+  }
+
+  .part-switch a {
+    padding: 8px 18px;
+  }
+
+  /* Messages pop up above it. */
+  .toast {
+    bottom: 96px;
+  }
+}
+
+/* A phone. */
 @media (max-width: 760px) {
   /* The name and the buttons shrink with the narrowest phones, so they still fit side by side. */
   .site-header {
@@ -371,28 +398,15 @@ input {
     padding: min(10px, 2.5vw);
   }
 
-  /* Studio | Atlas floats at the bottom of a phone's screen, under the thumb, with room kept
-     for it below every page. */
-  body {
-    padding-bottom: 88px;
-  }
-
+  /* The switch's tabs, too, so all three fit across the narrowest phones. */
   .part-switch {
-    position: fixed;
-    bottom: 16px;
-    left: 50%;
-    z-index: 40;
-    margin: 0;
-    transform: translateX(-50%);
+    gap: min(10px, 2vw);
   }
 
   .part-switch a {
-    padding: 8px 18px;
-  }
-
-  /* Messages pop up above it. */
-  .toast {
-    bottom: 96px;
+    gap: min(8px, 2vw);
+    padding: 8px min(18px, 3.5vw);
+    font-size: min(1.05rem, 4.4vw);
   }
 }
 

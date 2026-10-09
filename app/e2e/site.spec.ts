@@ -7,6 +7,7 @@ const EXPLAINED = [
   { path: '/atlas.html', title: 'How the Atlas works' },
   { path: '/painting.html?id=Q1217187', title: 'How the strips work' },
   { path: '/artist.html?id=Q5669', title: 'How Career Barcodes work' },
+  { path: '/lab.html', title: 'How the Lab works' },
 ] as const;
 
 /**
@@ -38,6 +39,10 @@ test('leads from the name at the top to the home of the part of the site it is o
   await page.getByRole('banner').getByRole('link', { name: 'Palette Atlas', exact: true }).click();
   await expect(page).toHaveURL(/\/atlas(\.html)?$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^4 paintings/);
+
+  await page.goto('/lab.html?like=Q1217187');
+  await page.getByRole('banner').getByRole('link', { name: 'Palette Atlas', exact: true }).click();
+  await expect(page).toHaveURL(/\/lab(\.html)?$/);
 });
 
 test('keeps the way to the Career Barcodes at the top: by name on a laptop, its icon beside How it works on a phone', async ({ page }) => {
@@ -70,23 +75,25 @@ test('keeps the way to the Career Barcodes at the top: by name on a laptop, its 
   await expect(atTop).toHaveAttribute('aria-current', 'page');
 });
 
-test('fits the header’s name and buttons within phones down to the narrowest, so no page pans sideways', async ({ page }) => {
-  for (const { path } of EXPLAINED) {
+for (const { path } of EXPLAINED) {
+  test(`fits the header’s name, its buttons and the switch between the parts within phones down to the narrowest, so ${path} never pans sideways`, async ({
+    page,
+  }) => {
     for (let width = NARROWEST_PHONE; width <= WIDEST_PHONE; width += 10) {
       await page.setViewportSize({ width, height: PHONE.height });
       await page.goto(path);
       await page.evaluate(() => document.fonts.ready);
       // How far the buttons reach past the header's padding on the right.
       const past = await page.getByRole('banner').evaluate((header) => {
-        const items = [...header.querySelectorAll('.brand, .site-actions > *, .careers-link')];
+        const items = [...header.querySelectorAll('.brand, .site-actions > *, .careers-link, .part-switch')];
         const inside = header.getBoundingClientRect().right - Number.parseFloat(getComputedStyle(header).paddingRight);
         return Math.max(...items.map((item) => item.getBoundingClientRect().right)) - inside;
       });
-      expect(past, `${path} at ${width} px`).toBeLessThanOrEqual(0);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth), `${path} at ${width} px`).toBe(width);
+      expect(past, `${width} px`).toBeLessThanOrEqual(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), `${width} px`).toBe(width);
     }
-  }
-});
+  });
+}
 
 test('leaves the way to every Career Barcode off a painting’s page, which leads to its artist’s own', async ({ page }) => {
   await page.setViewportSize(LAPTOP);

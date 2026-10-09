@@ -3,8 +3,8 @@ import { defineConfig } from 'vite';
 
 // Relative asset paths, so the built site works wherever it is served: at the root of a local
 // preview or of Cloudflare Pages, and under /PaletteAtlas/ on GitHub Pages once the repo is public.
-// The site's pages: the Studio, the Atlas, and a page for each of the Atlas's paintings and for
-// each artist's Career Barcode. The benchmark page stays out of the build: it is for development only.
+// The site's pages: the Studio, the Atlas, a page for each of the Atlas's paintings and for each
+// artist's Career Barcode, and the Lab. The benchmark page stays out of the build: it is for development only.
 export default defineConfig({
   base: './',
   build: {
@@ -14,6 +14,7 @@ export default defineConfig({
         atlas: resolve(import.meta.dirname, 'atlas.html'),
         painting: resolve(import.meta.dirname, 'painting.html'),
         artist: resolve(import.meta.dirname, 'artist.html'),
+        lab: resolve(import.meta.dirname, 'lab.html'),
       },
     },
   },
