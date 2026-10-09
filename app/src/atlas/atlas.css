@@ -129,6 +129,17 @@
   color: inherit;
 }
 
+/* The way to the Lab, yellow as the way to match an image is, and the way back to the gallery. */
+.matches-ways {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 16px;
+}
+
+.lab-door {
+  background: var(--yellow);
+}
+
 .query-card {
   display: block;
   margin: 0;
@@ -1538,7 +1549,7 @@ a.chip:hover {
     display: contents;
   }
 
-  .matches-top .pill {
+  .matches-ways {
     grid-column: 1 / -1;
   }
 
@@ -1674,7 +1685,41 @@ a.chip:hover {
   }
 }
 
-/* On a phone, where Studio | Atlas floats at the bottom of the screen, the way back to the Atlas is
+/* On a phone, the way back to the gallery is its ✕ alone, on one line with the way to the Lab;
+   the words stay for screen readers. */
+@media (max-width: 520px) {
+  .matches-ways {
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  .matches-ways .pill {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  /* It shrinks with the narrowest phones, so the two still fit side by side. */
+  .lab-door {
+    gap: min(10px, 2.5vw);
+    padding: 10px min(20px, 3.5vw);
+    font-size: min(1.05rem, 5vw);
+  }
+
+  .all-paintings {
+    padding: 10px;
+  }
+
+  .all-paintings span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* On a phone, where Studio | Atlas | Lab floats at the bottom of the screen, the way back to the Atlas is
    its arrow alone, leaving room for the list and the painters before and after; the word stays
    for screen readers. */
 @media (max-width: 760px) {

@@ -1,6 +1,7 @@
 import '@fontsource-variable/bricolage-grotesque/standard.css';
 import '../style.css';
 import './atlas.css';
+import { REPLAY_PAGE } from '../lab/lab-query.ts';
 import { SiteHeader } from '../site/site-header.ts';
 import { Atlas } from './atlas.ts';
 import { galleryHeadline, matchesHeadline, type QueryCard } from './atlas-headlines.ts';
@@ -47,11 +48,11 @@ async function atlasOf(data: GalleryData): Promise<Atlas> {
   const image = params.has('match') ? ImageQueries.take() : undefined;
   const matches = new ColorMatches(data);
   if (painting) {
-    const headline = matchesHeadline(paintingCard(painting));
+    const headline = matchesHeadline(paintingCard(painting), { href: `./lab.html?like=${painting.painting.id}` });
     return new Atlas(matches.of(painting.strip, MATCHES, painting.position), headline, MATCH_ROWS, WallPlaces.saved());
   }
   if (image) {
-    const headline = matchesHeadline({ ...image, name: YOUR_IMAGE });
+    const headline = matchesHeadline({ ...image, name: YOUR_IMAGE }, { href: REPLAY_PAGE, onOpen: () => ImageQueries.hand(image) });
     return new Atlas(matches.of(image.colors, MATCHES), headline, MATCH_ROWS, WallPlaces.saved());
   }
   // An address whose painting or image is gone opens the whole gallery.

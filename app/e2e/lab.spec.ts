@@ -118,6 +118,31 @@ test('replays the search for an image chosen in the Lab, keeps it on coming back
   expect(await nearestShown(page)).toEqual(order);
 });
 
+test('replays the search behind a wall of matches from its How they were found, for an image or a painting', async ({ page }) => {
+  await page.goto('/atlas.html');
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Match an image' }).click();
+  await (await chooser).setFiles(fixtureImage('Q1217187'));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Painted in these colors.');
+  await expect(page.locator('.wall .painting-tile')).toHaveCount(FIXTURE_PAINTINGS.length);
+  const wall = await wallTitles(page);
+  expect(wall[0]).toBe('Calumny of Apelles');
+  await page.getByRole('link', { name: 'How they were found' }).click();
+  await expect(page).toHaveURL(/\/lab(\.html)?\?match$/);
+  await expect(page.getByRole('img', { name: 'Your image' })).toBeVisible();
+  await skipToEnd(page);
+  expect((await nearestShown(page)).map((position) => FIXTURE_PAINTINGS[position]?.title)).toEqual(wall);
+  // Back on the wall, it is the same image's.
+  await page.goBack();
+  await expect(page.locator('.wall .painting-tile')).toHaveCount(FIXTURE_PAINTINGS.length);
+  expect(await wallTitles(page)).toEqual(wall);
+
+  await page.goto('/atlas.html?like=Q1217187');
+  await page.getByRole('link', { name: 'How they were found' }).click();
+  await expect(page).toHaveURL(/\/lab(\.html)?\?like=Q1217187$/);
+  await expect(page.getByRole('link', { name: 'Calumny of Apelles', exact: true })).toBeVisible();
+});
+
 test('opens on a painting of its own when asked for none, or for one not in the Atlas', async ({ page }) => {
   for (const path of ['/lab.html', '/lab.html?like=Q1']) {
     await page.goto(path);

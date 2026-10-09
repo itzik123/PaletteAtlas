@@ -1,5 +1,5 @@
 import type { RgbaImage } from '@palette-atlas/color';
-import { CLOSE_ICON, UPLOAD_ICON } from '../icons.ts';
+import { CLOSE_ICON, LAB_ICON, UPLOAD_ICON } from '../icons.ts';
 import { imageCanvas } from '../image-adapters.ts';
 
 // The headlines over the Atlas's wall (see Atlas): one over the whole gallery, and one over the
@@ -16,6 +16,14 @@ export interface QueryCard {
   readonly name: string;
   /** Where the card leads: a painting's own page. An image of the visitor's own leads nowhere. */
   readonly href?: string;
+}
+
+/** The way from the paintings nearest some colors to the Lab, which replays the search that found them. */
+export interface LabDoor {
+  /** The Lab's page for the same colors. */
+  readonly href: string;
+  /** Readies that page before it opens: hands it an image of the visitor's own (see ImageQueries). */
+  readonly onOpen?: () => void;
 }
 
 /**
@@ -46,10 +54,10 @@ export function galleryHeadline(count: number, onMatch: () => void): HTMLElement
 
 /**
  * The headline over the paintings nearest some colors: what they were matched to on a card, and
- * its color strip under the words "these colors.", which stand on it; then the way back to the
- * whole gallery.
+ * its color strip under the words "these colors.", which stand on it; then the way to the Lab's
+ * replay of the search that found them, and the way back to the whole gallery.
  */
-export function matchesHeadline(card: QueryCard): HTMLElement {
+export function matchesHeadline(card: QueryCard, lab: LabDoor): HTMLElement {
   const top = document.createElement('div');
   top.className = 'atlas-top matches-top';
   const shown = document.createElement(card.href ? 'a' : 'figure');
@@ -69,8 +77,14 @@ export function matchesHeadline(card: QueryCard): HTMLElement {
   text.className = 'matches-text';
   text.innerHTML = `
     <h1>Painted in <span class="named-colors">these colors.</span></h1>
-    <a class="pill" href="./atlas.html">${CLOSE_ICON}<span>All paintings</span></a>
+    <div class="matches-ways">
+      <a class="pill lab-door">${LAB_ICON}<span>How they were found</span></a>
+      <a class="pill all-paintings" href="./atlas.html">${CLOSE_ICON}<span>All paintings</span></a>
+    </div>
   `;
+  const door = text.querySelector('.lab-door') as HTMLAnchorElement;
+  door.href = lab.href;
+  door.addEventListener('click', () => lab.onOpen?.());
   const strip = imageCanvas(card.colors);
   strip.className = 'query-strip';
   // It repeats the colors of the picture the card names, so screen readers pass it by.

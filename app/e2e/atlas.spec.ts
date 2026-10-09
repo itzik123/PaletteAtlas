@@ -257,14 +257,22 @@ test('shows the paintings nearest a painting’s colors under its strips, and th
   expect(await wallTitles(page)).toEqual(titlesAt(order));
 });
 
-test('keeps the headline beside a wide painting’s card within a phone’s screen', async ({ page }) => {
+test('keeps the headline beside a wide painting’s card, and the ways on under them, within a phone’s screen', async ({ page }) => {
   // Vroom's View of the IJ is 2.76 times as wide as it is tall.
   await page.goto('/atlas.html?like=Q17812507');
   await expect(page.locator('.query-strip')).toBeVisible();
+  const ways = [page.getByRole('link', { name: 'How they were found' }), page.getByRole('link', { name: 'All paintings' })];
   for (const size of PHONE_SIZES) {
     await page.setViewportSize(size);
-    const [words, top] = await Promise.all([wordsBox(page, 'these colors.'), page.locator('.matches-top').boundingBox()]);
-    expect(words.right, `${size.width} px`).toBeLessThanOrEqual((top?.x ?? 0) + (top?.width ?? 0));
+    const [words, top, ...pills] = await Promise.all([
+      wordsBox(page, 'these colors.'),
+      page.locator('.matches-top').boundingBox(),
+      ...ways.map((way) => way.boundingBox()),
+    ]);
+    const right = (top?.x ?? 0) + (top?.width ?? 0);
+    expect(words.right, `${size.width} px`).toBeLessThanOrEqual(right);
+    for (const pill of pills) expect((pill?.x ?? 0) + (pill?.width ?? 0), `${size.width} px`).toBeLessThanOrEqual(right);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${size.width} px`).toBe(size.width);
   }
 });
 
