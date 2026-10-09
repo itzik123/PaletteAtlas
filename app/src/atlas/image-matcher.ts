@@ -3,6 +3,9 @@ import { StripReader } from '../studio/strip-reader.ts';
 import { Toast } from '../studio/toast.ts';
 import { ImageQueries, imageQuery, MATCHES_PAGE } from './image-query.ts';
 
+/** The strip an image is matched by: its colors. */
+const MATCHED_AXIS = 'color';
+
 /**
  * Takes the images handed to a page, dropped anywhere on it, pasted, or chosen in the file
  * picker, reads each one's colors in a worker as the Studio does, and opens the page that shows
@@ -37,9 +40,9 @@ export class ImageMatcher {
     }
     this.#toast.hide();
     this.#root.classList.add('is-matching');
-    const read = await this.#reader.read(file);
+    const read = await this.#reader.read(file, [MATCHED_AXIS]);
     this.#root.classList.remove('is-matching');
-    const colors = read?.strips.find(({ axis }) => axis === 'color')?.strip;
+    const colors = read?.strips.find(({ axis }) => axis === MATCHED_AXIS)?.strip;
     if (!read || !colors) {
       this.#toast.show(`Couldn’t open “${file.name}”.`);
     } else if (colors.segmentCount === 0) {

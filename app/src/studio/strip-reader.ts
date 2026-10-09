@@ -1,8 +1,8 @@
-import { type NamedStrip, Strip } from '@palette-atlas/strip';
+import { type AxisName, type NamedStrip, Strip } from '@palette-atlas/strip';
 import { WorkerChannel } from '../worker-channel.ts';
 import type { StripRequest, StripResponse } from '../workers/strip-messages.ts';
 
-/** An image file, decoded and read along every axis. */
+/** An image file, decoded and read along the axes asked for. */
 export interface ReadImage {
   /** The decoded picture, upright by its EXIF orientation. */
   readonly picture: ImageBitmap;
@@ -21,9 +21,12 @@ export class StripReader {
     (id) => ({ id }),
   );
 
-  /** The file's picture and strips, or undefined if it can't be read: the browser can't decode it, or the worker failed. */
-  async read(file: Blob): Promise<ReadImage | undefined> {
-    const { read } = await this.#channel.ask((id) => ({ id, file }));
+  /**
+   * The file's picture and its strips along some axes, every axis unless told otherwise, or
+   * undefined if it can't be read: the browser can't decode it, or the worker failed.
+   */
+  async read(file: Blob, axes?: readonly AxisName[]): Promise<ReadImage | undefined> {
+    const { read } = await this.#channel.ask((id) => ({ id, file, axes }));
     if (!read) return undefined;
     return { picture: read.picture, strips: read.strips.map(({ axis, strip }) => ({ axis, strip: Strip.fromData(strip) })) };
   }

@@ -7,7 +7,7 @@ import type { StripOnAxis, StripRequest, StripResponse } from './strip-messages.
 // to answer the user meanwhile. Each answer hands the decoded picture and the strips' arrays over
 // to the page rather than copying them.
 
-self.addEventListener('message', async ({ data: { id, file } }: MessageEvent<StripRequest>) => {
+self.addEventListener('message', async ({ data: { id, file, axes } }: MessageEvent<StripRequest>) => {
   let picture: ImageBitmap;
   try {
     picture = await createImageBitmap(file);
@@ -17,7 +17,7 @@ self.addEventListener('message', async ({ data: { id, file } }: MessageEvent<Str
     return;
   }
   try {
-    const strips: StripOnAxis[] = ImageStrips.read(bitmapPixels(picture)).strips.map(({ axis, strip }) => ({
+    const strips: StripOnAxis[] = ImageStrips.read(bitmapPixels(picture), axes).strips.map(({ axis, strip }) => ({
       axis,
       strip: strip.toData(),
     }));

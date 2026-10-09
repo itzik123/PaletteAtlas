@@ -23,6 +23,8 @@ const PALETTE_SEED = 1;
 
 /** The axes, by the names the app and the pipeline's files know them by. */
 export type AxisName = 'columns' | 'radial' | 'hilbert' | 'color';
+/** Every axis, in the order ImageStrips reads them unless asked for others. */
+const EVERY_AXIS: readonly AxisName[] = ['columns', 'radial', 'hilbert', 'color'];
 
 export interface NamedStrip {
   readonly axis: AxisName;
@@ -30,10 +32,10 @@ export interface NamedStrip {
 }
 
 /**
- * An image read along every axis with the project's settings, so that the app and the pipeline
+ * An image read along the axes with the project's settings, so that the app and the pipeline
  * draw the same strips: shrunk to PALETTE_WORKING_SIZE by area averaging in linear light, its
  * palette found by k-means and grown to cover the image, and one strip of STRIP_SEGMENTS segments
- * per axis, the color axis reading by that palette.
+ * per axis asked for, the color axis reading by that palette.
  *
  * Facade: one call stands in for the color library's shrink and palette and the strip engine.
  */
@@ -42,7 +44,7 @@ export class ImageStrips {
   readonly shrunk: RgbaImage;
   /** The image's main colors, largest share first. */
   readonly palette: readonly PaletteColor[];
-  /** One strip per axis, in a fixed order. */
+  /** One strip per axis, in the order asked for. */
   readonly strips: readonly NamedStrip[];
 
   private constructor(shrunk: RgbaImage, palette: readonly PaletteColor[], strips: readonly NamedStrip[]) {
@@ -51,16 +53,17 @@ export class ImageStrips {
     this.strips = strips;
   }
 
-  static read(image: RgbaImage): ImageStrips {
+  /** Reads an image along the given axes, every axis unless told otherwise: the gallery keeps only its color strips. */
+  static read(image: RgbaImage, axes: readonly AxisName[] = EVERY_AXIS): ImageStrips {
     const shrunk = downscale(image, PALETTE_WORKING_SIZE);
     const palette = extractPalette(shrunk, paletteClusterer(PALETTE_SIZE, new SeededRandom(PALETTE_SEED)));
-    const axes: readonly (readonly [AxisName, StripAxis])[] = [
-      ['columns', new ColumnAxis()],
-      ['radial', new RadialAxis()],
-      ['hilbert', new HilbertAxis()],
-      ['color', new ColorAxis(() => palette)],
-    ];
-    const strips = axes.map(([axis, stripAxis]) => ({ axis, strip: Strip.read(shrunk, stripAxis, STRIP_SEGMENTS) }));
+    const stripAxes: Readonly<Record<AxisName, StripAxis>> = {
+      columns: new ColumnAxis(),
+      radial: new RadialAxis(),
+      hilbert: new HilbertAxis(),
+      color: new ColorAxis(() => palette),
+    };
+    const strips = axes.map((axis) => ({ axis, strip: Strip.read(shrunk, stripAxes[axis], STRIP_SEGMENTS) }));
     return new ImageStrips(shrunk, palette, strips);
   }
 }

@@ -11,17 +11,16 @@ import {
   type Painting,
   SOURCE_WIDTH,
 } from '@palette-atlas/gallery';
-import { type AxisName, STRIP_SEGMENTS } from '@palette-atlas/strip';
+import { STRIP_SEGMENTS } from '@palette-atlas/strip';
 import { writeCareers } from './career-data.ts';
 import { type Catalog, CATALOG_FILE, readCatalog, type Work } from './catalog.ts';
 import { writeChunks } from './chunk-files.ts';
 import { writeSearchData } from './search-data.ts';
+import { GALLERY_AXIS } from './strip-messages.ts';
 import type { StripPool } from './strip-pool.ts';
 
 /** Paintings per chunk (see chunkOf): a chunk's strips take about 150 KB. */
 export const CHUNK_SIZE = 1000;
-/** The strip the gallery shows: the one read by color. The painting page reads the rest live. */
-const GALLERY_AXIS: AxisName = 'color';
 /**
  * Images less colorful than this (see colorfulness()) are black-and-white photos of paintings,
  * and are left out: their strips would show the photo, not the painting's colors. Measured on the
@@ -92,7 +91,7 @@ export async function buildPaintings(
   let failed = 0;
   results.forEach((result, index) => {
     const { work, image } = linked[index];
-    const strip = 'reading' in result ? result.reading.strips.find(({ axis }) => axis === GALLERY_AXIS)?.colors : undefined;
+    const strip = 'reading' in result ? result.reading.strip : undefined;
     if ('error' in result || strip?.width !== STRIP_SEGMENTS) {
       failed++;
       log(`Failed ${work.image}: ${'error' in result ? result.error : `no full ${GALLERY_AXIS} strip`}`);

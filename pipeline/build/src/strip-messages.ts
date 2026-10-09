@@ -4,16 +4,13 @@ import type { AxisName } from '@palette-atlas/strip';
 // The messages between the strip pool (strip-pool.ts) and its worker threads (strip-worker.ts).
 // postMessage copies them by the structured clone algorithm, so they hold plain data only.
 
-/** One axis's strip: its colors, one pixel per segment. */
-export interface AxisColors {
-  readonly axis: AxisName;
-  readonly colors: RgbaImage;
-}
+/** The strip the gallery keeps of each painting: the one read by color. The painting page reads the rest live. */
+export const GALLERY_AXIS: AxisName = 'color';
 
 /** What a worker reads from an image file. */
 export interface ImageReading {
-  /** The strip along every axis, in ImageStrips' order. */
-  readonly strips: readonly AxisColors[];
+  /** Its strip along GALLERY_AXIS, one pixel per segment. */
+  readonly strip: RgbaImage;
   /** See colorfulness(). */
   readonly colorfulness: number;
 }

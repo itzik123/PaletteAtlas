@@ -11,6 +11,8 @@ export class SourceHighlight {
   readonly element = document.createElement('canvas');
   /** How opaque the veil is, from 0 to MAX_BYTE. */
   readonly #alpha: number;
+  /** What the veil shows, if anything: pointing within one segment shows it once. */
+  #shown: { readonly map: SourceMap; readonly segment: number; readonly veil: string } | undefined;
 
   /** @param opacity How much of the image the veil hides, from 0 to 1. */
   constructor(opacity: number) {
@@ -19,6 +21,9 @@ export class SourceHighlight {
 
   /** Veils every pixel outside the segment in the given color. */
   show(map: SourceMap, segment: number, veil: Srgb): void {
+    const shown = { map, segment, veil: veil.toHex() };
+    if (this.#shown?.map === map && this.#shown.segment === segment && this.#shown.veil === shown.veil) return;
+    this.#shown = shown;
     const { width, height } = map;
     this.element.width = width;
     this.element.height = height;
@@ -39,6 +44,7 @@ export class SourceHighlight {
   }
 
   clear(): void {
+    this.#shown = undefined;
     context2d(this.element).clearRect(0, 0, this.element.width, this.element.height);
   }
 }

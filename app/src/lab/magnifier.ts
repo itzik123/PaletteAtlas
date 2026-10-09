@@ -17,12 +17,24 @@ const RISES_PAST = 0.6;
 const RISE = 24;
 /** How far the glass keeps from the pin, and from the patch it enlarges around it, in CSS pixels. */
 const CLEARANCE = 14;
+/** How opaque the paintings under the glass are until the search measures them, and once it has. */
+const FAINT = 0.3;
+const MEASURED = 0.8;
 const { ink: INK, card: CARD, yellow: YELLOW } = SITE_COLORS;
 
 /** The glass: where its middle stands on the stage, and its radius, in CSS pixels. */
 export interface Glass {
   readonly center: Point;
   readonly radius: number;
+}
+
+/** The glass's face as drawn for where it stands: its canvas, at the screen's resolution, and its top left corner there, in device pixels. */
+interface Face {
+  /** Where the glass stands, its size and the screen's resolution, which the face was drawn for. */
+  readonly key: string;
+  readonly canvas: HTMLCanvasElement;
+  readonly left: number;
+  readonly top: number;
 }
 
 function radiusOn(width: number): number {
@@ -34,6 +46,10 @@ function radiusOn(width: number): number {
  * glass, which the visitor can move about over the boards: the paintings near the query, faint
  * until the search measures them, and the nearest large, with the query in the middle. Lines lead
  * from the patch of the board it enlarges.
+ *
+ * The glass holds thousands of paintings near the query, so its face with all of them on it, faint,
+ * is drawn once for where the glass stands, and every frame copies it before drawing the search's
+ * work over it.
  */
 export class Magnifier {
   readonly #map: StackMap;
@@ -45,6 +61,8 @@ export class Magnifier {
   #within: number[] = [];
   /** How far the visitor has moved the glass from where it stands of itself. */
   #moved: Point = [0, 0];
+  /** The glass's face with the paintings under it, faint, as last drawn. */
+  #face: Face | undefined;
 
   constructor(map: StackMap, stack: BoardStack) {
     this.#map = map;
@@ -54,6 +72,7 @@ export class Magnifier {
   /** Centers it on the query, reaching far enough to hold its nearest paintings with room around them. */
   aim(query: StackPlace, nearest: readonly number[]): void {
     this.#query = query;
+    this.#face = undefined;
     const across = (node: number): number => this.#across(node);
     this.#reach = Math.max(LEAST_REACH, ROOM * Math.max(0, ...nearest.map(across)));
     this.#within = [];
@@ -131,40 +150,30 @@ export class Magnifier {
     });
   }
 
-  draw(context: CanvasRenderingContext2D, { center: [x, y], radius }: Glass, bottom: LayerWork | undefined, nearest: readonly number[]): void {
+  draw(context: CanvasRenderingContext2D, glass: Glass, bottom: LayerWork | undefined, nearest: readonly number[]): void {
+    const [x, y] = glass.center;
+    const { radius } = glass;
     this.#drawLeads(context, [x, y], radius);
     context.beginPath();
     context.arc(x + SHADOW, y + SHADOW, radius, 0, 2 * Math.PI);
     context.fillStyle = INK;
     context.fill();
+    const face = this.#faceOf(glass);
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.drawImage(face.canvas, face.left, face.top);
+    context.restore();
     context.save();
     context.beginPath();
     context.arc(x, y, radius, 0, 2 * Math.PI);
-    context.fillStyle = CARD;
-    context.fill();
     context.clip();
-    const scale = radius / this.#reach;
-    const { truePlaces, aspect, colors } = this.#map;
-    const [queryX, queryY] = this.#query.true;
-    const dot = (node: number, size: number, outline: number, alpha = 1): void => {
-      context.globalAlpha = alpha;
-      context.beginPath();
-      context.arc(x + (truePlaces[node * 2] - queryX) * scale, y + ((truePlaces[node * 2 + 1] - queryY) / aspect) * scale, size, 0, 2 * Math.PI);
-      context.fillStyle = colors[node];
-      context.fill();
-      if (outline) {
-        context.lineWidth = outline;
-        context.strokeStyle = INK;
-        context.stroke();
-      }
-      context.globalAlpha = 1;
-    };
-    // Paintings the search never measured stay faint; those it measured, and those it kept, stand out.
+    // The paintings the search measured stand out over the faint ones, and those it kept more.
     const top = new Set(nearest);
-    for (const node of this.#within) if (!bottom?.measured.has(node)) dot(node, 2.2, 0, 0.3);
-    for (const node of this.#within) if (bottom?.measured.has(node) && !bottom.kept.has(node)) dot(node, 2.6, 0.8, 0.8);
-    for (const node of this.#within) if (bottom?.kept.has(node) && !top.has(node)) dot(node, 3.6, 1.2);
-    for (const node of nearest) dot(node, 7, 2.4);
+    context.globalAlpha = MEASURED;
+    for (const node of this.#within) if (bottom?.measured.has(node) && !bottom.kept.has(node)) this.#dot(context, glass, node, 2.6, 0.8);
+    context.globalAlpha = 1;
+    for (const node of this.#within) if (bottom?.kept.has(node) && !top.has(node)) this.#dot(context, glass, node, 3.6, 1.2);
+    for (const node of nearest) this.#dot(context, glass, node, 7, 2.4);
     context.beginPath();
     context.arc(x, y, 7.5, 0, 2 * Math.PI);
     context.fillStyle = YELLOW;
@@ -178,6 +187,50 @@ export class Magnifier {
     context.lineWidth = 3;
     context.strokeStyle = INK;
     context.stroke();
+  }
+
+  /**
+   * The glass's face with every painting near the query on it, faint: drawn at the screen's
+   * resolution, lined up with its pixels, the first time the glass stands where it does.
+   */
+  #faceOf(glass: Glass): Face {
+    const [x, y] = glass.center;
+    const { radius } = glass;
+    const scale = devicePixelRatio;
+    const key = `${x} ${y} ${radius} ${scale}`;
+    if (this.#face?.key === key) return this.#face;
+    // A pixel's room around it for its edge's smoothing.
+    const left = Math.floor((x - radius) * scale) - 1;
+    const top = Math.floor((y - radius) * scale) - 1;
+    const canvas = this.#face?.canvas ?? document.createElement('canvas');
+    canvas.width = canvas.height = Math.ceil(2 * radius * scale) + 3;
+    const context = canvas.getContext('2d') as CanvasRenderingContext2D;
+    context.setTransform(scale, 0, 0, scale, -left, -top);
+    context.beginPath();
+    context.arc(x, y, radius, 0, 2 * Math.PI);
+    context.fillStyle = CARD;
+    context.fill();
+    context.clip();
+    context.globalAlpha = FAINT;
+    for (const node of this.#within) this.#dot(context, glass, node, 2.2, 0);
+    this.#face = { key, canvas, left, top };
+    return this.#face;
+  }
+
+  /** A painting's dot under the glass, where the glass enlarges it to, in its color and with an outline as wide as given. */
+  #dot(context: CanvasRenderingContext2D, { center: [x, y], radius }: Glass, node: number, size: number, outline: number): void {
+    const { truePlaces, aspect, colors } = this.#map;
+    const scale = radius / this.#reach;
+    const [queryX, queryY] = this.#query.true;
+    context.beginPath();
+    context.arc(x + (truePlaces[node * 2] - queryX) * scale, y + ((truePlaces[node * 2 + 1] - queryY) / aspect) * scale, size, 0, 2 * Math.PI);
+    context.fillStyle = colors[node];
+    context.fill();
+    if (outline) {
+      context.lineWidth = outline;
+      context.strokeStyle = INK;
+      context.stroke();
+    }
   }
 
   /** The patch of the board it enlarges, outlined, and the lines that lead from it to the glass. */
