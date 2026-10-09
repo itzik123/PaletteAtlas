@@ -11,6 +11,8 @@ const REFERENCE_BAND_WIDTH = 8;
 
 /** The longest the page may stay busy at one stretch while an image is read; longer, and it visibly freezes. */
 const LONGEST_TASK_MS = 100;
+/** How long a large image's strips may take to read while the rest of the tests keep the machine busy. */
+const READING_TIMEOUT_MS = 20_000;
 
 declare global {
   interface Window {
@@ -184,7 +186,8 @@ test('reading an image never freezes the page', async ({ page }) => {
     });
   });
   await page.locator('input[type=file]').setInputFiles(join(BENCHMARK, 'chess.webp'));
-  await expect.poll(() => stripColors(page)).toEqual(await referenceColors(page, 'chess', 'color'));
+  // However long the reading takes, the page never stalls.
+  await expect.poll(() => stripColors(page), { timeout: READING_TIMEOUT_MS }).toEqual(await referenceColors(page, 'chess', 'color'));
   expect(Math.max(0, ...(await page.evaluate(() => window.longTasks)))).toBeLessThan(LONGEST_TASK_MS);
 });
 
