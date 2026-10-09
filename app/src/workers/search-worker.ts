@@ -1,6 +1,6 @@
 import { HnswIndex } from '@palette-atlas/hnsw';
 import { colorSchemeDistance } from '@palette-atlas/vectorize';
-import { fetchGunzipped } from '../gunzip.ts';
+import { fetchGunzipped } from '../fetching.ts';
 import { GallerySearch } from './gallery-search.ts';
 import type { SearchRequest, SearchResponse } from './search-messages.ts';
 

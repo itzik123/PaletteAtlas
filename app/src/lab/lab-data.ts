@@ -1,5 +1,5 @@
 import { ColorSearch } from '../atlas/color-search.ts';
-import { GalleryData, type GalleryEntry } from '../atlas/gallery-data.ts';
+import { GalleryData } from '../atlas/gallery-data.ts';
 import type { IndexLayers } from './index-layers.ts';
 import { StackMap } from './stack-map.ts';
 
@@ -26,11 +26,5 @@ export class LabData {
     const search = new ColorSearch(gallery.searchIndexUrl);
     const [layers, map] = await Promise.all([search.layers(), gallery.paintingMap()]);
     return new LabData(gallery, search, layers, new StackMap(map));
-  }
-
-  /** The painting at a position in the gallery (whose chunks the gallery reads once). */
-  async entry(position: number): Promise<GalleryEntry> {
-    const [entry] = await this.gallery.entries(position, 1);
-    return entry;
   }
 }

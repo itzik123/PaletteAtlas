@@ -2,6 +2,7 @@ import './studio.css';
 import { OkLab } from '@palette-atlas/color';
 import { type AxisName, NO_SEGMENT, type NamedStrip, type Strip } from '@palette-atlas/strip';
 import { ImageQueries, imageQuery, MATCHES_PAGE } from '../atlas/image-query.ts';
+import { fetchOk } from '../fetching.ts';
 import { SEARCH_ICON, UPLOAD_ICON } from '../icons.ts';
 import { siteSrgb } from '../site-colors.ts';
 import { AxisPicker } from './axis-picker.ts';
@@ -148,11 +149,7 @@ export class Studio {
 
   /** Opens a painting from the wall as if its file had been dropped, named after its title. */
   async #openSample(sample: Sample): Promise<void> {
-    await this.open(`${sample.title}.webp`, async () => {
-      const response = await fetch(sample.image);
-      if (!response.ok) throw new Error(`${sample.image}: ${response.status}`);
-      return response.blob();
-    });
+    await this.open(`${sample.title}.webp`, async () => (await fetchOk(sample.image)).blob());
   }
 
   /**

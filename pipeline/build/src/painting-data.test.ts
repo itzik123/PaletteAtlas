@@ -20,6 +20,7 @@ import { colorSchemeVector } from '@palette-atlas/vectorize';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildCareers } from './career-data.ts';
 import { readCatalog } from './catalog.ts';
+import { readManifest } from './chunk-files.ts';
 import { readImage } from './image-file.ts';
 import { type BuildReport, buildPaintings } from './painting-data.ts';
 import { buildSearchData, readSearchIndex } from './search-data.ts';
@@ -68,7 +69,7 @@ describe('buildPaintings', () => {
     } finally {
       await pool.close();
     }
-    manifest = JSON.parse(await readFile(join(output, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
+    manifest = await readManifest(output);
     ({ paintings } = await readStored(output, GALLERY_FILES.gallery, manifest.count));
   }, TIMEOUT_MS);
 

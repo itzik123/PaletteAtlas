@@ -12,7 +12,7 @@ import {
   recordAt,
   stripInRow,
 } from '@palette-atlas/gallery';
-import { fetchGunzipped } from '../gunzip.ts';
+import { fetchGunzipped, fetchOk } from '../fetching.ts';
 import { decodeImage } from '../image-adapters.ts';
 
 /** Where the pipeline writes the gallery's data (app/public/data), as the site's pages see it. */
@@ -84,11 +84,18 @@ export class GalleryData {
     return paintings.map((entry, index) => ({ ...entry, position: from + index }));
   }
 
+  /** The painting at a position, one of the gallery's. */
+  async entry(position: number): Promise<GalleryEntry> {
+    const [entry] = await this.entries(position, 1);
+    if (!entry) throw new RangeError(`The gallery has no painting ${position}`);
+    return entry;
+  }
+
   /** The painting with a Wikidata item, if the gallery has it. */
   async find(id: string): Promise<GalleryEntry | undefined> {
     this.#ids ??= fetchJson<readonly string[]>(`${this.#url}${GALLERY_FILES.ids}`);
     const position = (await this.#ids).indexOf(id);
-    return position < 0 ? undefined : (await this.entries(position, 1))[0];
+    return position < 0 ? undefined : this.entry(position);
   }
 
   /** How many paintings each artist's career has, in the order of the manifest's artists (Painting.artist). */
@@ -184,12 +191,6 @@ class PaintingChunks {
       };
     });
   }
-}
-
-async function fetchOk(url: string): Promise<Response> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`${url}: ${response.status}`);
-  return response;
 }
 
 async function fetchJson<T>(url: string): Promise<T> {

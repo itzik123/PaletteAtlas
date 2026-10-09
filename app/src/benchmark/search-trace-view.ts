@@ -1,7 +1,8 @@
 import { type Random, SeededRandom } from '@palette-atlas/color';
 import { BruteForceIndex, HnswIndex, type SearchStep, SearchRecorder, Vectors } from '@palette-atlas/hnsw';
+import { type LayerWork, SearchReplay } from '../lab/search-replay.ts';
 
-/** Points on the plane, gathered in clusters, as the Lab's plane mode will have them. */
+/** Points on the plane, gathered in clusters. */
 const POINTS = 1500;
 const CLUSTERS = 12;
 const CLUSTER_SPREAD = 0.06;
@@ -28,45 +29,6 @@ const COLORS = {
   current: '#111',
 } as const;
 
-/** What a search had done on one layer by some step of its record. */
-interface LayerState {
-  readonly measured: Set<number>;
-  /** Each link followed: from the node expanded to a node it led to. */
-  readonly followed: [from: number, to: number][];
-  readonly expanded: Set<number>;
-  /** The nearest found so far on the layer, the paper's W. */
-  readonly kept: Set<number>;
-}
-
-/** The first `count` steps of a record, replayed: what happened on each layer, and the layer the search is on. */
-function replay(steps: readonly SearchStep[], count: number): { layers: Map<number, LayerState>; level: number } {
-  const layers = new Map<number, LayerState>();
-  let layer: LayerState | undefined;
-  let level = -1;
-  let expanding = -1;
-  for (const step of steps.slice(0, count)) {
-    if (step.kind === 'layer') {
-      level = step.level;
-      layer = { measured: new Set(), followed: [], expanded: new Set(), kept: new Set() };
-      layers.set(level, layer);
-      expanding = -1;
-    } else if (!layer) {
-      throw new Error('A search step came before its layer');
-    } else if (step.kind === 'measure') {
-      layer.measured.add(step.node);
-      if (expanding >= 0) layer.followed.push([expanding, step.node]);
-    } else if (step.kind === 'expand') {
-      expanding = step.node;
-      layer.expanded.add(step.node);
-    } else if (step.kind === 'keep') {
-      layer.kept.add(step.node);
-    } else {
-      layer.kept.delete(step.node);
-    }
-  }
-  return { layers, level };
-}
-
 function panelSize(level: number): number {
   return level === 0 ? 2 * PANEL_SIZE : PANEL_SIZE;
 }
@@ -92,7 +54,8 @@ function clusteredPoints(random: Random): Vectors {
 /**
  * The benchmark page's check of the search trace: an HNSW index of points on a plane, one square
  * per layer, top layer first. Clicking a square searches from that point; the slider replays the
- * search's record step by step, as the Lab will, and the bottom layer rings the true nearest.
+ * search's record step by step (SearchReplay, as the Lab does), and the bottom layer rings the
+ * true nearest.
  */
 export class SearchTraceView {
   readonly element = document.createElement('section');
@@ -190,8 +153,7 @@ export class SearchTraceView {
 
   #draw(): void {
     const shown = this.#slider.valueAsNumber;
-    const { layers, level: current } = replay(this.#steps, shown);
-    const done = shown >= this.#steps.length;
+    const { layers, level: current, done } = SearchReplay.of(this.#steps, shown);
     this.#canvases.forEach((canvas, level) => this.#drawLayer(canvas, level, layers.get(level), { active: level === current && !done, done }));
     const measured = this.#steps.filter((step) => step.kind === 'measure').length;
     const found = [...this.#found].filter((node) => this.#truth.has(node)).length;
@@ -201,7 +163,7 @@ export class SearchTraceView {
       `and found ${found} of the true ${K} nearest.`;
   }
 
-  #drawLayer(canvas: HTMLCanvasElement, level: number, state: LayerState | undefined, { active, done }: { active: boolean; done: boolean }): void {
+  #drawLayer(canvas: HTMLCanvasElement, level: number, work: LayerWork | undefined, { active, done }: { active: boolean; done: boolean }): void {
     const context = canvas.getContext('2d');
     if (!context) return;
     const scale = devicePixelRatio;
@@ -231,11 +193,11 @@ export class SearchTraceView {
     const nodes = Array.from({ length: graph.count }, (_, node) => node).filter((node) => graph.levelOf(node) >= level);
     for (const node of nodes) for (const link of graph.neighbors(node, level)) line(node, link, COLORS.link, 1);
     for (const node of nodes) dot(node, level === 0 ? 1.2 : 2, COLORS.node);
-    if (state) {
-      for (const [from, to] of state.followed) line(from, to, COLORS.followed, 1.5);
-      for (const node of state.measured) dot(node, 2.5, COLORS.measured);
-      for (const node of state.expanded) dot(node, 2.5, COLORS.followed);
-      for (const node of state.kept) dot(node, 3.5, COLORS.kept);
+    if (work) {
+      for (const [from, to] of work.followed) line(from, to, COLORS.followed, 1.5);
+      for (const node of work.measured.keys()) dot(node, 2.5, COLORS.measured);
+      for (const node of work.expanded) dot(node, 2.5, COLORS.followed);
+      for (const node of work.kept) dot(node, 3.5, COLORS.kept);
     }
     if (level === 0 && done) for (const node of this.#found) dot(node, 5, COLORS.kept);
     if (level === 0) {

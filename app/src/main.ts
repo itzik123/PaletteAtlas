@@ -3,6 +3,7 @@ import './style.css';
 import { SOURCE_WIDTH } from '@palette-atlas/gallery';
 import { GalleryData } from './atlas/gallery-data.ts';
 import { titleOf } from './atlas/painting-text.ts';
+import { fetchOk } from './fetching.ts';
 import { SiteHeader } from './site/site-header.ts';
 import { StripReader } from './studio/strip-reader.ts';
 import { Studio } from './studio/studio.ts';
@@ -24,8 +25,6 @@ async function openPainting(id: string): Promise<void> {
     .catch(() => undefined);
   await studio.open(entry ? `${titleOf(entry.painting)}.jpg` : id, async () => {
     if (!entry) throw new Error(`${id} is not in the Atlas`);
-    const response = await fetch(entry.image.url(SOURCE_WIDTH));
-    if (!response.ok) throw new Error(`${response.url}: ${response.status}`);
-    return response.blob();
+    return (await fetchOk(entry.image.url(SOURCE_WIDTH))).blob();
   });
 }

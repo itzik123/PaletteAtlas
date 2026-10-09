@@ -1,4 +1,5 @@
 import type { AxisName } from '@palette-atlas/strip';
+import { iconRadios } from '../icon-radios.ts';
 import { AXIS_ICONS } from '../icons.ts';
 
 /** The axes in the order the site lists them, by the names it shows. The first is picked at the start. */
@@ -9,40 +10,22 @@ export const AXIS_OPTIONS: readonly { readonly axis: AxisName; readonly label: s
   { axis: 'radial', label: 'Radial' },
 ];
 
-/**
- * A choice of axis, as a group of radio buttons drawn as tiles with an icon each, so the
- * keyboard and screen readers work as they do for any radio group.
- * Observer: every new choice is reported to the listener.
- */
+/** The name the site shows for an axis. */
+export function axisLabel(axis: AxisName): string {
+  return AXIS_OPTIONS.find((option) => option.axis === axis)?.label ?? axis;
+}
+
+/** A choice of axis, as radio buttons drawn as tiles with an icon each (see iconRadios), which reports every new choice. */
 export class AxisPicker {
-  readonly element = document.createElement('fieldset');
+  readonly element: HTMLFieldSetElement;
   #axis: AxisName = AXIS_OPTIONS[0].axis;
 
   constructor(onChange: (axis: AxisName) => void) {
-    this.element.className = 'axis-picker';
-    const legend = document.createElement('legend');
-    legend.className = 'visually-hidden';
-    legend.textContent = 'Path through the image';
-    this.element.append(legend);
-    for (const { axis, label } of AXIS_OPTIONS) {
-      const tile = document.createElement('label');
-      tile.className = `axis-tile axis-${axis}`;
-      const input = document.createElement('input');
-      input.type = 'radio';
-      input.name = 'axis';
-      input.value = axis;
-      input.checked = axis === this.#axis;
-      input.addEventListener('change', () => {
-        this.#axis = axis;
-        onChange(axis);
-      });
-      const name = document.createElement('span');
-      name.textContent = label;
-      tile.append(input);
-      tile.insertAdjacentHTML('beforeend', AXIS_ICONS[axis]);
-      tile.append(name);
-      this.element.append(tile);
-    }
+    const options = AXIS_OPTIONS.map(({ axis, label }) => ({ value: axis, label, icon: AXIS_ICONS[axis], className: `axis-tile axis-${axis}` }));
+    this.element = iconRadios('axis-picker', 'Path through the image', options, this.#axis, (axis) => {
+      this.#axis = axis;
+      onChange(axis);
+    });
   }
 
   get axis(): AxisName {

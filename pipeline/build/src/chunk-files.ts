@@ -6,6 +6,8 @@ import {
   type Columns,
   chunkOf,
   columnsOf,
+  GALLERY_FILES,
+  type GalleryManifest,
   PAINTING_FIELDS,
   type Painting,
   packStrips,
@@ -38,8 +40,16 @@ export async function writeChunks(folder: string, files: ChunkFiles, { paintings
   }
 }
 
-/** Reads back the first `count` paintings stored in chunks of `chunkSize` (see ChunkFiles), with their strips. */
-export async function readChunks(folder: string, files: ChunkFiles, count: number, chunkSize: number): Promise<StoredPaintings> {
+/** The manifest of the gallery in a folder (see GALLERY_FILES.manifest). */
+export async function readManifest(folder: string): Promise<GalleryManifest> {
+  return JSON.parse(await readFile(join(folder, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
+}
+
+/** Reads back the gallery that writeChunks wrote to a folder: its manifest, and its paintings in gallery order with their strips. */
+export async function readGallery(folder: string): Promise<StoredPaintings & { readonly manifest: GalleryManifest }> {
+  const manifest = await readManifest(folder);
+  const { count, chunkSize } = manifest;
+  const files = GALLERY_FILES.gallery;
   const chunks = count > 0 ? chunkOf(count - 1, chunkSize).chunk + 1 : 0;
   const paintings: Painting[] = [];
   const strips: RgbaImage[] = [];
@@ -51,5 +61,5 @@ export async function readChunks(folder: string, files: ChunkFiles, count: numbe
       strips.push(stripInRow(image, row));
     }
   }
-  return { paintings, strips };
+  return { manifest, paintings, strips };
 }

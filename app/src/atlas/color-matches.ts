@@ -51,6 +51,6 @@ class FoundPaintings implements WallPaintings {
       this.#positions.catch(() => (this.#positions = undefined));
     }
     const positions = (await this.#positions).slice(from, from + count);
-    return (await Promise.all(positions.map((position) => this.#data.entries(position, 1)))).flat();
+    return Promise.all(positions.map((position) => this.#data.entry(position)));
   }
 }

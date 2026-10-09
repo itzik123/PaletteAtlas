@@ -1,9 +1,10 @@
-import { BYTES_PER_PIXEL, type RgbaImage, resize } from '@palette-atlas/color';
+import { type RgbaImage, resize } from '@palette-atlas/color';
 import { placedYear } from '@palette-atlas/gallery';
 import { paintImage } from '../image-adapters.ts';
 import type { BarFill } from './bar-fills.ts';
 import type { Career, PaintingEntry } from './gallery-data.ts';
 import { dateOf, paintingCount, titleOf } from './painting-text.ts';
+import { standInColor } from './painting-tile.ts';
 import { type Tick, yearTicks } from './year-ticks.ts';
 
 /**
@@ -150,9 +151,7 @@ export class CareerBarcode {
     const aspect = painting.width / painting.height;
     this.#picture.style.width = `${Math.min(LABEL_PICTURE.height * aspect, LABEL_PICTURE.maxWidth)}px`;
     this.#picture.style.height = `${LABEL_PICTURE.height}px`;
-    // Until the picture arrives, the middle of its strip stands in for it.
-    const middle = Math.floor(strip.width / 2) * BYTES_PER_PIXEL;
-    this.#picture.style.backgroundColor = `rgb(${strip.data[middle]} ${strip.data[middle + 1]} ${strip.data[middle + 2]})`;
+    this.#picture.style.backgroundColor = standInColor(strip);
     // A wide picture is cut to fit, so it is asked for as wide as its full height needs.
     this.#picture.src = image.urlAtLeast(LABEL_PICTURE.height * aspect * devicePixelRatio);
     // Under the painting, as far as the barcode's edges allow.

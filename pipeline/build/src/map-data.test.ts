@@ -1,11 +1,10 @@
-import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { RgbaImage } from '@palette-atlas/color';
-import { GALLERY_FILES, type GalleryManifest, type PaintingMap } from '@palette-atlas/gallery';
+import type { PaintingMap } from '@palette-atlas/gallery';
 import { BruteForceIndex, type Vectors } from '@palette-atlas/hnsw';
 import { colorSchemeDistance } from '@palette-atlas/vectorize';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { readChunks } from './chunk-files.ts';
+import { readGallery } from './chunk-files.ts';
 import { averageColor, readPaintingMap } from './map-data.ts';
 import { colorSchemeVectors } from './search-data.ts';
 
@@ -33,8 +32,7 @@ describe('the gallery’s map', { timeout: TIMEOUT_MS }, () => {
   let map: PaintingMap;
 
   beforeAll(async () => {
-    const manifest = JSON.parse(await readFile(join(DATA, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
-    ({ strips } = await readChunks(DATA, GALLERY_FILES.gallery, manifest.count, manifest.chunkSize));
+    ({ strips } = await readGallery(DATA));
     vectors = colorSchemeVectors(strips);
     map = await readPaintingMap(DATA);
   }, TIMEOUT_MS);

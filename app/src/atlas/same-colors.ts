@@ -1,6 +1,6 @@
 import { AXIS_ICONS, NEXT_ICON } from '../icons.ts';
 import type { GalleryEntry } from './gallery-data.ts';
-import { justifiedRows, type Row } from './justified-rows.ts';
+import { justifiedRows, ROUNDING_ROOM, type Row } from './justified-rows.ts';
 import { PaintingTile } from './painting-tile.ts';
 
 /** How many of the nearest paintings are weighed for the rows: more than ever fit. */
@@ -13,8 +13,6 @@ const MIN_HEIGHT = 56;
 const ONE_COLUMN = '(max-width: 860px)';
 /** In one column: rows of pictures this tall, as many as fill with the paintings weighed, up to `rows`. */
 const COLUMN_ROW = { height: 96, rows: 3 } as const;
-/** Room left at the end of each row, so that rounding never pushes its last tile onto the next. */
-const ROUNDING_ROOM = 1;
 
 /** How the same colors are shown: a row of paintings, a button, or, without room even for that, not at all. */
 type Fit = 'row' | 'button' | 'none';

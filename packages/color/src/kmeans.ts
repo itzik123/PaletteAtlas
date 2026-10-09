@@ -23,7 +23,7 @@ export interface Clusterer {
 }
 
 /** Lloyd iterations allowed before stopping; palettes settle long before this. */
-const DEFAULT_MAX_ITERATIONS = 100;
+const MAX_ITERATIONS = 100;
 /** Candidates tried for each centroid after the first: this plus ln k, as in scikit-learn. */
 const BASE_CANDIDATES = 2;
 
@@ -35,13 +35,11 @@ const BASE_CANDIDATES = 2;
 export class KMeans implements Clusterer {
   readonly #k: number;
   readonly #random: Random;
-  readonly #maxIterations: number;
 
-  constructor(k: number, random: Random, maxIterations = DEFAULT_MAX_ITERATIONS) {
+  constructor(k: number, random: Random) {
     if (!Number.isInteger(k) || k < 1) throw new RangeError(`k must be a positive integer, not ${k}`);
     this.#k = k;
     this.#random = random;
-    this.#maxIterations = maxIterations;
   }
 
   /** The non-empty clusters; fewer than k when the points sit at fewer than k distinct positions. */
@@ -58,7 +56,7 @@ export class KMeans implements Clusterer {
   #lloyd(points: WeightedPoints, centroids: Float64Array): Cluster[] {
     const assignments = new Assignments(points.weights.length, centroids.length / DIMENSIONS);
     let clusterWeights: Float64Array = new Float64Array(0);
-    for (let iteration = 0; iteration < this.#maxIterations; iteration++) {
+    for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
       if (!assignments.update(points, centroids)) break;
       const before = centroids.slice();
       clusterWeights = moveCentroids(points, assignments.clusters, centroids);

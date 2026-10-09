@@ -362,6 +362,8 @@ a.query-card:active {
   padding: 3px;
   overflow: auto hidden;
   scrollbar-color: var(--ink) transparent;
+  /* A click enlarges the picture (see .lightbox). */
+  cursor: zoom-in;
 }
 
 .painting-view[data-pan] {
@@ -1349,10 +1351,6 @@ a.chip:hover {
 
 /* A painting enlarged over its page (see PictureLightbox): as large as fits, in its frame, the page
    darkened behind it. It rises into place, and sinks back away. */
-.painting-view {
-  cursor: zoom-in;
-}
-
 .lightbox {
   --w: 30px;
   --sunk: translateY(18px) scale(0.95);

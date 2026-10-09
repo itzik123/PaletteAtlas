@@ -4,22 +4,20 @@ import './atlas.css';
 import { REPLAY_PAGE } from '../lab/lab-query.ts';
 import { SiteHeader } from '../site/site-header.ts';
 import { Atlas } from './atlas.ts';
-import { galleryHeadline, matchesHeadline, type QueryCard } from './atlas-headlines.ts';
+import { galleryHeadline, matchesHeadline } from './atlas-headlines.ts';
 import { ColorMatches } from './color-matches.ts';
-import { GalleryData, type GalleryEntry } from './gallery-data.ts';
+import { GalleryData } from './gallery-data.ts';
 import { ImageMatcher } from './image-matcher.ts';
 import { ImageQueries } from './image-query.ts';
 import { missingPage } from './missing-page.ts';
-import { titleOf } from './painting-text.ts';
+import { type CardSize, imageCard, paintingCard } from './query-card.ts';
 import { GALLERY_ROWS, MATCH_ROWS } from './wall.ts';
 import { WallPlaces } from './wall-place.ts';
 
 /** How many of the paintings nearest some colors the wall hangs at most, the nearest first: well past where they stop resembling them. */
 const MATCHES = 600;
 /** The picture on the query's card at its largest, in CSS pixels (see .query-card in atlas.css). */
-const CARD_PICTURE = { height: 210, maxWidth: 440 } as const;
-/** What the card of an image of the visitor's own shows, for those who can't see it. */
-const YOUR_IMAGE = 'Your image';
+const CARD_PICTURE: CardSize = { height: 210, maxWidth: 440 };
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Missing #app element');
@@ -48,27 +46,14 @@ async function atlasOf(data: GalleryData): Promise<Atlas> {
   const image = params.has('match') ? ImageQueries.take() : undefined;
   const matches = new ColorMatches(data);
   if (painting) {
-    const headline = matchesHeadline(paintingCard(painting), { href: `./lab.html?like=${painting.painting.id}` });
+    const headline = matchesHeadline(paintingCard(painting, CARD_PICTURE), { href: `./lab.html?like=${painting.painting.id}` });
     return new Atlas(matches.of(painting.strip, MATCHES, painting.position), headline, MATCH_ROWS, WallPlaces.saved());
   }
   if (image) {
-    const headline = matchesHeadline({ ...image, name: YOUR_IMAGE }, { href: REPLAY_PAGE, onOpen: () => ImageQueries.hand(image) });
+    const headline = matchesHeadline(imageCard(image), { href: REPLAY_PAGE, onOpen: () => ImageQueries.hand(image) });
     return new Atlas(matches.of(image.colors, MATCHES), headline, MATCH_ROWS, WallPlaces.saved());
   }
   // An address whose painting or image is gone opens the whole gallery.
   if (location.search) history.replaceState(history.state, '', './atlas.html');
   return new Atlas(data, galleryHeadline(data.count, () => matcher.choose()), GALLERY_ROWS, WallPlaces.saved());
-}
-
-/** A painting's card over its matches: its picture from Commons, sharp at the card's size, leading to its page. */
-function paintingCard({ painting, image, strip }: GalleryEntry): QueryCard {
-  const aspect = painting.width / painting.height;
-  const width = Math.min(CARD_PICTURE.height * aspect, CARD_PICTURE.maxWidth);
-  return {
-    picture: image.urlAtLeast(width * devicePixelRatio),
-    aspect,
-    colors: strip,
-    name: titleOf(painting),
-    href: `./painting.html?id=${painting.id}`,
-  };
 }

@@ -1,3 +1,6 @@
+/** Room to leave at the end of each row, so that rounding never pushes its last item onto the next. */
+export const ROUNDING_ROOM = 1;
+
 /** One row of a justified layout: items start to end (exclusive), with their pictures this tall. */
 export interface Row {
   readonly start: number;

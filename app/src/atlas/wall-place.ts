@@ -1,3 +1,5 @@
+import { keepInHistory, keptInHistory } from '../history-state.ts';
+
 /**
  * Where a visitor was on the Atlas's wall: how many paintings were hung, and which one was at the
  * top of the screen, its tile this far below the screen's top (less than 0 when partly scrolled
@@ -19,13 +21,6 @@ const STATE_KEY = 'wallPlace';
  * while a fresh visit starts at the top.
  */
 export const WallPlaces = {
-  saved(): WallPlace | undefined {
-    const state: unknown = history.state;
-    return state && typeof state === 'object' && STATE_KEY in state ? (state[STATE_KEY] as WallPlace) : undefined;
-  },
-
-  save(place: WallPlace): void {
-    const state: unknown = history.state;
-    history.replaceState({ ...(state && typeof state === 'object' ? state : {}), [STATE_KEY]: place }, '');
-  },
+  saved: (): WallPlace | undefined => keptInHistory<WallPlace>(STATE_KEY),
+  save: (place: WallPlace): void => keepInHistory(STATE_KEY, place),
 } as const;

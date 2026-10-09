@@ -1,3 +1,5 @@
+import { ByteReader, ByteWriter } from '@palette-atlas/hnsw';
+
 /** Iterations of the power method per axis: the paintings' first axes settle in a few dozen. */
 const POWER_ITERATIONS = 200;
 /**
@@ -14,8 +16,6 @@ const MAGIC = Uint8Array.from('PMAP', (letter) => letter.charCodeAt(0));
 const VERSION = 1;
 /** Red, green and blue. */
 const CHANNELS = 3;
-const FLOAT_BYTES = 4;
-const PLACE_BYTES = 2;
 
 /** A place on the map: across, from 0 at its left, and down, from 0 at its back. */
 export type MapPlace = [x: number, y: number];
@@ -142,11 +142,9 @@ export class PaintingMap {
   toBytes(): Uint8Array {
     const { projection, places, colors, count } = this;
     const dimensions = projection.mean.length;
-    const writer = new FixedWriter(
-      MAGIC.length + 1 + 2 * 4 + FLOAT_BYTES * (1 + 3 * dimensions + 4 + 4) + count * (2 * PLACE_BYTES + CHANNELS),
-    );
+    const writer = new ByteWriter();
     writer.bytes(MAGIC);
-    writer.bytes(Uint8Array.of(VERSION));
+    writer.uint8(VERSION);
     writer.uint32(count);
     writer.uint32(dimensions);
     writer.float32(projection.held);
@@ -170,13 +168,13 @@ export class PaintingMap {
     for (let channel = 0; channel < CHANNELS; channel++) {
       writer.bytes(Uint8Array.from({ length: count }, (_, painting) => colors[painting * CHANNELS + channel]));
     }
-    return writer.done();
+    return writer.toBytes();
   }
 
   /** Reads a map that toBytes wrote. */
   static fromBytes(bytes: Uint8Array): PaintingMap {
-    if (bytes.length < MAGIC.length || MAGIC.some((letter, index) => bytes[index] !== letter)) throw new Error('These bytes are not a painting map');
-    const reader = new FixedReader(bytes, MAGIC.length);
+    const reader = new ByteReader(bytes);
+    if (reader.bytes(MAGIC.length).some((letter, index) => letter !== MAGIC[index])) throw new Error('These bytes are not a painting map');
     const version = reader.uint8();
     if (version !== VERSION) throw new Error(`A painting map of version ${version}; this code reads version ${VERSION}`);
     const count = reader.uint32();
@@ -250,80 +248,4 @@ function agreement(data: Float32Array, dimensions: number, mean: Float64Array, a
     sum += along * guide[vector];
   }
   return sum;
-}
-
-/** Writes numbers, little-endian, into bytes of a size known beforehand. */
-class FixedWriter {
-  readonly #bytes: Uint8Array;
-  readonly #view: DataView;
-  #at = 0;
-
-  constructor(length: number) {
-    this.#bytes = new Uint8Array(length);
-    this.#view = new DataView(this.#bytes.buffer);
-  }
-
-  bytes(values: Uint8Array): void {
-    this.#bytes.set(values, this.#at);
-    this.#at += values.length;
-  }
-
-  uint16(value: number): void {
-    this.#view.setUint16(this.#at, value, true);
-    this.#at += PLACE_BYTES;
-  }
-
-  uint32(value: number): void {
-    this.#view.setUint32(this.#at, value, true);
-    this.#at += 4;
-  }
-
-  float32(value: number): void {
-    this.#view.setFloat32(this.#at, value, true);
-    this.#at += FLOAT_BYTES;
-  }
-
-  done(): Uint8Array {
-    if (this.#at !== this.#bytes.length) throw new Error(`Wrote ${this.#at} of ${this.#bytes.length} bytes`);
-    return this.#bytes;
-  }
-}
-
-/** Reads numbers, little-endian, refusing to read past the end. */
-class FixedReader {
-  readonly #view: DataView;
-  #at: number;
-
-  constructor(bytes: Uint8Array, start: number) {
-    this.#view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    this.#at = start;
-  }
-
-  get atEnd(): boolean {
-    return this.#at === this.#view.byteLength;
-  }
-
-  uint8(): number {
-    return this.#view.getUint8(this.#advance(1));
-  }
-
-  uint16(): number {
-    return this.#view.getUint16(this.#advance(PLACE_BYTES), true);
-  }
-
-  uint32(): number {
-    return this.#view.getUint32(this.#advance(4), true);
-  }
-
-  float32(): number {
-    return this.#view.getFloat32(this.#advance(FLOAT_BYTES), true);
-  }
-
-  /** Where the next `length` bytes start; DataView throws a RangeError for any past the end. */
-  #advance(length: number): number {
-    const at = this.#at;
-    this.#at += length;
-    if (this.#at > this.#view.byteLength) throw new RangeError('The painting map ends too soon');
-    return at;
-  }
 }

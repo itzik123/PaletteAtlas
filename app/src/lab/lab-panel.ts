@@ -1,4 +1,5 @@
 import type { GalleryEntry } from '../atlas/gallery-data.ts';
+import { queryCardElement } from '../atlas/query-card.ts';
 import { ATLAS_ICON, UPLOAD_ICON } from '../icons.ts';
 import { imageCanvas } from '../image-adapters.ts';
 import type { LabQuery } from './lab-query.ts';
@@ -79,22 +80,11 @@ export class LabPanel {
 
   /** Shows what is searched for, and how its search compares with the exact answer (said once the replay ends). */
   showQuery(query: LabQuery, agreeing: number, exact: number): void {
-    const card = document.createElement(query.href ? 'a' : 'figure');
-    card.className = 'query-card';
-    card.style.setProperty('--aspect', String(query.aspect));
-    const picture = document.createElement('img');
-    picture.src = query.picture;
-    if (card instanceof HTMLAnchorElement && query.href) {
-      card.href = query.href;
-      card.setAttribute('aria-label', query.name);
-      picture.alt = '';
-    } else {
-      picture.alt = query.name;
-    }
+    const card = queryCardElement(query);
     const strip = imageCanvas(query.colors);
     strip.className = 'card-strip';
     strip.setAttribute('aria-hidden', 'true');
-    card.append(picture, strip);
+    card.append(strip);
     this.#card.replaceChildren(card);
     this.#name.textContent = query.name;
     this.#matches.href = query.matches;

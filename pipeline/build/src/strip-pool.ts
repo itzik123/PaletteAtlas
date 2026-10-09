@@ -1,9 +1,6 @@
 import { availableParallelism } from 'node:os';
 import { Worker } from 'node:worker_threads';
-import type { ImageReading, WorkerAnswer } from './strip-messages.ts';
-
-/** A reading of each image, or why it failed, in the order the images were given. */
-export type PoolResult = { readonly reading: ImageReading } | { readonly error: string };
+import type { WorkerAnswer } from './strip-messages.ts';
 
 /**
  * Reads image files into their strips on worker threads, one per core but one, each taking the
@@ -18,9 +15,9 @@ export class StripPool {
     this.#workers = Array.from({ length: size }, () => new Worker(new URL('./strip-worker.ts', import.meta.url)));
   }
 
-  /** Reads every image, reporting each one done. */
-  async read(paths: readonly string[], onDone: (done: number) => void = () => {}): Promise<PoolResult[]> {
-    const results = new Array<PoolResult>(paths.length);
+  /** Reads every image, reporting each one done: a reading of each, or why it failed, in the order given. */
+  async read(paths: readonly string[], onDone: (done: number) => void = () => {}): Promise<WorkerAnswer[]> {
+    const results = new Array<WorkerAnswer>(paths.length);
     let next = 0;
     let done = 0;
     await Promise.all(

@@ -50,5 +50,5 @@ async function queryOf(data: LabData): Promise<LabQuery> {
   if (image) return imageLabQuery(image);
   // An address whose painting or image is gone opens on the first painting.
   if (location.search) history.replaceState(history.state, '', './lab.html');
-  return paintingLabQuery((await data.gallery.find(FIRST_PAINTING)) ?? (await data.entry(0)));
+  return paintingLabQuery((await data.gallery.find(FIRST_PAINTING)) ?? (await data.gallery.entry(0)));
 }

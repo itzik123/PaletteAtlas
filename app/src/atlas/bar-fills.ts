@@ -4,7 +4,7 @@ import { AVERAGE_FILL_ICON, STRIP_FILL_ICON } from '../icons.ts';
 /**
  * What each bar of a career barcode shows of its painting.
  *
- * Strategy: the artist page switches between them (see FillSwitch).
+ * Strategy: the artist page switches between them (see CareerView).
  */
 export interface BarFill {
   /** What the switch calls it. */

@@ -1,7 +1,7 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { type Artist, careers, GALLERY_FILES, type GalleryManifest, recordAt, recordCount } from '@palette-atlas/gallery';
-import { readChunks, type StoredPaintings, writeChunks } from './chunk-files.ts';
+import { type Artist, careers, GALLERY_FILES, recordAt, recordCount } from '@palette-atlas/gallery';
+import { readGallery, type StoredPaintings, writeChunks } from './chunk-files.ts';
 
 /** What the careers hold. */
 export interface CareersReport {
@@ -35,8 +35,7 @@ export async function writeCareers(
  * where pnpm paintings reads every painting's image to write the gallery first.
  */
 export async function buildCareers(folder: string): Promise<CareersReport> {
-  const manifest = JSON.parse(await readFile(join(folder, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
-  const gallery = await readChunks(folder, GALLERY_FILES.gallery, manifest.count, manifest.chunkSize);
-  const artists = Array.from({ length: recordCount(manifest.artists) }, (_, index) => recordAt(manifest.artists, index));
-  return writeCareers(folder, gallery, artists, manifest.chunkSize);
+  const gallery = await readGallery(folder);
+  const { artists, chunkSize } = gallery.manifest;
+  return writeCareers(folder, gallery, Array.from({ length: recordCount(artists) }, (_, index) => recordAt(artists, index)), chunkSize);
 }

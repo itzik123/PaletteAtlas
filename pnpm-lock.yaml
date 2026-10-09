@@ -233,6 +233,9 @@ importers:
       '@palette-atlas/color':
         specifier: workspace:*
         version: link:../color
+      '@palette-atlas/hnsw':
+        specifier: workspace:*
+        version: link:../hnsw
     devDependencies:
       typescript:
         specifier: 'catalog:'

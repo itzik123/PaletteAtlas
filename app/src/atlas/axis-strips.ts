@@ -2,7 +2,7 @@ import type { RgbaImage } from '@palette-atlas/color';
 import type { AxisName, NamedStrip } from '@palette-atlas/strip';
 import { AXIS_ICONS } from '../icons.ts';
 import { imageCanvas } from '../image-adapters.ts';
-import { AXIS_OPTIONS } from '../studio/axis-picker.ts';
+import { AXIS_OPTIONS, axisLabel } from '../studio/axis-picker.ts';
 
 /**
  * A painting's strip along every axis, one under another, each beside its axis's icon. The color
@@ -25,14 +25,9 @@ export class AxisStrips {
     this.#draw(stored.axis, stored.colors);
   }
 
-  /** Shows the strips the browser read. */
-  show(strips: readonly NamedStrip[]): void {
+  /** Shows the strips the browser read, if it could read them, and ends the wait. */
+  show(strips: readonly NamedStrip[] = []): void {
     for (const { axis, strip } of strips) this.#draw(axis, strip.toImage());
-    this.done();
-  }
-
-  /** Ends the wait, whether or not the strips could be read. */
-  done(): void {
     this.element.removeAttribute('aria-busy');
   }
 
@@ -40,7 +35,7 @@ export class AxisStrips {
     const canvas = imageCanvas(colors);
     canvas.className = 'axis-strip-band';
     canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', `${AXIS_OPTIONS.find((option) => option.axis === axis)?.label ?? axis} strip`);
+    canvas.setAttribute('aria-label', `${axisLabel(axis)} strip`);
     this.#rows.get(axis)?.querySelector('.strip-slot')?.replaceChildren(canvas);
   }
 }

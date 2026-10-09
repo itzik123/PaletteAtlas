@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@palette-atlas/color": "workspace:*"
+    "@palette-atlas/color": "workspace:*",
+    "@palette-atlas/hnsw": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:",

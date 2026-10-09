@@ -39,12 +39,11 @@ export interface Sample {
    * shows every painting square, around its best-known part.
    */
   readonly focus: string;
-  /** Where the image came from. */
-  readonly source: string;
 }
 
-/** The paintings on the sample wall, in order. */
+/** The paintings on the sample wall, in order, each after a comment saying where its image came from. */
 export const SAMPLES: readonly Sample[] = [
+  // https://www.artic.edu/artworks/27992
   {
     id: 'grande-jatte',
     title: 'A Sunday on La Grande Jatte',
@@ -56,8 +55,8 @@ export const SAMPLES: readonly Sample[] = [
     thumbnail: grandeJatteThumbnail,
     // The couple with the monkey, and the woman and child in white.
     focus: '85% 50%',
-    source: 'https://www.artic.edu/artworks/27992',
   },
+  // https://commons.wikimedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg
   {
     id: 'mona-lisa',
     title: 'Mona Lisa',
@@ -69,8 +68,8 @@ export const SAMPLES: readonly Sample[] = [
     thumbnail: monaLisaThumbnail,
     // Her face and folded hands.
     focus: '50% 30%',
-    source: 'https://commons.wikimedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg',
   },
+  // https://www.artic.edu/artworks/28560
   {
     id: 'bedroom',
     title: 'The Bedroom',
@@ -81,8 +80,8 @@ export const SAMPLES: readonly Sample[] = [
     image: bedroom,
     thumbnail: bedroomThumbnail,
     focus: '55% 50%',
-    source: 'https://www.artic.edu/artworks/28560',
   },
+  // https://www.artic.edu/artworks/24645
   {
     id: 'great-wave',
     title: 'The Great Wave',
@@ -94,6 +93,5 @@ export const SAMPLES: readonly Sample[] = [
     thumbnail: greatWaveThumbnail,
     // The crest of the wave, with Mount Fuji under it.
     focus: '35% 50%',
-    source: 'https://www.artic.edu/artworks/24645',
   },
 ];

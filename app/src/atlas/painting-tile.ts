@@ -1,4 +1,4 @@
-import { BYTES_PER_PIXEL } from '@palette-atlas/color';
+import { BYTES_PER_PIXEL, type RgbaImage } from '@palette-atlas/color';
 import { thumbnailWidthAtLeast } from '@palette-atlas/gallery';
 import { imageCanvas } from '../image-adapters.ts';
 import type { GalleryEntry } from './gallery-data.ts';
@@ -28,9 +28,7 @@ export class PaintingTile {
     this.#picture.alt = '';
     this.#picture.loading = 'lazy';
     this.#picture.decoding = 'async';
-    // Until the picture arrives, the middle of its strip stands in for it.
-    const middle = Math.floor(strip.width / 2) * BYTES_PER_PIXEL;
-    this.#picture.style.backgroundColor = `rgb(${strip.data[middle]} ${strip.data[middle + 1]} ${strip.data[middle + 2]})`;
+    this.#picture.style.backgroundColor = standInColor(strip);
     const band = imageCanvas(strip);
     band.className = 'tile-strip';
     this.#label.className = 'tile-label';
@@ -71,4 +69,10 @@ export class PaintingTile {
     // Where it can't fit between them (a phone's narrowest screens), its start stays in view.
     return Math.max(Math.min(centered, right - width), left) - centered;
   }
+}
+
+/** The color in the middle of a painting's strip, as CSS: it stands in for the picture until the picture arrives. */
+export function standInColor(strip: RgbaImage): string {
+  const middle = Math.floor(strip.width / 2) * BYTES_PER_PIXEL;
+  return `rgb(${strip.data[middle]} ${strip.data[middle + 1]} ${strip.data[middle + 2]})`;
 }

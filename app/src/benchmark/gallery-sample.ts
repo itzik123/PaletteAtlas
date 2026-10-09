@@ -2,6 +2,7 @@ import type { RgbaImage } from '@palette-atlas/color';
 import { SOURCE_WIDTH } from '@palette-atlas/gallery';
 import { type GalleryEntry, GalleryData } from '../atlas/gallery-data.ts';
 import { dateOf, lifespanOf, nameOf, titleOf } from '../atlas/painting-text.ts';
+import { fetchOk } from '../fetching.ts';
 import { imageCanvas } from '../image-adapters.ts';
 import { StripReader } from '../studio/strip-reader.ts';
 
@@ -35,7 +36,7 @@ export class GallerySample {
     }
     const reader = new StripReader();
     const shuffle = async (): Promise<void> => {
-      const entries = await Promise.all(randomPositions(data.count).map(async (position) => (await data.entries(position, 1))[0]));
+      const entries = await Promise.all(randomPositions(data.count).map((position) => data.entry(position)));
       this.#list.replaceChildren(...entries.map((entry) => sampleRow(entry, reader)));
     };
     this.element.querySelector('button')?.addEventListener('click', () => void shuffle());
@@ -64,11 +65,11 @@ function sampleRow(entry: GalleryEntry, reader: StripReader): HTMLElement {
   row.append(picture, details(entry), strips, verdict);
 
   void (async () => {
-    const image = await fetch(entry.image.url(SOURCE_WIDTH)).then((response) => response.blob());
+    const image = await (await fetchOk(entry.image.url(SOURCE_WIDTH))).blob();
     picture.src = URL.createObjectURL(image);
-    const read = await reader.read(image);
+    const read = await reader.read(image, ['color']);
     read?.picture.close();
-    const browser = read?.strips.find(({ axis }) => axis === 'color')?.strip.toImage();
+    const browser = read?.strips[0]?.strip.toImage();
     if (browser) strips.append(stripRow('Browser', browser));
     verdict.replaceChildren(browser ? comparison(entry.strip, browser) : 'The browser could not read the image');
   })();

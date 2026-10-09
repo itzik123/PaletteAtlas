@@ -1,4 +1,5 @@
 import type { RgbaImage } from '@palette-atlas/color';
+import { keepInHistory, keptInHistory } from '../history-state.ts';
 import { context2d } from '../image-adapters.ts';
 import { SITE_COLORS } from '../site-colors.ts';
 
@@ -79,8 +80,7 @@ export const ImageQueries = {
 
   /** The query of this history entry, or else the one handed to this page, which the entry then keeps. */
   take(): ImageQuery | undefined {
-    const state: unknown = history.state;
-    const own = state && typeof state === 'object' && STATE_KEY in state ? (state[STATE_KEY] as KeptQuery) : undefined;
+    const own = keptInHistory<KeptQuery>(STATE_KEY);
     if (own) return restored(own);
     let handed: KeptQuery | undefined;
     try {
@@ -91,7 +91,7 @@ export const ImageQueries = {
       return undefined;
     }
     if (!handed) return undefined;
-    history.replaceState({ ...(state && typeof state === 'object' ? state : {}), [STATE_KEY]: handed }, '');
+    keepInHistory(STATE_KEY, handed);
     return restored(handed);
   },
 } as const;

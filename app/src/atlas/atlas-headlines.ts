@@ -1,22 +1,9 @@
-import type { RgbaImage } from '@palette-atlas/color';
 import { CLOSE_ICON, LAB_ICON, UPLOAD_ICON } from '../icons.ts';
 import { imageCanvas } from '../image-adapters.ts';
+import { type QueryCard, queryCardElement } from './query-card.ts';
 
 // The headlines over the Atlas's wall (see Atlas): one over the whole gallery, and one over the
 // paintings nearest an image's colors, or a painting's.
-
-/** What the paintings nearest some colors are matched to, shown on a card beside their headline. */
-export interface QueryCard {
-  /** The picture's address. */
-  readonly picture: string;
-  /** The picture's width over its height. */
-  readonly aspect: number;
-  readonly colors: RgbaImage;
-  /** What the picture shows, for those who can't see it. */
-  readonly name: string;
-  /** Where the card leads: a painting's own page. An image of the visitor's own leads nowhere. */
-  readonly href?: string;
-}
 
 /** The way from the paintings nearest some colors to the Lab, which replays the search that found them. */
 export interface LabDoor {
@@ -60,19 +47,6 @@ export function galleryHeadline(count: number, onMatch: () => void): HTMLElement
 export function matchesHeadline(card: QueryCard, lab: LabDoor): HTMLElement {
   const top = document.createElement('div');
   top.className = 'atlas-top matches-top';
-  const shown = document.createElement(card.href ? 'a' : 'figure');
-  shown.className = 'query-card';
-  shown.style.setProperty('--aspect', String(card.aspect));
-  const picture = document.createElement('img');
-  picture.src = card.picture;
-  if (shown instanceof HTMLAnchorElement && card.href) {
-    shown.href = card.href;
-    shown.setAttribute('aria-label', card.name);
-    picture.alt = '';
-  } else {
-    picture.alt = card.name;
-  }
-  shown.append(picture);
   const text = document.createElement('div');
   text.className = 'matches-text';
   text.innerHTML = `
@@ -90,6 +64,6 @@ export function matchesHeadline(card: QueryCard, lab: LabDoor): HTMLElement {
   // It repeats the colors of the picture the card names, so screen readers pass it by.
   strip.setAttribute('aria-hidden', 'true');
   text.querySelector('.named-colors')?.append(strip);
-  top.append(shown, text);
+  top.append(queryCardElement(card), text);
   return top;
 }

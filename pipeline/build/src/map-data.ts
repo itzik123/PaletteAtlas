@@ -18,7 +18,7 @@ export interface PaintingMapReport {
   readonly held: number;
 }
 
-/** A strip's colors averaged in linear light, as 8-bit sRGB: the color a painting's dot is drawn in. */
+/** A strip's colors averaged in linear light: the color a painting's dot is drawn in. */
 export function averageColor(strip: RgbaImage): LinearRgb {
   return LinearRgb.average(strip) ?? new LinearRgb(0, 0, 0);
 }

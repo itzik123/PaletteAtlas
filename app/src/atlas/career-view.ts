@@ -1,8 +1,8 @@
 import type { Artist } from '@palette-atlas/gallery';
+import { iconRadios } from '../icon-radios.ts';
 import { RETRY_ICON } from '../icons.ts';
 import { BAR_FILLS, type BarFill } from './bar-fills.ts';
 import { CareerBarcode } from './career-barcode.ts';
-import { FillSwitch } from './fill-switch.ts';
 import type { Career, Painter } from './gallery-data.ts';
 import { lifespanOf, nameOf, paintingCount } from './painting-text.ts';
 
@@ -36,14 +36,16 @@ export class CareerView {
     const facts = document.createElement('p');
     facts.className = 'artist-facts';
     facts.append(this.#lifespan, ' ', this.#count);
-    const fills = new FillSwitch(this.#fill, (fill) => {
+    // What each bar shows, picked on a switch drawn as one capsule.
+    const fillOptions = BAR_FILLS.map((fill) => ({ value: fill, label: fill.label, icon: fill.icon }));
+    const fills = iconRadios('fill-switch', 'What each painting’s bar shows', fillOptions, this.#fill, (fill) => {
       this.#fill = fill;
       if (this.#career) this.#barcode.show(this.#career, fill);
     });
     this.#trouble.className = 'career-trouble';
     this.#trouble.innerHTML = `<p>This career didn’t load.</p><button type="button" class="pill">${RETRY_ICON}<span>Try again</span></button>`;
     this.#trouble.querySelector('button')?.addEventListener('click', () => this.#retry?.());
-    this.element.append(this.#name, facts, fills.element, this.#barcode.element, this.#trouble);
+    this.element.append(this.#name, facts, fills, this.#barcode.element, this.#trouble);
     this.#stage('shown');
 
     new ResizeObserver(() => this.#fitName()).observe(this.#name);

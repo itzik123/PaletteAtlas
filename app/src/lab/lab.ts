@@ -40,7 +40,7 @@ export class Lab {
 
   constructor(data: LabData, onNewImage: () => void) {
     this.#data = data;
-    const entry = (position: number) => data.entry(position);
+    const entry = (position: number) => data.gallery.entry(position);
     this.#view = new StackView(data.map, data.layers);
     this.#stage = new LabStage(this.#view, data.layers, entry);
     this.#controls = new ReplayControls({

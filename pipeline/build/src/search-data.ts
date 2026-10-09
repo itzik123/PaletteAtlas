@@ -2,10 +2,10 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { type RgbaImage, SeededRandom } from '@palette-atlas/color';
-import { GALLERY_FILES, type GalleryManifest } from '@palette-atlas/gallery';
+import { GALLERY_FILES } from '@palette-atlas/gallery';
 import { HnswIndex, Vectors } from '@palette-atlas/hnsw';
 import { COLOR_SCHEME_LENGTH, colorSchemeDistance, colorSchemeVector } from '@palette-atlas/vectorize';
-import { readChunks } from './chunk-files.ts';
+import { readGallery } from './chunk-files.ts';
 import { landmarks } from './landmarks.ts';
 import { type PaintingMapReport, writePaintingMap } from './map-data.ts';
 
@@ -69,8 +69,7 @@ async function writeSearchIndex(folder: string, strips: readonly RgbaImage[], ve
  * again: about a minute, where pnpm paintings reads every painting's image to write the gallery first.
  */
 export async function buildSearchData(folder: string): Promise<SearchDataReport> {
-  const manifest = JSON.parse(await readFile(join(folder, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
-  const { strips } = await readChunks(folder, GALLERY_FILES.gallery, manifest.count, manifest.chunkSize);
+  const { strips } = await readGallery(folder);
   return writeSearchData(folder, strips);
 }
 

@@ -8,7 +8,8 @@ const VARINT_LOW_BITS = 0x7f;
 const VARINT_MAX_BYTES = 5;
 
 /**
- * Writes numbers into a growing array of bytes, little-endian, as an index file holds them.
+ * Writes numbers into a growing array of bytes, little-endian, as an index file (or the gallery's
+ * map of the paintings) holds them.
  * Small unsigned integers can be written as variable-length integers (LEB128, as Lucene stores
  * its graphs' links): 7 bits per byte, so a number below 128 takes one byte.
  */
@@ -83,6 +84,11 @@ export class ByteReader {
   constructor(bytes: Uint8Array) {
     this.#bytes = bytes;
     this.#view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  }
+
+  /** Whether every byte has been read. */
+  get atEnd(): boolean {
+    return this.#position === this.#bytes.length;
   }
 
   uint8(): number {

@@ -1,11 +1,11 @@
-import { readFile, stat } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { SeededRandom } from '@palette-atlas/color';
-import { GALLERY_FILES, type GalleryManifest, stripInRow } from '@palette-atlas/gallery';
+import { GALLERY_FILES, stripInRow } from '@palette-atlas/gallery';
 import { BruteForceIndex, HnswIndex, type VectorIndex, type Vectors } from '@palette-atlas/hnsw';
 import { colorSchemeDistance } from '@palette-atlas/vectorize';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { readChunks } from './chunk-files.ts';
+import { readGallery, readManifest } from './chunk-files.ts';
 import { readImage } from './image-file.ts';
 import { LANDMARK_COUNT, landmarks } from './landmarks.ts';
 import { colorSchemeVectors, readSearchIndex } from './search-data.ts';
@@ -70,7 +70,7 @@ describe('searching the gallery by color scheme', { timeout: TIMEOUT_MS }, () =>
   });
 
   it('has the gallery’s own index hold every painting, each finding itself by its strip', async () => {
-    const manifest = JSON.parse(await readFile(join(DATA, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
+    const manifest = await readManifest(DATA);
     const site = await readSearchIndex(DATA);
     expect(site.graph.count).toBe(manifest.count);
     // A painting can share its strip with a copy of itself, and then its vector too.
@@ -84,8 +84,7 @@ describe('searching the gallery by color scheme', { timeout: TIMEOUT_MS }, () =>
   });
 
   it('has the gallery’s own index start every search among its landmarks, alone on its top layer', async () => {
-    const manifest = JSON.parse(await readFile(join(DATA, GALLERY_FILES.manifest), 'utf8')) as GalleryManifest;
-    const { strips } = await readChunks(DATA, GALLERY_FILES.gallery, manifest.count, manifest.chunkSize);
+    const { strips } = await readGallery(DATA);
     const { graph } = await readSearchIndex(DATA);
     const onTop = Array.from({ length: graph.count }, (_, painting) => painting).filter((painting) => graph.levelOf(painting) === graph.topLevel);
     expect(onTop).toHaveLength(LANDMARK_COUNT);

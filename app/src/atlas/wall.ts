@@ -1,5 +1,5 @@
 import type { GalleryEntry } from './gallery-data.ts';
-import { justifiedRows } from './justified-rows.ts';
+import { justifiedRows, ROUNDING_ROOM } from './justified-rows.ts';
 import { PaintingTile } from './painting-tile.ts';
 
 /** How tall a wall's rows aim to be: a share of the wall's width, kept within bounds in CSS pixels. */
@@ -13,9 +13,6 @@ export interface RowHeights {
 export const GALLERY_ROWS: RowHeights = { share: 0.16, min: 110, max: 200 };
 /** The rows of the paintings nearest some colors, a quarter taller, so that their colors show more. */
 export const MATCH_ROWS: RowHeights = { share: 0.2, min: 138, max: 250 };
-
-/** Room left at the end of each row, so that rounding never pushes its last tile onto the next. */
-const ROUNDING_ROOM = 1;
 
 /**
  * The Atlas's wall: paintings at their own shapes in justified rows, each filling the wall's width,

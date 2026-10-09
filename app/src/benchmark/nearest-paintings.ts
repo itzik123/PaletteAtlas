@@ -37,7 +37,7 @@ export class NearestPaintings {
   async #fill(element: HTMLElement, strip: RgbaImage): Promise<void> {
     const gallery = await this.#gallery;
     const found = await (await this.#search).nearest(strip, SHOWN);
-    const entries = (await Promise.all(found.map(({ id }) => gallery.entries(id, 1)))).flat();
+    const entries = await Promise.all(found.map(({ id }) => gallery.entry(id)));
     element.replaceChildren(
       ...entries.map((entry, index) => {
         const figure = document.createElement('figure');

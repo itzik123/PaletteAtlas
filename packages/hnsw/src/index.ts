@@ -1,4 +1,5 @@
 export { BruteForceIndex } from './brute-force-index.ts';
+export { ByteReader, ByteWriter } from './byte-stream.ts';
 export { type Distance, squaredEuclidean } from './distance.ts';
 export { HnswIndex, type HnswOptions, type ReadOptions, type SearchOptions } from './hnsw-index.ts';
 export type { HnswGraph } from './layered-graph.ts';

@@ -1,4 +1,5 @@
 import { type Artist, SOURCE_WIDTH } from '@palette-atlas/gallery';
+import { fetchOk } from '../fetching.ts';
 import { BACK_ICON, BARCODE_ICON, OUT_ICON, PAN_ICON, STUDIO_ICON } from '../icons.ts';
 import type { StripReader } from '../studio/strip-reader.ts';
 import { AxisStrips } from './axis-strips.ts';
@@ -92,18 +93,13 @@ export class PaintingPage {
     const resized = new ResizeObserver(() => same.fit());
     resized.observe(frame);
     resized.observe(info);
-    void fetch(image.url(SOURCE_WIDTH))
-      .then((response) => (response.ok ? response.blob() : undefined))
-      .then((blob) => blob && reader.read(blob))
+    void fetchOk(image.url(SOURCE_WIDTH))
+      .then(async (response) => reader.read(await response.blob()))
+      .catch(() => undefined)
       .then((read) => {
-        if (read) {
-          read.picture.close();
-          strips.show(read.strips);
-        } else {
-          strips.done();
-        }
-      })
-      .catch(() => strips.done());
+        read?.picture.close();
+        strips.show(read?.strips);
+      });
   }
 }
 

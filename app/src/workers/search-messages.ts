@@ -11,27 +11,24 @@ interface Request {
   readonly index: string;
 }
 
-/** Asks for the paintings whose colors lie nearest a color strip's, as the Atlas hangs them. */
-export interface NearestRequest extends Request {
-  readonly kind: 'nearest';
+/**
+ * Asks for the paintings whose colors lie nearest a color strip's, as the Atlas hangs them
+ * ('nearest'), or for that same search recorded step by step beside the exact answer, for the Lab
+ * ('traced', see TracedSearch).
+ */
+interface ColorsRequest extends Request {
+  readonly kind: 'nearest' | 'traced';
   /** A color strip, its segments in a row (see colorSchemeVector). */
   readonly colors: RgbaImage;
   readonly count: number;
 }
 
-/** Asks for that same search recorded step by step, beside the exact answer (see TracedSearch): for the Lab. */
-export interface TracedRequest extends Request {
-  readonly kind: 'traced';
-  readonly colors: RgbaImage;
-  readonly count: number;
-}
-
 /** Asks for the index's layers above the bottom one (see UpperLayers): for the Lab to draw. */
-export interface LayersRequest extends Request {
+interface LayersRequest extends Request {
   readonly kind: 'layers';
 }
 
-export type SearchRequest = NearestRequest | TracedRequest | LayersRequest;
+export type SearchRequest = ColorsRequest | LayersRequest;
 
 /** A search for a color strip, recorded as it ran, and the exact answer it is checked against. */
 export interface TracedSearch {
