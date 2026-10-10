@@ -1,7 +1,7 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import type { RgbaImage } from '@palette-atlas/color';
+import { BYTES_PER_PIXEL, Channel, MAX_BYTE, type RgbaImage } from '@palette-atlas/color';
 import {
   type ChunkFiles,
   type Columns,
@@ -21,7 +21,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildCareers } from './career-data.ts';
 import { readCatalog } from './catalog.ts';
 import { readManifest } from './chunk-files.ts';
-import { readImage } from './image-file.ts';
+import { readImage, writePng } from './image-file.ts';
 import { type BuildReport, buildPaintings } from './painting-data.ts';
 import { buildSearchData, readSearchIndex } from './search-data.ts';
 import { StripPool } from './strip-pool.ts';
@@ -39,6 +39,30 @@ const CHUNK_SIZE = 2;
 const HELD_BACK = { ids: ['Q1747569'], position: 2 };
 /** Starting worker threads and reading three images can take seconds on a slow machine. */
 const TIMEOUT_MS = 30_000;
+
+/**
+ * Builds the gallery of a catalog into a folder that doesn't exist yet, as on a fresh machine (the
+ * build makes it), and answers with the folder and the build's report.
+ */
+async function build(catalog: string): Promise<{ output: string; report: BuildReport }> {
+  const output = join(await mkdtemp(join(tmpdir(), 'paintings-')), 'gallery');
+  const pool = new StripPool(2);
+  try {
+    return { output, report: await buildPaintings(catalog, output, pool, { chunkSize: CHUNK_SIZE, heldBack: HELD_BACK, log: () => {} }) };
+  } finally {
+    await pool.close();
+  }
+}
+
+/** Expects the search index and map rebuilt from a gallery's own files, reading no image again, to be the very files the build wrote. */
+async function expectSearchDataRebuiltSame(folder: string, paintings: number): Promise<void> {
+  const files = [GALLERY_FILES.searchIndex, GALLERY_FILES.paintingMap];
+  const written = await Promise.all(files.map((file) => readFile(join(folder, file))));
+  await Promise.all(files.map((file) => rm(join(folder, file))));
+  const report = await buildSearchData(folder);
+  expect([report.paintings, report.indexBytes, report.map.bytes]).toEqual([paintings, written[0].length, written[1].length]);
+  for (const [index, file] of files.entries()) expect((await readFile(join(folder, file))).equals(written[index]), file).toBe(true);
+}
 
 /** The first `count` paintings stored in chunks, with their strips, read straight from the files. */
 async function readStored(folder: string, files: ChunkFiles, count: number): Promise<{ paintings: Painting[]; strips: RgbaImage[] }> {
@@ -61,14 +85,7 @@ describe('buildPaintings', () => {
   let paintings: Painting[];
 
   beforeAll(async () => {
-    // A folder that doesn't exist yet, as on a fresh machine: the build makes it.
-    output = join(await mkdtemp(join(tmpdir(), 'paintings-')), 'gallery');
-    const pool = new StripPool(2);
-    try {
-      report = await buildPaintings(FIXTURE, output, pool, { chunkSize: CHUNK_SIZE, heldBack: HELD_BACK, log: () => {} });
-    } finally {
-      await pool.close();
-    }
+    ({ output, report } = await build(FIXTURE));
     manifest = await readManifest(output);
     ({ paintings } = await readStored(output, GALLERY_FILES.gallery, manifest.count));
   }, TIMEOUT_MS);
@@ -141,12 +158,34 @@ describe('buildPaintings', () => {
     expect(strips.map((strip) => index.search(colorSchemeVector(strip), 1)[0].id)).toEqual(strips.map((_, position) => position));
   });
 
-  it('rebuilds the very same search index and map from the gallery’s own files, reading no image again', async () => {
-    const files = [GALLERY_FILES.searchIndex, GALLERY_FILES.paintingMap];
-    const written = await Promise.all(files.map((file) => readFile(join(output, file))));
-    await Promise.all(files.map((file) => rm(join(output, file))));
-    const report = await buildSearchData(output);
-    expect([report.paintings, report.indexBytes, report.map.bytes]).toEqual([4, written[0].length, written[1].length]);
-    for (const [index, file] of files.entries()) expect((await readFile(join(output, file))).equals(written[index]), file).toBe(true);
-  });
+  it('rebuilds the very same search index and map from the gallery’s own files, reading no image again', () => expectSearchDataRebuiltSame(output, 4));
+});
+
+describe('buildPaintings, from an image with transparency', () => {
+  let catalog: string;
+  let output: string;
+
+  beforeAll(async () => {
+    // The fixture, with Vroom's View of the IJ as a PNG that fades in from its left edge: 73 of the
+    // gallery's images on Commons are partly transparent, and their strips' segments carry alpha.
+    catalog = await mkdtemp(join(tmpdir(), 'transparent-'));
+    await cp(FIXTURE, catalog, { recursive: true });
+    const id = 'Q17812507';
+    const image = await readImage(join(catalog, 'images', `${id}.jpg`));
+    const { width, data } = image;
+    for (let pixel = 0; pixel < data.length / BYTES_PER_PIXEL; pixel++) {
+      data[pixel * BYTES_PER_PIXEL + Channel.alpha] = Math.round((MAX_BYTE * ((pixel % width) + 1)) / width);
+    }
+    await writePng(join(catalog, 'images', `${id}.png`), image);
+    const works = join(catalog, 'works.json');
+    const fixture = JSON.parse(await readFile(works, 'utf8')) as { works: { id: string; image: string }[] };
+    for (const work of fixture.works.filter((work) => work.id === id)) work.image = `images/${id}.png`;
+    await writeFile(works, JSON.stringify(fixture));
+    ({ output } = await build(catalog));
+  }, TIMEOUT_MS);
+
+  afterAll(() => Promise.all([catalog, dirname(output)].map((folder) => rm(folder, { recursive: true, force: true }))));
+
+  it('works from its strip as it stores it, so the search index and map rebuilt from its own files are the very same', () =>
+    expectSearchDataRebuiltSame(output, 4));
 });

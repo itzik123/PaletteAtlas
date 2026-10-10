@@ -1,6 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { RgbaImage } from '@palette-atlas/color';
+import { BYTES_PER_PIXEL, Channel, MAX_BYTE, type RgbaImage } from '@palette-atlas/color';
 import {
   type ChunkFiles,
   type Columns,
@@ -24,6 +24,17 @@ export interface StoredPaintings {
 }
 
 /**
+ * A strip as the gallery stores it: opaque. A partly transparent image (73 of the gallery's on
+ * Commons) gives segments whose alpha is their pixels' coverage, which the chunks leave out, so
+ * whatever the build draws up from a strip it has just read comes out as from the stored strip.
+ */
+export function asStored(strip: RgbaImage): RgbaImage {
+  const data = strip.data.slice();
+  for (let alpha = Channel.alpha; alpha < data.length; alpha += BYTES_PER_PIXEL) data[alpha] = MAX_BYTE;
+  return { width: strip.width, height: strip.height, data };
+}
+
+/**
  * Writes paintings and their strips in chunks of `chunkSize` (see ChunkFiles), emptying the
  * chunks' folders first so that nothing of an earlier build stays.
  */
@@ -35,7 +46,7 @@ export async function writeChunks(folder: string, files: ChunkFiles, { paintings
   for (const [chunk, image] of packStrips(strips, STRIP_SEGMENTS, chunkSize).entries()) {
     const records = paintings.slice(chunk * chunkSize, (chunk + 1) * chunkSize);
     await writeFile(join(folder, files.paintings(chunk)), JSON.stringify(columnsOf(records, PAINTING_FIELDS)));
-    // Every strip is opaque, so the alpha channel would only take room.
+    // The gallery keeps its strips opaque (see asStored), so the alpha channel would only take room.
     await writePng(join(folder, files.strips(chunk)), image, { opaque: true });
   }
 }

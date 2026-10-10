@@ -14,7 +14,7 @@ import {
 import { STRIP_SEGMENTS } from '@palette-atlas/strip';
 import { writeCareers } from './career-data.ts';
 import { type Catalog, CATALOG_FILE, readCatalog, type Work } from './catalog.ts';
-import { writeChunks } from './chunk-files.ts';
+import { asStored, writeChunks } from './chunk-files.ts';
 import { writeSearchData } from './search-data.ts';
 import { GALLERY_AXIS } from './strip-messages.ts';
 import type { StripPool } from './strip-pool.ts';
@@ -98,7 +98,7 @@ export async function buildPaintings(
     } else if (result.reading.colorfulness < MIN_COLORFULNESS) {
       colorless++;
     } else {
-      kept.push({ work, image, strip });
+      kept.push({ work, image, strip: asStored(strip) });
     }
   });
 
