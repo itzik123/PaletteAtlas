@@ -85,6 +85,10 @@ python pipeline/fetch/fetch.py images    # download them to pipeline/data (hours
 pnpm paintings                           # read their strips and write the site's data
 ```
 
+## Contributing
+
+Help is welcome. Issues labeled [good first issue](https://github.com/itzik123/PaletteAtlas/labels/good%20first%20issue) are the place to start, and ideas and questions go in [Discussions](https://github.com/itzik123/PaletteAtlas/discussions). [CONTRIBUTING.md](CONTRIBUTING.md) covers the setup, the conventions and how to add a new strip axis.
+
 ## License
 
 The code is under the [MIT License](LICENSE). The ray-traced renders in `benchmark/` and the GIFs in `docs/` are under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); the paintings shown in them are in the public domain.
