@@ -42,6 +42,8 @@ const FIXTURE = join(import.meta.dirname, '../../fixtures/wikidata');
 const CHUNK_SIZE = 2;
 /** Van Eyck's Madonna, the first in the catalog, held back to third place. */
 const HELD_BACK = { ids: ['Q1747569'], position: 2 };
+/** Botticelli's Calumny, retitled as museums write it. */
+const TITLE_FIXES = { Q1217187: 'The Calumny of Apelles' };
 /** Starting worker threads and reading three images can take seconds on a slow machine. */
 const TIMEOUT_MS = 30_000;
 
@@ -53,7 +55,8 @@ async function build(catalog: string): Promise<{ output: string; report: BuildRe
   const output = join(await mkdtemp(join(tmpdir(), 'paintings-')), 'gallery');
   const pool = new StripPool(2);
   try {
-    return { output, report: await buildPaintings(catalog, output, pool, { chunkSize: CHUNK_SIZE, heldBack: HELD_BACK, log: () => {} }) };
+    const options = { chunkSize: CHUNK_SIZE, heldBack: HELD_BACK, titleFixes: TITLE_FIXES, log: () => {} };
+    return { output, report: await buildPaintings(catalog, output, pool, options) };
   } finally {
     await pool.close();
   }
@@ -110,6 +113,15 @@ describe('buildPaintings', () => {
       'Hendrick Cornelisz Vroom',
       'Jan van Eyck',
       'Amico Aspertini',
+    ]);
+  });
+
+  it('titles each painting as the catalog does, but for those whose title is fixed', () => {
+    expect(paintings.map(({ title }) => title)).toEqual([
+      'The Calumny of Apelles',
+      'View of the IJ from the East',
+      'The Madonna in the Church',
+      'Female Saint Holding a Book',
     ]);
   });
 

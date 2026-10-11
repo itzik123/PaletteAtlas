@@ -41,6 +41,33 @@ export const MIN_COLORFULNESS = 0.001;
  * 2026): Courbet's L'Origine du monde.
  */
 export const HELD_BACK = { ids: ['Q334138'], position: 500 } as const;
+/**
+ * Titles that replace the catalog's, by Wikidata item: the paintings whose English label on
+ * Wikidata was vandalized or garbled by an anonymous or brand-new editor and never reverted (found
+ * Oct 11, 2026, by comparing every title with the English Wikipedia's article, the Commons file
+ * name and the other languages' labels, and by reading the edit histories of the first 2,000
+ * paintings and of the next 3,000 that have an English Wikipedia article). Each fix is the label
+ * as it stood before the edit that spoiled it, or the article's title. Drop an entry once
+ * Wikidata has the right label again: the catalog then brings it.
+ */
+export const TITLE_FIXES: TitleFixes = {
+  // "The Surrender of Brea", since May 2026.
+  Q1133420: 'The Surrender of Breda',
+  // "The Coronation of Gabo Napoleon", since Sep 2026.
+  Q1231009: 'The Coronation of Napoleon',
+  // "El retorno del hijo gey", since Oct 5, 2026.
+  Q512755: 'The Return of the Prodigal Son',
+  // "A Journalist Lecturing on the Orrery", since 2019.
+  Q1651874: 'A Philosopher Lecturing on the Orrery',
+  // "The Fif", since 2024.
+  Q26250: 'The Fifer',
+  // "Narcissuss", since 2021.
+  Q746716: 'Narcissus',
+  // "Walk on the mountain", since 2024.
+  Q6065609: 'Walk on the Beach',
+  // "San Bernardino Altarpiec", since Aug 2026.
+  Q3889248: 'San Bernardino Altarpiece',
+};
 /** How often the build reports its progress, in images. */
 const PROGRESS_EVERY = 1000;
 
@@ -50,10 +77,14 @@ export interface HeldBack {
   readonly position: number;
 }
 
+/** The title to show for a painting, by its Wikidata item, in place of the catalog's. */
+export type TitleFixes = Readonly<Record<string, string>>;
+
 export interface BuildOptions {
   /** Paintings per chunk. */
   readonly chunkSize?: number;
   readonly heldBack?: HeldBack;
+  readonly titleFixes?: TitleFixes;
   readonly log?: (line: string) => void;
 }
 
@@ -76,7 +107,7 @@ export async function buildPaintings(
   catalogFolder: string,
   outputFolder: string,
   pool: StripPool,
-  { chunkSize = CHUNK_SIZE, heldBack = HELD_BACK, log = console.log }: BuildOptions = {},
+  { chunkSize = CHUNK_SIZE, heldBack = HELD_BACK, titleFixes = TITLE_FIXES, log = console.log }: BuildOptions = {},
 ): Promise<BuildReport> {
   const catalog = await readCatalog(join(catalogFolder, CATALOG_FILE));
   const works = await downloaded(catalog.works, catalogFolder);
@@ -108,7 +139,7 @@ export async function buildPaintings(
     }
   });
 
-  await writeGallery(holdBack(kept, heldBack), catalog, outputFolder, chunkSize);
+  await writeGallery(holdBack(kept, heldBack).map((painting) => retitle(painting, titleFixes)), catalog, outputFolder, chunkSize);
   return {
     paintings: kept.length,
     notDownloaded: catalog.works.length - works.length,
@@ -155,6 +186,12 @@ function holdBack(paintings: readonly KeptPainting[], { ids, position }: HeldBac
   const others = paintings.filter((painting) => !isHeldBack(painting));
   others.splice(position, 0, ...paintings.filter(isHeldBack));
   return others;
+}
+
+/** The painting, with the title the fixes name for it, if any. */
+function retitle(painting: KeptPainting, fixes: TitleFixes): KeptPainting {
+  const title = fixes[painting.work.id];
+  return title === undefined ? painting : { ...painting, work: { ...painting.work, title } };
 }
 
 /** Writes the gallery's files, then the artists' careers and the search index drawn up from them. */
