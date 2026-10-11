@@ -109,6 +109,19 @@ test('shows all of an artist’s page on a laptop’s screen, without scrolling'
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(720);
 });
 
+test('keeps the way back, the list and the painters before and after on one line, down to the narrowest phone', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto(`/artist.html?id=${BOTTICELLI.id}`);
+  await expect(page.getByRole('button', { name: 'Next painter' })).toBeInViewport({ ratio: 1 });
+  const middles = await page.locator('.artist-bar > *').evaluateAll((items) =>
+    items.map((item) => {
+      const { top, height } = item.getBoundingClientRect();
+      return top + height / 2;
+    }),
+  );
+  expect(Math.max(...middles) - Math.min(...middles)).toBeLessThan(1);
+});
+
 test('says so when an artist isn’t in the Atlas, and leads back to it', async ({ page }) => {
   await page.goto('/artist.html?id=Q1');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('This artist isn’t in the Atlas.');
@@ -242,4 +255,17 @@ test.describe('on a touch screen', () => {
     await label.tap();
     await expect(page).toHaveURL(new RegExp(`/painting(\\.html)?\\?id=${BOTTICELLI.painting}$`));
   });
+});
+
+test('leaves the painters’ letters out on a phone on its side, too short for them all, and keeps them upright', async ({ page }) => {
+  for (const [size, shown] of [
+    [{ width: 844, height: 390 }, false],
+    [{ width: 390, height: 844 }, true],
+  ] as const) {
+    await page.setViewportSize(size);
+    await page.goto(`/artist.html?id=${BOTTICELLI.id}`);
+    await page.getByRole('button', { name: 'Painters' }).click();
+    await expect(page.getByRole('searchbox', { name: 'Find a painter' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Painters by letter' })).toBeVisible({ visible: shown });
+  }
 });

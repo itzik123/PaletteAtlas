@@ -15,15 +15,19 @@ const DESKTOP_WINDOWS = [
   { width: 1920, height: 950 },
 ] as const;
 
+/** A phone on its side: wide enough for the layers' labels, too short for five of them. */
+const PHONE_ON_ITS_SIDE = { width: 844, height: 390 } as const;
 /** A phone's screen height, and the room the Lab leaves at its sides there, in CSS pixels. */
 const PHONE_HEIGHT = 844;
 const PHONE_GUTTER = 16;
 
 test.beforeEach(({ page }) => serveFixtureGallery(page));
 
-/** Takes the replay to its end at once, as dragging its scrubber to the end does. */
+/** Takes the replay to its end at once, as dragging its scrubber to the end does, once the search has arrived and set its length. */
 async function skipToEnd(page: Page): Promise<void> {
-  await page.getByRole('slider', { name: 'Replay' }).press('End');
+  const replay = page.getByRole('slider', { name: 'Replay' });
+  await expect(replay).toHaveAttribute('max', /^\d+$/);
+  await replay.press('End');
   await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
 }
 
@@ -157,6 +161,25 @@ test('opens on the search’s end, still, where the system asks for less motion,
   await expect(replay).toHaveAttribute('aria-valuetext', 'Layer 0');
   await replay.press('Home');
   await expect(replay).toHaveAttribute('aria-valuetext', 'Layer 1');
+});
+
+test('never lets the layers’ labels run into one another, leaving them out where the boards lie too close', async ({ page }) => {
+  // The site's own gallery, five layers deep (the fixture's two always have room), its pictures left out.
+  await page.unroute('**/data/**');
+  for (const size of [PHONE_ON_ITS_SIDE, ...DESKTOP_WINDOWS]) {
+    await page.setViewportSize(size);
+    await page.goto('/lab.html');
+    await skipToEnd(page);
+    const where = `${size.width}×${size.height}`;
+    const shown = (): Promise<DOMRect[]> =>
+      page.locator('.sheet-label').evaluateAll((elements) =>
+        elements.filter((label) => label.checkVisibility()).map((label) => label.getBoundingClientRect().toJSON() as DOMRect),
+      );
+    // A laptop's window has room for them all, once the stage has settled.
+    if (size.width >= 1280) await expect.poll(async () => (await shown()).length, where).toBe(5);
+    const labels = await shown();
+    for (let below = 1; below < labels.length; below++) expect(labels[below].top, where).toBeGreaterThanOrEqual(labels[below - 1].bottom);
+  }
 });
 
 test('opens on a painting of its own when asked for none, or for one not in the Atlas', async ({ page }) => {

@@ -1069,6 +1069,14 @@ a.chip:hover {
   display: none;
 }
 
+/* Too short a screen for 27 letters a finger can tell apart (a phone on its side): the list
+   scrolls and the search finds any painter without them. */
+@media (max-height: 500px) {
+  .alphabet-rail {
+    display: none;
+  }
+}
+
 .alphabet-rail button {
   flex: 1 1 0;
   min-height: 0;
@@ -1753,5 +1761,20 @@ a.chip:hover {
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+}
+
+/* On the narrowest phones (320 px), closer together, so all four still fit on one line. */
+@media (max-width: 359px) {
+  .artist-bar {
+    gap: 6px;
+  }
+
+  .artist-bar .back {
+    padding: 7px 10px;
+  }
+
+  .painters-button {
+    padding: 7px 12px;
   }
 }

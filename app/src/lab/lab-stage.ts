@@ -10,7 +10,10 @@ import type { StackView } from './stack-view.ts';
 /** The column of the layers' labels, and the room between it and the boards, in CSS pixels. */
 const LABEL_COLUMN = 140;
 const LABEL_GAP = 28;
-/** A stage narrower than this leaves the labels out, giving the boards all its width. */
+/**
+ * A stage narrower than this leaves the labels out, giving the boards all its width; so does one
+ * too short for a label between each board and the next (a phone on its side).
+ */
 const LABELED_FROM = 560;
 /** How far above a dot its painting's label stands, and the width of the picture asked for it. */
 const LABEL_RISE = 14;
@@ -101,10 +104,19 @@ export class LabStage {
     (this.#pinHead.querySelector('img') as HTMLImageElement).src = picture;
   }
 
-  /** Lays the stack out over the stage as it is now, with its labels beside the boards. */
+  /** Lays the stack out over the stage as it is now, with its labels beside the boards where they fit. */
   layout(): void {
     const { width, height } = this.element.getBoundingClientRect();
-    const labeled = width >= LABELED_FROM;
+    this.#lay(width, height, width >= LABELED_FROM);
+    if (!this.#labels.hidden && this.#labelsCrowd()) this.#lay(width, height, false);
+    this.#pinHead.style.left = `${this.#view.pinX}px`;
+    this.#placeGlass();
+    this.#labeled = undefined;
+    if (this.#replay) this.show(this.#replay, this.#nearest);
+  }
+
+  /** Lays the boards out, beside a column of their labels or across the whole stage. */
+  #lay(width: number, height: number, labeled: boolean): void {
     this.#view.layout(width, height, labeled ? LABEL_COLUMN + LABEL_GAP : 0);
     this.#labels.hidden = !labeled;
     this.#labels.replaceChildren(
@@ -118,10 +130,12 @@ export class LabStage {
         return label;
       }),
     );
-    this.#pinHead.style.left = `${this.#view.pinX}px`;
-    this.#placeGlass();
-    this.#labeled = undefined;
-    if (this.#replay) this.show(this.#replay, this.#nearest);
+  }
+
+  /** Whether any label, centered on its board, reaches the one under it. */
+  #labelsCrowd(): boolean {
+    const boxes = [...this.#labels.children].map((label) => label.getBoundingClientRect());
+    return boxes.some((box, below) => below > 0 && box.top < (boxes[below - 1]?.bottom ?? box.top));
   }
 
   /** Shows the search as far as it is replayed, and the nearest it has found by then. */

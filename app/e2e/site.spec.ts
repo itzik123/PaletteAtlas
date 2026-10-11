@@ -101,3 +101,26 @@ test('leaves the way to every Career Barcode off a painting’s page, which lead
   await expect(page.getByRole('link', { name: 'Career Barcode', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Career Barcodes' })).toHaveCount(0);
 });
+
+test('floats Studio | Atlas | Lab at the foot of a phone held upright, and keeps it in the header on a phone on its side', async ({ page }) => {
+  const parts = page.getByRole('navigation', { name: 'Parts of the site' });
+  for (const [size, floats] of [
+    [PHONE, true],
+    [{ width: 667, height: 375 }, false],
+    [{ width: 844, height: 390 }, false],
+  ] as const) {
+    await page.setViewportSize(size);
+    for (const path of ['/atlas.html', '/lab.html']) {
+      await page.goto(path);
+      const where = `${size.width}×${size.height} ${path}`;
+      expect(await parts.evaluate((nav) => getComputedStyle(nav).position), where).toBe(floats ? 'fixed' : 'static');
+      // On its side, it fits the header with the buttons beside it, within the screen.
+      if (!floats) {
+        const [switchBox, header] = await Promise.all([parts.boundingBox(), page.getByRole('banner').boundingBox()]);
+        expect(switchBox && header && switchBox.y + switchBox.height <= header.y + header.height, where).toBe(true);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), where).toBe(0);
+        await expect(page.getByRole('banner').getByRole('link', { name: 'GitHub' }), where).toBeInViewport({ ratio: 1 });
+      }
+    }
+  }
+});
