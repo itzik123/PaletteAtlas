@@ -1,11 +1,13 @@
 import type { RgbaImage } from '@palette-atlas/color';
+import { MATCHES, NEAREST_COUNT } from '@palette-atlas/gallery';
 import type { WallPaintings } from './atlas.ts';
 import { ColorSearch } from './color-search.ts';
 import type { GalleryData, GalleryEntry } from './gallery-data.ts';
 
 /**
  * The gallery's paintings nearest some colors: the search index's answer (ColorSearch), read into
- * paintings from the gallery's data, for a wall or a row of them.
+ * paintings from the gallery's data, for a wall or a row of them; for a painting's own colors, the
+ * first of them as the gallery stores them, without the index.
  */
 export class ColorMatches {
   readonly #data: GalleryData;
@@ -27,6 +29,34 @@ export class ColorMatches {
         .filter((position) => position !== leaveOut)
         .slice(0, count),
     );
+  }
+
+  /**
+   * The MATCHES paintings nearest a painting's colors, as `of` finds them for its strip, leaving it
+   * out: the first NEAREST_COUNT as the gallery stores them (see GalleryData.nearest), and the rest
+   * from the search, which downloads the index only once they are asked for.
+   */
+  like({ strip, position }: GalleryEntry): WallPaintings {
+    return new NearestFirst(this.#data, position, this.of(strip, MATCHES, position));
+  }
+}
+
+/** A painting's nearest paintings: the first page as the gallery stores them, and the rest as found. */
+class NearestFirst implements WallPaintings {
+  readonly #data: GalleryData;
+  readonly #position: number;
+  readonly #found: WallPaintings;
+
+  constructor(data: GalleryData, position: number, found: WallPaintings) {
+    this.#data = data;
+    this.#position = position;
+    this.#found = found;
+  }
+
+  async entries(from: number, count: number): Promise<GalleryEntry[]> {
+    if (from + count > NEAREST_COUNT) return this.#found.entries(from, count);
+    const positions = (await this.#data.nearest(this.#position)).slice(from, from + count);
+    return Promise.all(positions.map((position) => this.#data.entry(position)));
   }
 }
 

@@ -5,7 +5,8 @@ import type { ThumbnailWidth } from './commons-image.ts';
 // app/public/data:
 //
 //   gallery.json            the manifest: GalleryManifest, with every artist
-//   ids.json                every painting's Wikidata item, in gallery order, to find one by it
+//   ids/<k>.json            shard k of the paintings' Wikidata items, each with its position in
+//                           the gallery, to find one by it (see idShard)
 //   paintings/<k>.json      chunk k of the paintings in gallery order, as Columns<Painting>
 //   strips/<k>.png          their color strips, a row each (see packStrips)
 //   careers.json            how many paintings each artist's career has, in the manifest's order
@@ -15,6 +16,8 @@ import type { ThumbnailWidth } from './commons-image.ts';
 //                           gzipped, node i being the gallery's painting i
 //   painting-map.bin.gz     every painting's place on a map of the color schemes, and its color
 //                           (PaintingMap.toBytes), gzipped, for the Lab
+//   nearest/<k>.bin         chunk k's paintings' nearest paintings, as the search index finds them
+//                           (see packNearest)
 
 /**
  * Paintings stored in chunks of GalleryManifest.chunkSize (see chunkOf): a file of their records
@@ -40,7 +43,8 @@ function chunkFiles(paintingsFolder: string, stripsFolder: string): ChunkFiles {
 /** The gallery's files, relative to its data folder. */
 export const GALLERY_FILES = {
   manifest: 'gallery.json',
-  ids: 'ids.json',
+  /** The paintings' Wikidata items, each with its position, in ID_SHARDS shards by idShard: an object of item to position each. */
+  ids: { folder: 'ids', shard: (shard: number) => `ids/${shard}.json` },
   /** The paintings in gallery order, the most famous first. */
   gallery: chunkFiles('paintings', 'strips'),
   /** How many paintings each artist's career has, in the order of the manifest's artists. */
@@ -64,6 +68,11 @@ export const GALLERY_FILES = {
    * its color (see PaintingMap). Gzipped, as the search index is.
    */
   paintingMap: 'painting-map.bin.gz',
+  /**
+   * Each painting's NEAREST_COUNT nearest paintings, in chunks as the gallery's: the first page of
+   * its wall of matches, as the search index finds them for it (see packNearest).
+   */
+  nearest: { folder: 'nearest', chunk: (chunk: number) => `nearest/${chunk}.bin` },
 } as const;
 
 /**

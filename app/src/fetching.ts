@@ -20,3 +20,29 @@ export async function fetchGunzipped(url: string): Promise<Uint8Array> {
   const unzipped = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
   return new Uint8Array(await new Response(unzipped).arrayBuffer());
 }
+
+/**
+ * Values fetched on first use, once each by key however many ask for them, and fetched again
+ * after a failure.
+ *
+ * Virtual Proxy: stands in for the files a page reads in parts (the chunks of paintings, say).
+ */
+export class FetchedOnce<K, V> {
+  readonly #fetch: (key: K) => Promise<V>;
+  readonly #values = new Map<K, Promise<V>>();
+
+  constructor(fetch: (key: K) => Promise<V>) {
+    this.#fetch = fetch;
+  }
+
+  get(key: K): Promise<V> {
+    let value = this.#values.get(key);
+    if (!value) {
+      value = this.#fetch(key);
+      this.#values.set(key, value);
+      // One that fails to arrive is asked for again next time.
+      value.catch(() => this.#values.delete(key));
+    }
+    return value;
+  }
+}

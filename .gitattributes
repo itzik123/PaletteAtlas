@@ -1,2 +1,5 @@
 # Store and check out text files with LF endings on every OS.
 * text=auto eol=lf
+
+# Binary data the pipeline writes (each painting's nearest), never to be taken for text.
+*.bin binary

@@ -14,6 +14,8 @@ const WIDEST_THUMBNAIL = THUMBNAIL_WIDTHS[THUMBNAIL_WIDTHS.length - 1];
 export class PaintingView {
   readonly element = document.createElement('div');
   readonly #picture = document.createElement('img');
+  /** Settles once the picture has first arrived, or failed to: what else the page shows can follow it. */
+  readonly arrived: Promise<void>;
   readonly #image: CommonsImage;
   /** The width of the picture asked for so far. */
   #pictureWidth = 0;
@@ -23,6 +25,12 @@ export class PaintingView {
     this.element.className = 'painting-view';
     this.#picture.alt = title;
     this.#picture.draggable = false;
+    // What the page is for: ahead of the data and the other pictures it fetches meanwhile.
+    this.#picture.fetchPriority = 'high';
+    this.arrived = new Promise((settle) => {
+      this.#picture.addEventListener('load', () => settle(), { once: true });
+      this.#picture.addEventListener('error', () => settle(), { once: true });
+    });
     this.#picture.style.setProperty('--aspect', String(aspect));
     // The height at which the widest thumbnail fills the picture, enlarged as far as allowed.
     this.#picture.style.setProperty('--sharpest', `${(MAX_ENLARGEMENT * WIDEST_THUMBNAIL) / aspect / devicePixelRatio}px`);

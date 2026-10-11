@@ -1,4 +1,4 @@
-import { access, mkdir, writeFile } from 'node:fs/promises';
+import { access, mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { RgbaImage } from '@palette-atlas/color';
 import {
@@ -8,6 +8,8 @@ import {
   columnsOf,
   GALLERY_FILES,
   type GalleryManifest,
+  ID_SHARDS,
+  idShard,
   type Painting,
   SOURCE_WIDTH,
 } from '@palette-atlas/gallery';
@@ -19,8 +21,12 @@ import { writeSearchData } from './search-data.ts';
 import { GALLERY_AXIS } from './strip-messages.ts';
 import type { StripPool } from './strip-pool.ts';
 
-/** Paintings per chunk (see chunkOf): a chunk's strips take about 150 KB. */
-export const CHUNK_SIZE = 1000;
+/**
+ * Paintings per chunk (see chunkOf): a chunk's strips take about 15 KB, its records about 6 KB.
+ * Small, as a search's paintings lie all over the gallery, about one chunk each: a wall of matches'
+ * first 60 fetch 1.2 MB of chunks of 100, where chunks of 1,000 took 6.5 MB (Oct 11, 2026).
+ */
+export const CHUNK_SIZE = 100;
 /**
  * Images less colorful than this (see colorfulness()) are black-and-white photos of paintings,
  * and are left out: their strips would show the photo, not the painting's colors. Measured on the
@@ -170,10 +176,24 @@ async function writeGallery(paintings: readonly KeptPainting[], catalog: Catalog
 
   await mkdir(folder, { recursive: true });
   await writeFile(join(folder, GALLERY_FILES.manifest), JSON.stringify(manifest));
-  await writeFile(join(folder, GALLERY_FILES.ids), JSON.stringify(gallery.paintings.map(({ id }) => id)));
+  await writeIds(folder, gallery.paintings.map(({ id }) => id));
   await writeChunks(folder, GALLERY_FILES.gallery, gallery, chunkSize);
   await writeCareers(folder, gallery, artists, chunkSize);
-  await writeSearchData(folder, gallery.strips);
+  await writeSearchData(folder, gallery.strips, chunkSize);
+}
+
+/** Writes the paintings' Wikidata items in their shards (see GALLERY_FILES.ids), each with its position: every shard, if empty. */
+async function writeIds(folder: string, ids: readonly string[]): Promise<void> {
+  const shards = Array.from({ length: ID_SHARDS }, (): Record<string, number> => ({}));
+  ids.forEach((id, position) => {
+    const shard = idShard(id);
+    if (shard === undefined) throw new RangeError(`${id} is no Wikidata item`);
+    shards[shard][id] = position;
+  });
+  const target = join(folder, GALLERY_FILES.ids.folder);
+  await rm(target, { recursive: true, force: true });
+  await mkdir(target, { recursive: true });
+  await Promise.all(shards.map((shard, index) => writeFile(join(folder, GALLERY_FILES.ids.shard(index)), JSON.stringify(shard))));
 }
 
 function painting(work: Work, image: CommonsImage, artist: number): Painting {

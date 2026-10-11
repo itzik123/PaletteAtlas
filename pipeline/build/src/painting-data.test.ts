@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { BYTES_PER_PIXEL, Channel, MAX_BYTE, type RgbaImage } from '@palette-atlas/color';
@@ -9,6 +9,11 @@ import {
   chunkOf,
   GALLERY_FILES,
   type GalleryManifest,
+  ID_SHARDS,
+  idShard,
+  MATCHES,
+  NEAREST_COUNT,
+  nearestInRow,
   type Painting,
   recordAt,
   recordCount,
@@ -54,9 +59,13 @@ async function build(catalog: string): Promise<{ output: string; report: BuildRe
   }
 }
 
-/** Expects the search index and map rebuilt from a gallery's own files, reading no image again, to be the very files the build wrote. */
+/**
+ * Expects the search index, the map and every painting's nearest rebuilt from a gallery's own
+ * files, reading no image again, to be the very files the build wrote.
+ */
 async function expectSearchDataRebuiltSame(folder: string, paintings: number): Promise<void> {
-  const files = [GALLERY_FILES.searchIndex, GALLERY_FILES.paintingMap];
+  const chunks = Array.from({ length: Math.ceil(paintings / CHUNK_SIZE) }, (_, chunk) => GALLERY_FILES.nearest.chunk(chunk));
+  const files = [GALLERY_FILES.searchIndex, GALLERY_FILES.paintingMap, ...chunks];
   const written = await Promise.all(files.map((file) => readFile(join(folder, file))));
   await Promise.all(files.map((file) => rm(join(folder, file))));
   const report = await buildSearchData(folder);
@@ -102,7 +111,14 @@ describe('buildPaintings', () => {
       'Jan van Eyck',
       'Amico Aspertini',
     ]);
-    expect(JSON.parse(await readFile(join(output, GALLERY_FILES.ids), 'utf8'))).toEqual(paintings.map(({ id }) => id));
+  });
+
+  it('finds every painting by its Wikidata item in its shard of the ids, every shard written', async () => {
+    expect(await readdir(join(output, GALLERY_FILES.ids.folder))).toHaveLength(ID_SHARDS);
+    for (const [position, { id }] of paintings.entries()) {
+      const shard = JSON.parse(await readFile(join(output, GALLERY_FILES.ids.shard(idShard(id) ?? -1)), 'utf8')) as Record<string, number>;
+      expect(shard[id]).toBe(position);
+    }
   });
 
   it('links every painting to the very image on Commons that its strip was read from', async () => {
@@ -158,7 +174,24 @@ describe('buildPaintings', () => {
     expect(strips.map((strip) => index.search(colorSchemeVector(strip), 1)[0].id)).toEqual(strips.map((_, position) => position));
   });
 
-  it('rebuilds the very same search index and map from the gallery’s own files, reading no image again', () => expectSearchDataRebuiltSame(output, 4));
+  it('writes each painting’s nearest paintings, as the site’s search index finds them for its wall of matches', async () => {
+    const index = await readSearchIndex(output);
+    const { strips } = await readStored(output, GALLERY_FILES.gallery, manifest.count);
+    for (const [position, strip] of strips.entries()) {
+      const { chunk, row } = chunkOf(position, manifest.chunkSize);
+      const stored = nearestInRow(new Uint8Array(await readFile(join(output, GALLERY_FILES.nearest.chunk(chunk)))), row);
+      const found = index
+        .search(colorSchemeVector(strip), MATCHES + 1)
+        .map(({ id }) => id)
+        .filter((id) => id !== position);
+      // The fixture has fewer paintings than a wall's first page: each has the 3 others.
+      expect(stored).toEqual(found.slice(0, NEAREST_COUNT));
+      expect(stored).toHaveLength(3);
+    }
+  });
+
+  it('rebuilds the very same search index, map and nearest paintings from the gallery’s own files, reading no image again', () =>
+    expectSearchDataRebuiltSame(output, 4));
 });
 
 describe('buildPaintings, from an image with transparency', () => {

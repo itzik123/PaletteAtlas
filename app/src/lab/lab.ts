@@ -1,3 +1,4 @@
+import { MATCHES } from '@palette-atlas/gallery';
 import type { SearchStep } from '@palette-atlas/hnsw';
 import type { LabData } from './lab-data.ts';
 import { LabPanel, NEAREST_COUNT } from './lab-panel.ts';
@@ -8,8 +9,8 @@ import { ReplayControls } from './replay-controls.ts';
 import { SearchReplay } from './search-replay.ts';
 import { StackView } from './stack-view.ts';
 
-/** As many as the Atlas's search asks for: its 600 matches, and one more for a painting searched by its own colors. */
-const SEARCHED = 601;
+/** As many as the Atlas's search asks for: its matches, and one more for a painting searched by its own colors. */
+const SEARCHED = MATCHES + 1;
 /** The media query by which a visitor's system asks for less motion. */
 const LESS_MOTION = '(prefers-reduced-motion: reduce)';
 

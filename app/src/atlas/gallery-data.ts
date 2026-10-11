@@ -7,12 +7,14 @@ import {
   chunkOf,
   GALLERY_FILES,
   type GalleryManifest,
+  idShard,
+  nearestInRow,
   type Painting,
   PaintingMap,
   recordAt,
   stripInRow,
 } from '@palette-atlas/gallery';
-import { fetchGunzipped, fetchOk } from '../fetching.ts';
+import { FetchedOnce, fetchGunzipped, fetchOk } from '../fetching.ts';
 import { decodeImage } from '../image-adapters.ts';
 
 /** Where the pipeline writes the gallery's data (app/public/data), as the site's pages see it. */
@@ -47,8 +49,9 @@ export interface Painter {
 
 /**
  * The gallery's data, fetched only as pages need it: the manifest at the start, then chunks of
- * paintings with their strips, in gallery order or in the order of the artists' careers, and the
- * lists of every painting's id and of every career's length only to find what a page shows.
+ * paintings with their strips, in gallery order or in the order of the artists' careers, and of
+ * their nearest paintings, and the shards of the paintings' ids and the list of every career's
+ * length only to find what a page shows.
  *
  * Virtual Proxy: each file is fetched and decoded on first use, once, however many ask for it.
  */
@@ -57,7 +60,10 @@ export class GalleryData {
   readonly #manifest: GalleryManifest;
   readonly #gallery: PaintingChunks;
   readonly #careers: PaintingChunks;
-  #ids: Promise<readonly string[]> | undefined;
+  readonly #nearest = new FetchedOnce(async (chunk: number) =>
+    new Uint8Array(await (await fetchOk(`${this.#url}${GALLERY_FILES.nearest.chunk(chunk)}`)).arrayBuffer()),
+  );
+  readonly #ids = new FetchedOnce((shard: number) => fetchJson<Readonly<Record<string, number>>>(`${this.#url}${GALLERY_FILES.ids.shard(shard)}`));
   #careerLengths: Promise<readonly number[]> | undefined;
   #map: Promise<PaintingMap> | undefined;
 
@@ -91,11 +97,20 @@ export class GalleryData {
     return entry;
   }
 
-  /** The painting with a Wikidata item, if the gallery has it. */
+  /** The painting with a Wikidata item, if the gallery has it: found in its shard of the ids. */
   async find(id: string): Promise<GalleryEntry | undefined> {
-    this.#ids ??= fetchJson<readonly string[]>(`${this.#url}${GALLERY_FILES.ids}`);
-    const position = (await this.#ids).indexOf(id);
-    return position < 0 ? undefined : this.entry(position);
+    const shard = idShard(id);
+    const position = shard === undefined ? undefined : (await this.#ids.get(shard))[id];
+    return position === undefined ? undefined : this.entry(position);
+  }
+
+  /**
+   * The paintings nearest a painting's colors, by their positions, the nearest first: the first
+   * NEAREST_COUNT of those the search index finds for its wall of matches, as the gallery stores them.
+   */
+  async nearest(position: number): Promise<readonly number[]> {
+    const { chunk, row } = chunkOf(position, this.#manifest.chunkSize);
+    return nearestInRow(await this.#nearest.get(chunk), row);
   }
 
   /** How many paintings each artist's career has, in the order of the manifest's artists (Painting.artist). */
@@ -144,7 +159,7 @@ class PaintingChunks {
   readonly #url: string;
   readonly #files: ChunkFiles;
   readonly #manifest: GalleryManifest;
-  readonly #chunks = new Map<number, Promise<PaintingEntry[]>>();
+  readonly #chunks = new FetchedOnce((chunk: number) => this.#readChunk(chunk));
 
   constructor(url: string, files: ChunkFiles, manifest: GalleryManifest) {
     this.#url = url;
@@ -158,19 +173,8 @@ class PaintingChunks {
     const { chunkSize } = this.#manifest;
     const first = chunkOf(from, chunkSize).chunk;
     const last = chunkOf(end - 1, chunkSize).chunk;
-    const chunks = await Promise.all(Array.from({ length: last - first + 1 }, (_, index) => this.#chunk(first + index)));
+    const chunks = await Promise.all(Array.from({ length: last - first + 1 }, (_, index) => this.#chunks.get(first + index)));
     return chunks.flat().slice(from - first * chunkSize, end - first * chunkSize);
-  }
-
-  #chunk(chunk: number): Promise<PaintingEntry[]> {
-    let entries = this.#chunks.get(chunk);
-    if (!entries) {
-      entries = this.#readChunk(chunk);
-      this.#chunks.set(chunk, entries);
-      // A chunk that fails to arrive is asked for again next time.
-      entries.catch(() => this.#chunks.delete(chunk));
-    }
-    return entries;
   }
 
   async #readChunk(chunk: number): Promise<PaintingEntry[]> {

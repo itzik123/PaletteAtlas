@@ -1,4 +1,5 @@
 import '@fontsource-variable/bricolage-grotesque/standard.css';
+import { MATCHES } from '@palette-atlas/gallery';
 import '../style.css';
 import './atlas.css';
 import { REPLAY_PAGE } from '../lab/lab-query.ts';
@@ -14,8 +15,6 @@ import { type CardSize, imageCard, paintingCard } from './query-card.ts';
 import { GALLERY_ROWS, MATCH_ROWS } from './wall.ts';
 import { WallPlaces } from './wall-place.ts';
 
-/** How many of the paintings nearest some colors the wall hangs at most, the nearest first: well past where they stop resembling them. */
-const MATCHES = 600;
 /** The picture on the query's card at its largest, in CSS pixels (see .query-card in atlas.css). */
 const CARD_PICTURE: CardSize = { height: 210, maxWidth: 440 };
 
@@ -47,7 +46,7 @@ async function atlasOf(data: GalleryData): Promise<Atlas> {
   const matches = new ColorMatches(data);
   if (painting) {
     const headline = matchesHeadline(paintingCard(painting, CARD_PICTURE), { href: `./lab.html?like=${painting.painting.id}` });
-    return new Atlas(matches.of(painting.strip, MATCHES, painting.position), headline, MATCH_ROWS, WallPlaces.saved());
+    return new Atlas(matches.like(painting), headline, MATCH_ROWS, WallPlaces.saved());
   }
   if (image) {
     const headline = matchesHeadline(imageCard(image), { href: REPLAY_PAGE, onOpen: () => ImageQueries.hand(image) });

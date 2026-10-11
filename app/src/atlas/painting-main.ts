@@ -34,7 +34,7 @@ GalleryData.load()
       document.title = `${titleOf(entry.painting)} · Palette Atlas`;
       const hasCareer = (careerLengths[entry.painting.artist] ?? 0) > 0;
       // The paintings nearest its own colors, itself left out.
-      const sameColors = new ColorMatches(data).of(entry.strip, SAME_COLORS_COUNT, entry.position).entries(0, SAME_COLORS_COUNT);
+      const sameColors = () => new ColorMatches(data).like(entry).entries(0, SAME_COLORS_COUNT);
       app.append(new PaintingPage(entry, new StripReader(), hasCareer, sameColors).element);
     },
     () => app.append(missingPage('This painting didn’t load.')),

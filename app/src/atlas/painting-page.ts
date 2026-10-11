@@ -30,7 +30,8 @@ const TITLE_LENGTHS = { long: 30, longer: 70 } as const;
 export class PaintingPage {
   readonly element = document.createElement('main');
 
-  constructor(entry: GalleryEntry, reader: StripReader, hasCareer: boolean, sameColors: Promise<readonly GalleryEntry[]>) {
+  /** `sameColors` reads the paintings nearest its colors, once its picture has arrived, so they never slow it down. */
+  constructor(entry: GalleryEntry, reader: StripReader, hasCareer: boolean, sameColors: () => Promise<readonly GalleryEntry[]>) {
     const { painting, artist, image } = entry;
     const aspect = painting.width / painting.height;
     this.element.className = 'painting-page';
@@ -86,7 +87,7 @@ export class PaintingPage {
       const style = getComputedStyle(this.element);
       return innerHeight - Number.parseFloat(style.paddingBottom) - Number.parseFloat(style.rowGap);
     };
-    const same = new SameColors(painting.id, sameColors, bottom);
+    const same = new SameColors(painting.id, view.arrived.then(sameColors), bottom);
     const info = this.element.querySelector('.painting-info')!;
     info.after(strips.element, same.element);
     // The room left changes with the picture's card and the details above (the window resized, say).

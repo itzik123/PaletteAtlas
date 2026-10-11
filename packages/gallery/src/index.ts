@@ -13,5 +13,7 @@ export {
   type Painting,
   SOURCE_WIDTH,
 } from './gallery-files.ts';
+export { ID_SHARDS, idShard } from './id-shards.ts';
+export { MATCHES, NEAREST_COUNT, nearestInRow, packNearest } from './nearest-chunks.ts';
 export { MapProjection, type MapPlace, PaintingMap } from './painting-map.ts';
 export { type ChunkPosition, chunkOf, packStrips, stripInRow } from './strip-chunks.ts';

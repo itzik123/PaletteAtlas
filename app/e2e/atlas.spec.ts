@@ -238,7 +238,14 @@ test('comes back to the same matches from a painting, and keeps them on reloadin
   expect(await wallTitles(page)).toEqual(matches);
 });
 
-test('shows the paintings nearest a painting’s colors under its strips, and the rest of them on the wall', async ({ page }) => {
+test('shows the paintings nearest a painting’s colors under its strips, and the rest of them on the wall, as the pipeline found them', async ({
+  page,
+}) => {
+  // Both come from the paintings' nearest stored with the gallery, not from the search index.
+  const searched: string[] = [];
+  page.context().on('request', (request) => {
+    if (request.url().includes(GALLERY_FILES.searchIndex)) searched.push(request.url());
+  });
   await page.setViewportSize({ width: 1440, height: 800 });
   await page.goto('/painting.html?id=Q1217187');
   const order = (await byColorScheme(page, await storedStrip(page, GALLERY_FILES.gallery, 1))).filter((position) => position !== 1);
@@ -255,6 +262,28 @@ test('shows the paintings nearest a painting’s colors under its strips, and th
   await expect(page.locator('.query-card')).toHaveAttribute('href', './painting.html?id=Q1217187');
   await expect(page.locator('.wall .painting-tile')).toHaveCount(order.length);
   expect(await wallTitles(page)).toEqual(titlesAt(order));
+  expect(searched).toEqual([]);
+});
+
+test('fetches a painting’s own picture before its Same colors, which then follow', async ({ page }) => {
+  // Its picture held back, as on a slow connection, the rest of its page waits for it.
+  let arrive = (): void => {};
+  const arrived = new Promise<void>((resolve) => (arrive = resolve));
+  await page.route(/calumnia/, async (route) => {
+    await arrived;
+    await route.fallback();
+  });
+  const asked: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes(`/${GALLERY_FILES.nearest.folder}/`)) asked.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 800 });
+  await page.goto('/painting.html?id=Q1217187');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Calumny of Apelles');
+  await page.waitForTimeout(500);
+  expect(asked).toEqual([]);
+  arrive();
+  await expect(page.getByRole('region', { name: 'Same colors' }).locator('.painting-tile').first()).toBeVisible();
 });
 
 test('keeps the headline beside a wide painting’s card, and the ways on under them, within a phone’s screen', async ({ page }) => {
