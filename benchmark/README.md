@@ -1,6 +1,6 @@
 # Benchmark images
 
-Renders from Itzik's Java ray tracer, used as the standard inputs for Palette Atlas's visual checks. All six are square, opaque WebP files.
+Renders from Itzik's Java ray tracer, used as the standard inputs for Palette Atlas's visual checks. All six are square, opaque WebP files. They and their strips are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), unlike the code (MIT).
 
 | File | Size | What it exercises |
 |---|---|---|

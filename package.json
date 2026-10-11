@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Turn any image into a color strip and find paintings with a similar palette.",
+  "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@12.9.1",
   "engines": {
