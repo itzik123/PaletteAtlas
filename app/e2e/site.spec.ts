@@ -20,6 +20,10 @@ const PHONE = { width: 390, height: 800 } as const;
 /** Phones' screens, from the narrowest still in use to the widest, in CSS pixels. */
 const NARROWEST_PHONE = 320;
 const WIDEST_PHONE = 430;
+/** Where the site is served for good: a link preview names its picture by its full address there. */
+const SITE_URL = 'https://itzik123.github.io/PaletteAtlas/';
+/** The size of a link preview's picture, the size chats and feeds draw a link's card at. */
+const PREVIEW_PICTURE = { width: 1200, height: 630 } as const;
 
 test.beforeEach(({ page }) => serveFixtureGallery(page));
 
@@ -32,6 +36,33 @@ test('explains each part of the site in its own words', async ({ page }) => {
     await explanation.getByRole('button', { name: 'Close' }).click();
     await expect(explanation).toBeHidden();
   }
+});
+
+test('gives each page a link preview, as chats and feeds read it without running scripts: its title, its words and a picture of it', async ({
+  browser,
+  baseURL,
+  page,
+}) => {
+  const crawler = await browser.newContext({ baseURL, javaScriptEnabled: false });
+  const card = await crawler.newPage();
+  const tag = (key: string) => card.locator(`meta[property="${key}"], meta[name="${key}"]`);
+  for (const { path } of EXPLAINED) {
+    await card.goto(path);
+    await expect(tag('og:title'), path).toHaveAttribute('content', await card.title());
+    await expect(tag('og:description'), path).toHaveAttribute('content', (await tag('description').getAttribute('content')) ?? '');
+    await expect(tag('twitter:card'), path).toHaveAttribute('content', 'summary_large_image');
+    await expect(tag('og:image:width'), path).toHaveAttribute('content', String(PREVIEW_PICTURE.width));
+    await expect(tag('og:image:height'), path).toHaveAttribute('content', String(PREVIEW_PICTURE.height));
+
+    await expect(tag('og:image'), path).toHaveCount(1);
+    const picture = (await tag('og:image').getAttribute('content')) ?? '';
+    expect(picture.startsWith(SITE_URL), `${path}: ${picture}`).toBe(true);
+    const served = await page.goto(`/${picture.slice(SITE_URL.length)}`);
+    expect(served?.headers()['content-type'], picture).toBe('image/jpeg');
+    const size = await page.locator('img').evaluate((image: HTMLImageElement) => ({ width: image.naturalWidth, height: image.naturalHeight }));
+    expect(size, picture).toEqual(PREVIEW_PICTURE);
+  }
+  await crawler.close();
 });
 
 test('leads from the name at the top to the home of the part of the site it is on', async ({ page }) => {
