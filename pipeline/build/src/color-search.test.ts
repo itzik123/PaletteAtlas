@@ -26,9 +26,10 @@ const DOWNLOAD_BUDGET = 6_000_000;
 const RECALL_TARGET = 0.95;
 /**
  * Reading the strips and building the index take a few seconds, and so does each test's searching
- * every painting: more, beyond Vitest's 5 s default, while the rest of `pnpm test` runs alongside.
+ * every painting: far more while the rest of `pnpm test` runs alongside, the UI tests' browsers
+ * above all (the landmarks' test took 9 s alone and 85 s so, Oct 11, 2026).
  */
-const TIMEOUT_MS = 60_000;
+const TIMEOUT_MS = 180_000;
 
 describe('searching the gallery by color scheme', { timeout: TIMEOUT_MS }, () => {
   let vectors: Vectors;
