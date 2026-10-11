@@ -27,7 +27,7 @@ async function skipToEnd(page: Page): Promise<void> {
   await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
 }
 
-/** The paintings the Lab shows as the nearest, by their positions in the fixture gallery. */
+/** The paintings the Lab shows as the nearest, by their positions in the fixture gallery: its tiles come once their paintings are read, so poll it. */
 async function nearestShown(page: Page): Promise<number[]> {
   const ids = await page
     .locator('.nearest-tiles .painting-tile')
@@ -85,7 +85,7 @@ test('replays the search for a painting’s colors layer by layer, to the painti
 
   await skipToEnd(page);
   const order = (await byColorScheme(page, await storedStrip(page, GALLERY_FILES.gallery, 1))).filter((position) => position !== 1);
-  expect(await nearestShown(page)).toEqual(order);
+  await expect.poll(() => nearestShown(page)).toEqual(order);
   await expect(page.locator('.measured')).toHaveText(/^\s*4\s*of 4 measured\s*$/);
   await expect(page.getByText('The same 3 as measuring every painting.')).toBeVisible();
 
@@ -107,7 +107,7 @@ test('replays the search for an image chosen in the Lab, keeps it on coming back
   // The browser reads the image's colors as the pipeline read the painting's from the same file.
   const order = await byColorScheme(page, await storedStrip(page, GALLERY_FILES.gallery, 3));
   expect(order[0]).toBe(3);
-  expect(await nearestShown(page)).toEqual(order);
+  await expect.poll(() => nearestShown(page)).toEqual(order);
 
   await page.getByRole('link', { name: 'See the matches' }).click();
   await expect(page).toHaveURL(/\/atlas(\.html)?\?match$/);
@@ -119,7 +119,7 @@ test('replays the search for an image chosen in the Lab, keeps it on coming back
   await page.reload();
   await expect(page.getByRole('img', { name: 'Your image' })).toBeVisible();
   await skipToEnd(page);
-  expect(await nearestShown(page)).toEqual(order);
+  await expect.poll(() => nearestShown(page)).toEqual(order);
 });
 
 test('replays the search behind a wall of matches from its How they were found, for an image or a painting', async ({ page }) => {
@@ -135,7 +135,7 @@ test('replays the search behind a wall of matches from its How they were found, 
   await expect(page).toHaveURL(/\/lab(\.html)?\?match$/);
   await expect(page.getByRole('img', { name: 'Your image' })).toBeVisible();
   await skipToEnd(page);
-  expect((await nearestShown(page)).map((position) => FIXTURE_PAINTINGS[position]?.title)).toEqual(wall);
+  await expect.poll(async () => (await nearestShown(page)).map((position) => FIXTURE_PAINTINGS[position]?.title)).toEqual(wall);
   // Back on the wall, it is the same image's.
   await page.goBack();
   await expect(page.locator('.wall .painting-tile')).toHaveCount(FIXTURE_PAINTINGS.length);
@@ -164,7 +164,8 @@ test('draws every painting in its own color, names it while pointed at, and open
   const stack = await page.locator('.stack-stage canvas').boundingBox();
   if (!stack) throw new Error('The stack is not laid out');
   // Its dot on the bottom layer, among the nearest, is large enough to show it whole; so is its
-  // copy in the magnifier, which names nothing.
+  // copy in the magnifier, which names nothing. Its name is at hand once its tile has come.
+  await expect.poll(() => nearestShown(page)).toContain(2);
   const label = page.locator('.dot-label');
   let named = false;
   for (const { x, y } of await patchesOf(page, mapColor(2))) {
@@ -283,6 +284,8 @@ test.describe('on a touch screen', () => {
     const { id, title } = FIXTURE_PAINTINGS[2];
     const stack = await page.locator('.stack-stage canvas').boundingBox();
     if (!stack) throw new Error('The stack is not laid out');
+    // Its name is at hand once its tile among the nearest has come.
+    await expect.poll(() => nearestShown(page)).toContain(2);
     const label = page.locator('.dot-label');
     let named = false;
     for (const { x, y } of await patchesOf(page, mapColor(2))) {
