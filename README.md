@@ -2,7 +2,7 @@
 
 Turn any image into a strip of color, and find the paintings painted in its colors.
 
-**[Open Palette Atlas →](https://palette-atlas.pages.dev)**
+**[Open Palette Atlas →](https://itzik123.github.io/PaletteAtlas/)**
 
 A static site with no server: every image is read in your browser and never leaves your computer.
 

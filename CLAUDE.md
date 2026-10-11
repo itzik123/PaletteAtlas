@@ -1,6 +1,6 @@
 # Palette Atlas
 
-A static site, with no server, that turns any image into a continuous color strip and finds paintings with a similar color scheme, using an HNSW index built from scratch. Users' images never leave their computer, and the site is hosted for free: on Cloudflare Pages while the repo is private, on GitHub Pages once it goes public.
+A static site, with no server, that turns any image into a continuous color strip and finds paintings with a similar color scheme, using an HNSW index built from scratch. Users' images never leave their computer, and the site is hosted for free on GitHub Pages, at https://itzik123.github.io/PaletteAtlas/ (on Cloudflare Pages while the repo was private, until v1.0).
 
 Source: the design doc "Palette Atlas: Project Structure and Work Plan" (Oct 4, 2026). This file summarizes it; update it when decisions change.
 
@@ -9,7 +9,7 @@ Source: the design doc "Palette Atlas: Project Structure and Work Plan" (Oct 4, 
 - Itzik is new to TypeScript: briefly explain TS concepts and tooling choices when they first come up.
 - Work in small increments, one phase and one step at a time. Itzik reviews each stage as we reach it, and the plan adapts to the problems that come up.
 - Start minimal: add folders, files and dependencies only when a step needs them.
-- The GitHub repository (`itzik123/PaletteAtlas`) stays private until launch (v1.0). Never make it public, deploy publicly or publish anything without explicit approval.
+- The GitHub repository (`itzik123/PaletteAtlas`) was private until launch and went public with v1.0 (Oct 11, 2026). Never change its settings or publish anything (releases, posts, deploys elsewhere) without explicit approval.
 
 ## Commits (strict)
 
@@ -136,7 +136,7 @@ PaletteAtlas/
 - **Compute**: Web Workers for every heavy computation, so the interface never freezes.
 - **Tests**: Vitest for the libraries, the pipeline's build and the app's pure modules (the painters' name filing and search, the Lab's replay), each test file next to its code as `*.test.ts`; `unittest` for the Python fetch step, likewise as `*_test.py`; Playwright for UI flows and for screenshots of the app compared against reference images, with axe-core (`@axe-core/playwright`) for accessibility.
 - **Images in Node**: `sharp` (libvips) decodes and encodes image files in the pipeline, WebP and PNG included. Its strips of the benchmark images match the browser's exactly.
-- **CI/CD**: GitHub Actions run tests and build on every push, and every green push to `main` publishes the tested build: to Cloudflare Pages (with `wrangler`) while the repo is private, to GitHub Pages once it is public. Only the deploy job changes between the two.
+- **CI/CD**: GitHub Actions run tests and build on every push, and every green push to `main` publishes the tested build to GitHub Pages (to Cloudflare Pages, with `wrangler`, while the repo was private; only the deploy job changed between the two).
 - **Toolchain**: Node 24 LTS, pnpm 12 (pinned by `packageManager`), TypeScript 6. Not TS 7 yet: it is very new (July 2026) and `typescript-eslint` only supports up to TS 6; revisit later.
 - **Workspace conventions**: packages are named `@palette-atlas/<name>`. Shared dependency versions live in the `catalog` in `pnpm-workspace.yaml`, and packages refer to them as `"catalog:"`. Each package has its own `typecheck` and `test` scripts, plus `build` where there is something to build; the root scripts run them across the workspace.
 - **Libraries ship TypeScript source**: no build step. A library's `exports` points at `src/index.ts`, and Vite, Vitest and Node 24 (built-in type stripping) all run it directly.
@@ -159,7 +159,7 @@ The core and the site are TypeScript. Python is used only for parts that don't r
 
 ## Work phases
 
-Seven phases, each ending in something you can show. **Current phase: 7 (Polish and launch).**
+Seven phases, each ending in something you can show. **Current phase: 7 (Polish and launch): v1.0 released Oct 11, 2026; the launch post remains.**
 
 1. **Infrastructure** (1 weekend): monorepo, CI, and deployment of an empty page to GitHub Pages. From here on, every push goes live. *Deployment was deferred; phase 1 covered the monorepo, CI and the empty page, and the site went live in phase 3 (see Hosting while private).* Done Oct 4, 2026.
 2. **Color library and strip engine** (2–3 weekends): OKLab conversions and correct averaging, k-means, a column axis and a radial axis, a color axis with TSP ordering, and a Hilbert axis with fold-back. Deliverable: correct strips generated from a script, covered by tests. Done Oct 4, 2026.
@@ -209,7 +209,7 @@ Every part gets an automated test that runs in CI, and a screen where you can se
   - **The painting's picture first**: asked for with high priority, and its Same colors only once it has arrived.
   - Result: a painting's picture at 5.6 s on slow 4G (11.5 before) and its Same colors at 10.7 (about 45), 1.6 MB in all; a wall of matches' first screen at 16.6 s (83), 4.6 MB, most of it Commons's pictures. Left as they are: the pictures at a phone's 3× sharpness (2 MB of the Atlas's first page), and the 5.4 MB index, which a matched image and the Lab still need.
 - **Performance**: downscale an image to about 256 px before k-means (area averaging in linear light, see Color spaces), and run it in a Worker. k-means keeps bounds on each point's distances to the centroids (Hamerly, 2010; Oct 9, 2026), which skip only what measuring every centroid would confirm: the same palettes, byte for byte, in about half the time (140 ms down to 72 for a painting). The Lab's magnifier draws the thousands of faint paintings under its glass once for where the glass stands, so a replay frame takes about 2 ms rather than 9.
-- **Hosting while private** (decided Oct 5, 2026; not in the design doc): GitHub Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), so until the repo goes public at v1.0 the site lives on Cloudflare Pages, which serves private repos for free. CI uploads the tested `app/dist` with `wrangler`, using the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, to https://palette-atlas.pages.dev (live since Oct 5, 2026). The site is public either way. The build uses relative paths, so it already works under `/PaletteAtlas/` for the move to GitHub Pages.
+- **Hosting while private** (decided Oct 5, 2026; not in the design doc): GitHub Pages on a private repo needs a paid plan (e.g. GitHub Pro through the Student Developer Pack), so until the repo goes public at v1.0 the site lives on Cloudflare Pages, which serves private repos for free. CI uploads the tested `app/dist` with `wrangler`, using the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, to https://palette-atlas.pages.dev (live since Oct 5, 2026). The site is public either way. The build uses relative paths, so it works under `/PaletteAtlas/` on GitHub Pages too. Ended at v1.0 (Oct 11, 2026): the repo went public and the site moved to GitHub Pages; palette-atlas.pages.dev keeps its last deploy.
 
 ## What the project teaches
 
