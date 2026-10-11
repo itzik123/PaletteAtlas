@@ -59,8 +59,8 @@ test('draws every painting of a career as a bar of its color strip, the darker e
   page,
 }) => {
   await page.goto(`/artist.html?id=${BOTTICELLI.id}`);
-  const barcode = page.getByRole('img', { name: 'Career Barcode: 1 painting, 1495' });
-  await expect(barcode).toBeVisible();
+  const barcode = page.getByRole('slider', { name: 'Career Barcode' });
+  await expect(barcode).toHaveAttribute('aria-valuetext', '1 painting, 1495');
   // The strip is the one the pipeline stored for his career; his one painting's bar spans the barcode.
   const bar = barEnds(await storedStrip(page, GALLERY_FILES.careers, BOTTICELLI.career));
   await expect.poll(() => columnEnds(barcode)).toEqual(bar.strip);
@@ -74,7 +74,7 @@ test('draws every painting of a career as a bar of its color strip, the darker e
 
 test('shows a painting’s label while its bar is pointed at, and opens its page on a click', async ({ page }) => {
   await page.goto(`/artist.html?id=${BOTTICELLI.id}`);
-  const barcode = page.getByRole('img', { name: /^Career Barcode/ });
+  const barcode = page.getByRole('slider', { name: 'Career Barcode' });
   const label = page.locator('.barcode-label');
   await expect(label).toBeHidden();
   await barcode.hover();
@@ -84,10 +84,27 @@ test('shows a painting’s label while its bar is pointed at, and opens its page
   await expect(page).toHaveURL(new RegExp(`/painting(\\.html)?\\?id=${BOTTICELLI.painting}$`));
 });
 
+test('steps along a Career Barcode by keyboard, naming each painting, and opens it on Enter', async ({ page }) => {
+  await page.goto(`/artist.html?id=${BOTTICELLI.id}`);
+  const barcode = page.getByRole('slider', { name: 'Career Barcode' });
+  const label = page.locator('.barcode-label');
+  await barcode.focus();
+  await barcode.press('ArrowRight');
+  await expect(label).toHaveText('Calumny of Apelles1490s');
+  await expect(barcode).toHaveAttribute('aria-valuetext', 'Calumny of Apelles, 1490s');
+  // The arrows step along the barcode there, rather than to the painter after.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(BOTTICELLI.name);
+  await barcode.press('Escape');
+  await expect(label).toBeHidden();
+  await barcode.press('Home');
+  await barcode.press('Enter');
+  await expect(page).toHaveURL(new RegExp(`/painting(\\.html)?\\?id=${BOTTICELLI.painting}$`));
+});
+
 test('shows all of an artist’s page on a laptop’s screen, without scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto(`/artist.html?id=${BOTTICELLI.id}`);
-  await expect(page.getByRole('img', { name: /^Career Barcode/ })).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole('slider', { name: 'Career Barcode' })).toBeInViewport({ ratio: 1 });
   await expect(page.getByRole('radio', { name: 'Average' })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(720);
 });
@@ -143,7 +160,7 @@ test('shows a painter picked in the list in place, their bars in the fill picked
   await expect(vroom).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('radio', { name: 'Average' })).toBeChecked();
   const bar = barEnds(await storedStrip(page, GALLERY_FILES.careers, VROOM.career));
-  await expect.poll(() => columnEnds(page.getByRole('img', { name: /^Career Barcode/ }))).toEqual(bar.average);
+  await expect.poll(() => columnEnds(page.getByRole('slider', { name: 'Career Barcode' }))).toEqual(bar.average);
 });
 
 test('finds a painter by a name the gallery leaves out or with slips in spelling, and shows the best match on Enter', async ({
@@ -208,4 +225,21 @@ test('opens the list over the page on a phone, and closes it as a painter is pic
   await open.click();
   await page.keyboard.press('Escape');
   await expect(list).toBeHidden();
+});
+
+test.describe('on a touch screen', () => {
+  test.use({ hasTouch: true });
+
+  test('names a painting tapped on the barcode, and opens its page on a tap on its name', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/artist.html?id=${BOTTICELLI.id}`);
+    const barcode = page.getByRole('slider', { name: 'Career Barcode' });
+    const label = page.locator('.barcode-label');
+    await barcode.tap();
+    await expect(label).toHaveText('Calumny of Apelles1490s');
+    // A tap names it, and stays on the page.
+    await expect(page).toHaveURL(new RegExp(`/artist(\\.html)?\\?id=${BOTTICELLI.id}$`));
+    await label.tap();
+    await expect(page).toHaveURL(new RegExp(`/painting(\\.html)?\\?id=${BOTTICELLI.painting}$`));
+  });
 });

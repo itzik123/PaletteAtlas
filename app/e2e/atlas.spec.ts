@@ -120,7 +120,7 @@ test('opens a painting in the Studio from its page, read from the same image', a
   await expect(page).toHaveURL(/\/\?painting=Q1217187$/);
   await expect(page.locator('.studio')).toHaveAttribute('data-state', 'loaded');
   await expect(page.getByRole('img', { name: 'Calumny of Apelles' })).toBeVisible();
-  expect(await canvasColors(page.getByRole('img', { name: 'Strip' }))).toEqual(await storedStrip(page, GALLERY_FILES.gallery, 1));
+  expect(await canvasColors(page.getByRole('slider', { name: 'Strip' }))).toEqual(await storedStrip(page, GALLERY_FILES.gallery, 1));
 });
 
 test('says so when a painting isn’t in the Atlas, and leads back to it', async ({ page }) => {
@@ -362,6 +362,23 @@ test('enlarges a painting over its page on a click, and puts it away on another,
   await expect(enlarged).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(enlarged).toBeHidden();
+});
+
+test('enlarges a painting from the keyboard, and gives the focus back as it is put away', async ({ page }) => {
+  await page.goto('/painting.html?id=Q1217187');
+  const picture = page.getByRole('button', { name: 'Enlarge' });
+  const enlarged = page.getByRole('dialog', { name: 'Calumny of Apelles' });
+  // One stop for Tab, after the ways on from the page.
+  await page.getByRole('link', { name: 'Open in Studio' }).focus();
+  await page.keyboard.press('Tab');
+  await expect(picture).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expectAsLargeAsFits(enlarged);
+  await page.keyboard.press('Escape');
+  await expect(enlarged).toBeHidden();
+  await expect(picture).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(enlarged).toBeVisible();
 });
 
 test('enlarges a painting as large as fits when clicked before its picture has arrived', async ({ page }) => {

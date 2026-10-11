@@ -147,6 +147,18 @@ test('replays the search behind a wall of matches from its How they were found, 
   await expect(page.getByRole('link', { name: 'Calumny of Apelles', exact: true })).toBeVisible();
 });
 
+test('opens on the search’s end, still, where the system asks for less motion, and names each layer along the replay', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/lab.html?like=Q1217187');
+  const replay = page.getByRole('slider', { name: 'Replay' });
+  await expect.poll(async () => (await replay.inputValue()) === (await replay.getAttribute('max'))).toBe(true);
+  await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
+  await expect.poll(() => nearestShown(page)).toEqual([2, 3, 0]);
+  await expect(replay).toHaveAttribute('aria-valuetext', 'Layer 0');
+  await replay.press('Home');
+  await expect(replay).toHaveAttribute('aria-valuetext', 'Layer 1');
+});
+
 test('opens on a painting of its own when asked for none, or for one not in the Atlas', async ({ page }) => {
   for (const path of ['/lab.html', '/lab.html?like=Q1']) {
     await page.goto(path);

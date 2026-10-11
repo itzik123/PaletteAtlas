@@ -10,11 +10,13 @@ import { StackView } from './stack-view.ts';
 
 /** As many as the Atlas's search asks for: its 600 matches, and one more for a painting searched by its own colors. */
 const SEARCHED = 601;
+/** The media query by which a visitor's system asks for less motion. */
+const LESS_MOTION = '(prefers-reduced-motion: reduce)';
 
 /**
  * The Lab: the very search that hangs a query's matches on the Atlas, replayed over the index's
- * layers (LabStage) beside what it found and measured (LabPanel), played as it opens, and paused
- * or moved along by its controls.
+ * layers (LabStage) beside what it found and measured (LabPanel), played as it opens (or shown
+ * at its end, for less motion), and paused or moved along by its controls.
  *
  * Mediator: the stage, the panel and the controls know nothing of one another; the Lab tells each
  * what the replay shows at every frame.
@@ -80,8 +82,13 @@ export class Lab {
     this.#stage.layout();
     this.#replay = SearchReplay.of([], 0);
     this.#shownSteps = 0;
-    this.#show(0);
-    this.#setPlaying(true);
+    // Played as it opens, unless the visitor's system asks for less motion: then it opens on its end.
+    if (matchMedia(LESS_MOTION).matches) {
+      this.#show(this.#clock.duration);
+    } else {
+      this.#show(0);
+      this.#setPlaying(true);
+    }
   }
 
   /** Shows the replay at a time, in milliseconds from its start. */

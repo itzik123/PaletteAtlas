@@ -1,5 +1,6 @@
 import { type RgbaImage, resize } from '@palette-atlas/color';
 import { placedYear } from '@palette-atlas/gallery';
+import { ArrowSteps } from '../arrow-steps.ts';
 import { paintImage } from '../image-adapters.ts';
 import type { BarFill } from './bar-fills.ts';
 import type { Career, PaintingEntry } from './gallery-data.ts';
@@ -21,8 +22,8 @@ const LABEL_PICTURE = { height: 72, maxWidth: 160 } as const;
  * begin. It is drawn at the screen's resolution by area averaging in linear light, and again
  * whenever its size changes. Pointing at a bar outlines it and shows the painting's museum label,
  * and a click opens the painting's page; on a touch screen, a tap shows the label, and a tap on the
- * label opens the page. One barcode shows career after career, as the visitor goes from artist to
- * artist.
+ * label opens the page; by keyboard, the arrows step from bar to bar (see ArrowSteps), and Enter
+ * opens the page. One barcode shows career after career, as the visitor goes from artist to artist.
  */
 export class CareerBarcode {
   readonly element = document.createElement('figure');
@@ -38,6 +39,7 @@ export class CareerBarcode {
   readonly #picture = document.createElement('img');
   readonly #title = document.createElement('b');
   readonly #date = document.createElement('span');
+  readonly #steps: ArrowSteps;
   /** Each fill's barcode of the career shown, at one pixel per painting, made the first time the fill is shown. */
   readonly #barcodes = new Map<BarFill, RgbaImage>();
   #fill: BarFill | undefined;
@@ -52,11 +54,23 @@ export class CareerBarcode {
   constructor() {
     this.element.className = 'career-barcode';
     this.#frame.className = 'barcode-frame';
-    this.#canvas.setAttribute('role', 'img');
+    this.#steps = new ArrowSteps(this.#canvas, {
+      name: 'Career Barcode',
+      onStep: (bar) => this.#point(bar),
+      describe: (bar) => {
+        const painting = bar === undefined ? undefined : this.#paintings[bar]?.painting;
+        if (painting) return `${titleOf(painting)}, ${dateOf(painting)}`;
+        return this.#years.length > 0 ? describe(this.#years) : '';
+      },
+      // A tap on the label, which takes the focus, keeps it.
+      within: this.element,
+    });
     this.#ruler.className = 'barcode-ruler';
     this.#ruler.setAttribute('aria-hidden', 'true');
     this.#cursor.className = 'barcode-cursor';
     this.#label.className = 'barcode-label';
+    // Enter on the barcode opens the painting, so Tab passes the label by.
+    this.#label.tabIndex = -1;
     this.#picture.alt = '';
     // A picture that fails to arrive leaves its stand-in color, rather than a broken image.
     this.#picture.addEventListener('error', () => this.#picture.removeAttribute('src'));
@@ -83,6 +97,9 @@ export class CareerBarcode {
     this.#canvas.addEventListener('click', () => {
       if (this.#mouse && this.#pointed !== undefined) location.assign(this.#label.href);
     });
+    this.#canvas.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && this.#pointed !== undefined) location.assign(this.#label.href);
+    });
     // A tap anywhere else puts the label away.
     document.addEventListener('pointerdown', (event) => {
       if (!this.element.contains(event.target as Node)) this.#point(undefined);
@@ -97,7 +114,7 @@ export class CareerBarcode {
       this.#paintings = paintings;
       this.#years = paintings.map(({ painting }) => placedYear(painting, artist) ?? painting.year);
       this.#barcodes.clear();
-      this.#canvas.setAttribute('aria-label', `Career Barcode: ${describe(this.#years)}`);
+      this.#steps.setCount(paintings.length);
     }
     this.#fill = fill;
     this.#draw();
@@ -132,6 +149,7 @@ export class CareerBarcode {
   #point(bar: number | undefined): void {
     if (bar === this.#pointed && bar !== undefined) return;
     this.#pointed = bar;
+    this.#steps.show(bar);
     this.#cursor.hidden = bar === undefined;
     this.#label.hidden = bar === undefined;
     const entry = bar === undefined ? undefined : this.#paintings[bar];

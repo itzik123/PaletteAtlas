@@ -75,7 +75,7 @@ export class PaintingPage {
     const view = new PaintingView(image, aspect, titleOf(painting));
     frame.prepend(view.element);
     const enlarged = new PictureLightbox(image, aspect, titleOf(painting), painting.id);
-    enlarged.openOnClick(view.element);
+    enlarged.openFrom(view.element);
     this.element.append(enlarged.element);
 
     const strips = new AxisStrips({ axis: STORED_AXIS, colors: entry.strip });

@@ -57,7 +57,7 @@ async function dropFile(page: Page, target: Locator, path: string, type: string)
 
 /** The colors the Studio's strip shows, four bytes per segment. */
 function stripColors(page: Page): Promise<number[]> {
-  return page.getByRole('img', { name: 'Strip' }).evaluate((canvas: HTMLCanvasElement) => {
+  return page.getByRole('slider', { name: 'Strip' }).evaluate((canvas: HTMLCanvasElement) => {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Canvas 2D is not available');
     return Array.from(context.getImageData(0, 0, canvas.width, canvas.height).data);
@@ -85,7 +85,7 @@ async function referenceColors(page: Page, image: string, axis: string): Promise
 
 /** The middle of a segment's band on the Studio's strip, in page coordinates. */
 function segmentPoint(page: Page, segment: number): Promise<{ x: number; y: number }> {
-  return page.getByRole('img', { name: 'Strip' }).evaluate((canvas: HTMLCanvasElement, segment) => {
+  return page.getByRole('slider', { name: 'Strip' }).evaluate((canvas: HTMLCanvasElement, segment) => {
     const box = canvas.getBoundingClientRect();
     return {
       x: box.left + canvas.clientLeft + ((segment + 0.5) / canvas.width) * canvas.clientWidth,
@@ -194,7 +194,7 @@ test('reading an image never freezes the page', async ({ page }) => {
 test('a dropped file that is not an image is turned away', async ({ page }) => {
   await dropFile(page, page.getByRole('button', { name: /drop an image/i }), join(BENCHMARK, 'README.md'), 'text/markdown');
   await expect(page.getByRole('alert')).toContainText('not an image');
-  await expect(page.getByRole('img', { name: 'Strip' })).toBeHidden();
+  await expect(page.getByRole('slider', { name: 'Strip' })).toBeHidden();
 });
 
 // The cube shrinks to 256 × 256 pixels, so along the columns axis each of the 128 segments is
@@ -208,6 +208,27 @@ test('hovering the strip uncovers the pixels its segment came from, and leaving 
   await page.mouse.move(x, y);
   await expect.poll(() => veilColumns(page)).toBe(clearOnly([80, 81], SHRUNK_CUBE));
   await page.mouse.move(0, 0);
+  await expect.poll(() => veilColumns(page)).toBe('c'.repeat(SHRUNK_CUBE));
+});
+
+test('the strip steps along by keyboard too, uncovering each segment’s pixels as pointing does', async ({ page }) => {
+  await dropFile(page, page.getByRole('button', { name: /drop an image/i }), join(BENCHMARK, 'cube.webp'), 'image/webp');
+  await page.getByRole('radio', { name: 'Columns' }).check();
+  const strip = page.getByRole('slider', { name: 'Strip' });
+  await expect(strip).toHaveAttribute('aria-valuetext', '128 stripes');
+  // One stop for Tab, after the ways to save it.
+  await page.getByRole('button', { name: 'Wallpaper' }).focus();
+  await page.keyboard.press('Tab');
+  await expect(strip).toBeFocused();
+  await strip.press('ArrowRight');
+  await expect.poll(() => veilColumns(page)).toBe(clearOnly([0, 1], SHRUNK_CUBE));
+  await strip.press('ArrowRight');
+  await expect.poll(() => veilColumns(page)).toBe(clearOnly([2, 3], SHRUNK_CUBE));
+  await expect(strip).toHaveAttribute('aria-valuetext', 'Stripe 2 of 128');
+  await strip.press('End');
+  await strip.press('ArrowLeft');
+  await expect.poll(() => veilColumns(page)).toBe(clearOnly([252, 253], SHRUNK_CUBE));
+  await strip.press('Escape');
   await expect.poll(() => veilColumns(page)).toBe('c'.repeat(SHRUNK_CUBE));
 });
 
@@ -265,7 +286,7 @@ test('an image’s colors lead to the paintings nearest them, in the Atlas', asy
 
 test('every axis’s icon and name fit within its button, on phones down to the narrowest', async ({ page }) => {
   await page.getByRole('button', { name: /Mona Lisa/ }).click();
-  await expect(page.getByRole('img', { name: 'Strip' })).toBeVisible();
+  await expect(page.getByRole('slider', { name: 'Strip' })).toBeVisible();
   for (let width = NARROWEST_PHONE; width <= WIDEST_PHONE; width += 10) {
     await page.setViewportSize({ width, height: 800 });
     for (const { label } of AXES) {
@@ -292,7 +313,7 @@ test('fits a desktop window without scrolling, before an image and with one', as
     await page.evaluate(() => document.fonts.ready);
     expect(await scrolls(), `${where}, before an image`).toBe(0);
     await page.getByRole('button', { name: /Mona Lisa/ }).click();
-    await expect(page.getByRole('img', { name: 'Strip' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Strip' })).toBeVisible();
     expect(await scrolls(), `${where}, with an image`).toBe(0);
   }
 });
@@ -300,13 +321,13 @@ test('fits a desktop window without scrolling, before an image and with one', as
 test('a painting clicked on the sample wall becomes its strip', async ({ page }) => {
   await page.getByRole('button', { name: /Mona Lisa/ }).click();
   await expect(page.getByRole('img', { name: 'Mona Lisa' })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'Strip' })).toHaveJSProperty('width', 128);
+  await expect(page.getByRole('slider', { name: 'Strip' })).toHaveJSProperty('width', 128);
 });
 
 test('a painting dragged from the sample wall onto the drop zone becomes its strip', async ({ page }) => {
   await page.getByRole('button', { name: /The Great Wave/ }).dragTo(page.getByRole('button', { name: /drop an image/i }));
   await expect(page.getByRole('img', { name: 'The Great Wave' })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'Strip' })).toHaveJSProperty('width', 128);
+  await expect(page.getByRole('slider', { name: 'Strip' })).toHaveJSProperty('width', 128);
 });
 
 test('an image without a single visible pixel is turned away', async ({ page }) => {
@@ -322,7 +343,7 @@ test('an image without a single visible pixel is turned away', async ({ page }) 
   const zone = page.getByRole('button', { name: /drop an image/i });
   for (const event of ['dragenter', 'dragover', 'drop']) await zone.dispatchEvent(event, { dataTransfer });
   await expect(page.getByRole('alert')).toContainText('nothing visible');
-  await expect(page.getByRole('img', { name: 'Strip' })).toBeHidden();
+  await expect(page.getByRole('slider', { name: 'Strip' })).toBeHidden();
 });
 
 // The strip reader runs in a worker; a worker that never loads must not leave the page waiting.

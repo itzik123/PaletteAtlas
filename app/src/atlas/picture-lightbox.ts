@@ -8,9 +8,9 @@ const CLICK_SLOP = 5;
 /**
  * A painting enlarged over its page, as large as fits the screen, in a frame picked for it, the
  * page darkened behind it. It rises into place and sinks back away (see atlas.css), and a click
- * anywhere or Escape puts it away. CSS sizes the picture from the painting's shape before any
- * image arrives, so Commons is asked for one as wide as it is shown; the picture on the page, if
- * it has arrived, stands in until then.
+ * anywhere or Escape puts it away, the focus going back to the picture it was opened from. CSS
+ * sizes the picture from the painting's shape before any image arrives, so Commons is asked for
+ * one as wide as it is shown; the picture on the page, if it has arrived, stands in until then.
  */
 export class PictureLightbox {
   readonly element = document.createElement('dialog');
@@ -31,8 +31,19 @@ export class PictureLightbox {
     this.element.addEventListener('click', () => this.element.close());
   }
 
-  /** Opens on a click on a picture, not on a drag across it (a wide one pans). */
-  openOnClick(picture: HTMLElement): void {
+  /**
+   * Makes a picture the button that opens it: on a click, not on a drag across it (a wide one
+   * pans), or on Enter or Space.
+   */
+  openFrom(picture: HTMLElement): void {
+    picture.tabIndex = 0;
+    picture.setAttribute('role', 'button');
+    picture.setAttribute('aria-label', 'Enlarge');
+    picture.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      this.open(picture.querySelector('img'));
+    });
     let pressed = { x: 0, y: 0 };
     picture.addEventListener('pointerdown', ({ clientX, clientY }) => (pressed = { x: clientX, y: clientY }));
     picture.addEventListener('click', ({ clientX, clientY }) => {

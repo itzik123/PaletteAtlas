@@ -52,4 +52,9 @@ export class ReplayClock {
     }
     return shown;
   }
+
+  /** The layer the replay shows at a moment: the last whose part has begun, or none before any. */
+  levelAt(time: number): number | undefined {
+    return this.segments.findLast(({ start }) => start <= time)?.level;
+  }
 }

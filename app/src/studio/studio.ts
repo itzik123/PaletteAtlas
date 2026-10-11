@@ -40,6 +40,8 @@ export class Studio {
   readonly #strip = new StripView((segment) => this.#point(segment));
   readonly #picker = new AxisPicker((axis) => this.#showAxis(axis));
   readonly #toast = new Toast();
+  /** The page's heading with an image: its name, for those who hear the page rather than see it. */
+  readonly #heading = document.createElement('h1');
   readonly #reader: StripReader;
   readonly #intake: FileIntake;
   #strips: readonly NamedStrip[] = [];
@@ -112,7 +114,8 @@ export class Studio {
     this.#strip.element.append(find);
     const workspace = document.createElement('section');
     workspace.className = 'workspace';
-    workspace.append(this.#picture.element, controls, this.#strip.element);
+    this.#heading.className = 'visually-hidden';
+    workspace.append(this.#heading, this.#picture.element, controls, this.#strip.element);
     return workspace;
   }
 
@@ -184,6 +187,7 @@ export class Studio {
     this.#toast.hide();
     this.#strips = strips;
     this.#title = name.replace(/\.[^.]*$/, '') || UNTITLED;
+    this.#heading.textContent = this.#title;
     this.#picture.show(picture, this.#title);
     this.#showAxis(this.#picker.axis);
     this.element.dataset.state = 'loaded';

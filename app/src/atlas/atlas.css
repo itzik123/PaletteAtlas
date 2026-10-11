@@ -370,6 +370,16 @@ a.query-card:active {
   cursor: grab;
 }
 
+/* Focused, the picture rings its card, as the axis buttons do, rather than its scrolling box. */
+.painting-view:focus-visible {
+  outline: none;
+}
+
+.painting-frame:has(.painting-view:focus-visible) {
+  outline: 4px solid var(--blue);
+  outline-offset: 4px;
+}
+
 .painting-view.dragging {
   cursor: grabbing;
 }
@@ -908,9 +918,10 @@ a.chip:hover {
   appearance: none;
 }
 
+/* Faint, yet as readable as WCAG AA asks of text (4.5:1): 4.7:1 on the field. */
 .search-field input::placeholder {
   color: inherit;
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
 /* The field's own clear button gives way to the site's. */
@@ -1227,6 +1238,16 @@ a.chip:hover {
   border-radius: 14px;
   image-rendering: pixelated;
   cursor: pointer;
+}
+
+/* Focused, the barcode rings its card, clear of the outline round the painting stepped to. */
+.barcode-frame canvas:focus-visible {
+  outline: none;
+}
+
+.barcode-frame:has(canvas:focus-visible) {
+  outline: 4px solid var(--blue);
+  outline-offset: 4px;
 }
 
 .barcode-ruler {

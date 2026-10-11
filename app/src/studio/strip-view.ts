@@ -1,23 +1,28 @@
 import type { Srgb } from '@palette-atlas/color';
 import type { Strip } from '@palette-atlas/strip';
+import { ArrowSteps } from '../arrow-steps.ts';
 import { paintImage } from '../image-adapters.ts';
 
 /**
  * The strip, drawn big, with a marker that pins one segment and shows its color in a bubble.
  * Observer: pointing at the strip reports the segment under the pointer, and leaving it reports
- * undefined.
+ * undefined; so do its arrow keys (see ArrowSteps), stripe by stripe.
  */
 export class StripView {
   readonly element = document.createElement('div');
   readonly #canvas = document.createElement('canvas');
   readonly #marker = document.createElement('div');
+  readonly #steps: ArrowSteps;
   #segments = 0;
 
   constructor(onPoint: (segment: number | undefined) => void) {
     this.element.className = 'strip-stack';
     this.#canvas.className = 'studio-strip';
-    this.#canvas.setAttribute('role', 'img');
-    this.#canvas.setAttribute('aria-label', 'Strip');
+    this.#steps = new ArrowSteps(this.#canvas, {
+      name: 'Strip',
+      onStep: onPoint,
+      describe: (segment) => (segment === undefined ? `${this.#segments} stripes` : `Stripe ${segment + 1} of ${this.#segments}`),
+    });
     this.#marker.className = 'segment-marker';
     this.#marker.setAttribute('aria-hidden', 'true');
     this.#marker.hidden = true;
@@ -38,6 +43,7 @@ export class StripView {
   show(strip: Strip): void {
     this.#segments = strip.segmentCount;
     paintImage(this.#canvas, strip.toImage());
+    this.#steps.setCount(this.#segments);
     this.unmark();
   }
 
@@ -47,9 +53,11 @@ export class StripView {
     this.#marker.style.setProperty('--span', String(1 / this.#segments));
     this.#marker.style.setProperty('--color', color?.toHex() ?? 'transparent');
     this.#marker.hidden = false;
+    this.#steps.show(segment);
   }
 
   unmark(): void {
     this.#marker.hidden = true;
+    this.#steps.show(undefined);
   }
 }

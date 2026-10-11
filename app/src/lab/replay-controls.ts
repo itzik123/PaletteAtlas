@@ -10,7 +10,8 @@ export interface ReplayListener {
 }
 
 /**
- * Play and pause, and a scrubber along the replay with a notch where each layer's part begins.
+ * Play and pause, and a scrubber along the replay with a notch where each layer's part begins,
+ * which tells a screen reader the layer it is at.
  *
  * Observer: reports the visitor's moves to its listener, and shows what it is told.
  */
@@ -19,6 +20,7 @@ export class ReplayControls {
   readonly #play = document.createElement('button');
   readonly #scrubber = document.createElement('input');
   readonly #notches = document.createElement('div');
+  #clock: ReplayClock | undefined;
 
   constructor(listener: ReplayListener) {
     this.element.className = 'lab-transport';
@@ -40,7 +42,9 @@ export class ReplayControls {
   }
 
   /** Sets the scrubber's length to a replay's, notched where each layer after the first begins. */
-  setClock({ duration, segments }: ReplayClock): void {
+  setClock(clock: ReplayClock): void {
+    const { duration, segments } = clock;
+    this.#clock = clock;
     this.#scrubber.max = String(Math.round(duration));
     this.#notches.replaceChildren(
       ...segments.slice(1).map(({ start }) => {
@@ -55,6 +59,9 @@ export class ReplayControls {
     this.#scrubber.value = String(Math.round(time));
     const duration = Number(this.#scrubber.max) || 1;
     this.#scrubber.style.setProperty('--done', `${(100 * time) / duration}%`);
+    const level = this.#clock?.levelAt(time);
+    if (level === undefined) this.#scrubber.removeAttribute('aria-valuetext');
+    else this.#scrubber.setAttribute('aria-valuetext', `Layer ${level}`);
   }
 
   showPlaying(playing: boolean): void {
